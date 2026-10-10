@@ -104,6 +104,11 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
     return out, still_random
 
 
+# Worlds that can regenerate from slot_data alone, but whose slot_data misses options that change the
+# logic: when the player's yaml is configured, regenerate from it with slot_data applied on top.
+YAML_PLUS_SLOT_DATA = {"Ori and the Will of the Wisps"}
+
+
 class SlotLogic:
     """One slot's regenerated world, kept between updates."""
 
@@ -138,6 +143,18 @@ class SlotLogic:
 
     def _regenerate(self, core, world_cls, slot_name: str, game: str, slot_data: dict[str, Any],
                     yaml_path: Path | None) -> None:
+        if game in YAML_PLUS_SLOT_DATA and yaml_path is not None and Path(yaml_path).is_file() \
+                and getattr(world_cls, "ut_can_gen_without_yaml", False):
+            # UT's slot_data-only path writes an empty yaml (all defaults) then applies slot_data on top:
+            # give it the player's yaml instead, for the options slot_data lacks.
+            def write_player_yaml(game_name: str, player_name: str, tempdir: str) -> None:
+                _, self.random_options = prepare_player_yaml(
+                    Path(yaml_path), player_name, game_name, Path(tempdir), slot_data,
+                    set(world_cls.options_dataclass.type_hints))
+            core.write_empty_yaml = write_player_yaml
+            core.initalize_tracker_core(world_cls, slot_data)
+            self.mode = "yaml+slot_data"
+            return
         if getattr(world_cls, "ut_can_gen_without_yaml", False):
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "slot_data"

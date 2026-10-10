@@ -50,6 +50,26 @@ def _balatro(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
         world_cls.generate_early = original
 
 
+@contextlib.contextmanager
+def _tloz_ph(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Phantom Hourglass: in a Universal Tracker regeneration the world's key rules (Mountain Passage...) assume
+    the player may waste small keys unless the `ut_smart_keys` option is on, whereas the generator's own logic
+    (the one that decided the seed is beatable) assumes keys are spent smartly. Force it on so the tool
+    agrees with the generator (it is a tracker display option, not a seed property)."""
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        self.options.ut_smart_keys.value = 1
+
+    world_cls.generate_early = generate_early
+    try:
+        yield
+    finally:
+        world_cls.generate_early = original
+
+
 ADAPTERS_M7: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "Balatro": _balatro,
+    "The Legend of Zelda - Phantom Hourglass": _tloz_ph,
 }

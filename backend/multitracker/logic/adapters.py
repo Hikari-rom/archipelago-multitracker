@@ -135,10 +135,26 @@ def _ori_wotw(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]
         self.__dict__["spawn_area"] = str(value).split(".")[0]
 
     world_cls.spawn_region_name = property(_get, _set)
+    # With UT's passthrough the world already creates "Spawn item 1..10"; with a non-vanilla `spawn`
+    # option (from the player's yaml) it would create them a second time and crash.
+    original_create_regions = world_cls.create_regions
+
+    def create_regions(self) -> None:
+        if getattr(self.multiworld, "re_gen_passthrough", {}).get(self.game) is None:
+            return original_create_regions(self)
+        spawn = self.options.spawn.value
+        self.options.spawn.value = type(self.options.spawn).option_vanilla
+        try:
+            original_create_regions(self)
+        finally:
+            self.options.spawn.value = spawn
+
+    world_cls.create_regions = create_regions
     try:
         yield
     finally:
         del world_cls.spawn_region_name  # instances keep their values in __dict__
+        world_cls.create_regions = original_create_regions
 
 
 def apply_options(world, slot_data: dict[str, Any], names: list[str]) -> None:
