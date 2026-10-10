@@ -4,6 +4,7 @@ import * as api from '../lib/api'
 import {
   buildPutBody,
   checkByName,
+  mergeDiscovered,
   mergeRows,
   setAll,
   type ConfigResponse,
@@ -55,14 +56,7 @@ async function onDiscover() {
   try {
     const d = await api.discover(roomUrl.value.trim())
     if (d.room_url) roomUrl.value = d.room_url
-    // keep the user's current edits for rows already shown
-    const current = rows.value.filter((r) => r.checked || r.yaml || r.owner)
-    const merged = mergeRows(
-      current.map((r) => ({ name: r.name, game: r.game, owner: r.owner, yaml: r.yaml })),
-      d.players,
-    )
-    const prev = new Map(rows.value.map((r) => [r.name, r]))
-    rows.value = merged.map((r) => ({ ...r, ...(prev.get(r.name) ? { checked: prev.get(r.name)!.checked, yaml: prev.get(r.name)!.yaml, owner: prev.get(r.name)!.owner } : {}) }))
+    rows.value = mergeDiscovered(rows.value, d.players)
     discoverInfo.value = `${d.players.length} slot(s) trouvé(s) sur ${d.server}`
   } catch (e) {
     discoverError.value = e instanceof Error ? e.message : String(e)

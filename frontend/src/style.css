@@ -198,3 +198,4 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
 .mini { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
 @media (min-width: 760px) { .srow { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.8fr); align-items: end; } }
+.pick input { flex-shrink: 0; }

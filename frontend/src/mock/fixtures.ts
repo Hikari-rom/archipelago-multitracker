@@ -1,3 +1,4 @@
+import type { ConfigResponse, DiscoverResponse } from '../lib/config'
 import type { Hint, SlotDetail, SlotSummary } from '../lib/types'
 
 function slot(p: Partial<SlotSummary> & { name: string; game: string }): SlotSummary {
@@ -21,13 +22,13 @@ export const mockSlots: SlotSummary[] = [
   slot({ name: 'Romain_Celeste', game: 'Celeste (Open World)', checks: { done: 3, total: 233, remaining: 230 },
     items: { received: 12, new: 2 }, hints: { mine_elsewhere: 1, in_my_world: 2, in_my_world_in_logic: 1 },
     logic: { state: 'ok', count: 14, message: null } }),
-  slot({ name: 'Romain_TWW', game: 'The Wind Waker HD', checks: { done: 40, total: 300, remaining: 260 },
+  slot({ name: 'Romain_TWW', owner: 'Romain', game: 'The Wind Waker HD', checks: { done: 40, total: 300, remaining: 260 },
     items: { received: 55, new: 0 }, hints: { mine_elsewhere: 3, in_my_world: 1, in_my_world_in_logic: 0 },
     logic: { state: 'ok', count: 1, message: null } }),
   slot({ name: 'Romain_KH2', game: 'Kingdom Hearts 2', checks: { done: 10, total: 450, remaining: 440 },
     items: { received: 20, new: 7 },
     logic: { state: 'unavailable', count: 0, message: "Pas d'apworld compatible pour ce jeu (logique non calculable sans lancer le jeu)." } }),
-  slot({ name: 'Romain_Hades', game: 'Hades', checks: { done: 5, total: 90, remaining: 85 },
+  slot({ name: 'Romain_Hades', owner: 'Alice', game: 'Hades', checks: { done: 5, total: 90, remaining: 85 },
     items: { received: 3, new: 0 }, logic: { state: 'ok', count: 0, message: null } }),
   slot({ name: 'Romain_Pokemon', game: 'Pokemon Emerald', checks: { done: 12, total: 250, remaining: 238 },
     logic: { state: 'pending', count: 0, message: null } }),
@@ -81,4 +82,25 @@ export function mockDetail(name: string): SlotDetail {
       : [],
     players: {},
   }
+}
+
+export const mockConfig: ConfigResponse = {
+  room_url: 'https://archipelago.gg/room/AbCdEfGhIjKlMnOpQrSt',
+  server: 'archipelago.gg:38281',
+  has_password: true,
+  slots: [
+    { name: 'Romain_KH2', game: 'Kingdom Hearts 2', owner: 'Romain', yaml: 'config/players/kh2.yaml' },
+    { name: 'Romain_Celeste', game: 'Celeste (Open World)', owner: 'Romain', yaml: null },
+  ],
+  player_yamls: ['config/players/kh2.yaml', 'config/players/celeste.yaml'],
+}
+export const mockDiscover: DiscoverResponse = {
+  room_url: mockConfig.room_url,
+  server: 'archipelago.gg:38281',
+  players: [
+    { name: 'Romain_KH2', game: 'Kingdom Hearts 2' },
+    { name: 'Romain_Celeste', game: 'Celeste (Open World)' },
+    { name: 'Alice_Hades', game: 'Hades' },
+    { name: 'Alice_A Link to the Past with a very long slot name', game: 'A Link to the Past' },
+  ],
 }

@@ -54,6 +54,18 @@ export function mergeRows(
   return rows
 }
 
+/** After a discover: keep the user's current rows (edits included), add newly found players unchecked. */
+export function mergeDiscovered(rows: SlotRow[], players: { name: string; game: string }[]): SlotRow[] {
+  const have = new Set(rows.map((r) => r.name))
+  const out = rows.map((r) => ({ ...r }))
+  for (const p of players) {
+    if (have.has(p.name)) continue
+    have.add(p.name)
+    out.push({ name: p.name, game: p.game, checked: false, yaml: '', owner: '' })
+  }
+  return out
+}
+
 export interface PasswordInput {
   value: string
   clear: boolean
