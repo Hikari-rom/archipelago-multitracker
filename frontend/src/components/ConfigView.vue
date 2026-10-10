@@ -38,8 +38,8 @@ const canSave = computed(() => !saving.value && (roomUrl.value.trim() || server.
 onMounted(async () => {
   try {
     cfg.value = await api.getConfig()
-    roomUrl.value = cfg.value.room_url
-    server.value = cfg.value.room_url ? '' : cfg.value.server
+    roomUrl.value = cfg.value.room_url ?? ''
+    server.value = cfg.value.room_url ? '' : (cfg.value.server ?? '')
     advanced.value = !cfg.value.room_url && !!cfg.value.server
     rows.value = mergeRows(cfg.value.slots, null)
   } catch (e) {

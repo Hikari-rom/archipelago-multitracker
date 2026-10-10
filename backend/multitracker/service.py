@@ -43,6 +43,7 @@ class Service:
         self.started_at = time.time()
         self.current_server = config.server
         self.room_error: str | None = None
+        self.room_sleeping = False
         self._room_task: asyncio.Task | None = None
         self._room_checked_at = 0.0
         self._room_woken_at = 0.0
@@ -91,6 +92,7 @@ class Service:
             self.config = config
             self.slot_configs = {s.name: s for s in config.slots}
             self.room_error, self._room_checked_at, self._room_woken_at = None, 0.0, 0.0
+            self.room_sleeping = False
             self._start_trackers()
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
 
@@ -103,12 +105,24 @@ class Service:
         if not force and time.monotonic() - self._room_checked_at < min_interval:
             return
         self._room_checked_at = time.monotonic()
-        # Loading the room page wakes a sleeping room up: do it at most every 10 minutes, so that a room
-        # stopped on purpose is not kept awake by the tracker alone.
-        wake = time.monotonic() - self._room_woken_at > 600
+        # Loading the room page wakes a sleeping room up. Only with the "wake_room" option (off by default:
+        # the tracker alone must not keep the room awake), and at most every 10 minutes.
+        wake = self.config.wake_room and time.monotonic() - self._room_woken_at > 600
         if wake:
             self._room_woken_at = time.monotonic()
         self._room_task = asyncio.create_task(self._refresh_room(wake))
+
+    async def wake_room_now(self) -> None:
+        """One explicit wake-up ("Réveiller maintenant"), whatever the wake_room option says."""
+        if not self.config.room_url:
+            raise ValueError("aucune room archipelago.gg configurée")
+        if self._room_task is not None and not self._room_task.done():
+            await asyncio.gather(self._room_task, return_exceptions=True)
+        self._room_checked_at = self._room_woken_at = time.monotonic()
+        self._room_task = asyncio.create_task(self._refresh_room(True))
+        await self._room_task
+        for tracker in self.trackers.values():
+            tracker.retry_now()
 
     async def _refresh_room(self, wake: bool = True) -> None:
         from .room import RoomError, fetch_room
@@ -118,7 +132,12 @@ class Service:
             self.room_error = str(exc)
             log.warning("room refresh failed: %s", exc)
             return
-        self.room_error = None if info.server else "la room ne publie pas de port (endormie ?)"
+        self.room_sleeping = info.sleeping and not wake
+        if self.room_sleeping:
+            self.room_error = ("room endormie : elle redémarre quand quelqu'un ouvre son lien "
+                               "(ou bouton « Réveiller maintenant »)")
+        else:
+            self.room_error = None if info.server else "la room ne publie pas de port (endormie ?)"
         if info.server and info.server != self.current_server:
             log.info("room server is now %s (was %s)", info.server, self.current_server)
             self.current_server = info.server
@@ -126,6 +145,8 @@ class Service:
     # -- change handling -----------------------------------------------------------------
     def _on_change(self, tracker: SlotTracker, kinds: set[str]) -> None:
         name = tracker.state.name
+        if "connected" in kinds and self.room_sleeping:  # someone woke the room up
+            self.room_sleeping, self.room_error = False, None
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results

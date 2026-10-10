@@ -26,11 +26,11 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | Super Mario Odyssey | mdietz94/smo_archipelago v1.5.3 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 comparables + e2e | Nom de jeu **« Spicy Meatball Overdrive »**. Sa génération n'est pas reproductible d'un process à l'autre (ordre de remplissage) : certains runs de validation sont « non comparables », sans effet sur la logique. Logique activée |
 | Ori and the Blind Forest | c-ostic/Archipelago v0.4.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Logique activée |
 | Ori and the Will of the Wisps | Satisha10/APwotw_release v0.6.5 | ✅ | ✅ | ✅ | ✅ (incomplet) | ⚠️ yaml + slot_data | ⚠️ 3/4 | Le `slot_data` ne couvre pas toutes les options : régénération depuis le yaml + `slot_data`. Adaptateurs : bug du spawn (coût des portes à keystones faux, aussi dans UT) et « Spawn item » en double. Reste une surestimation (événements de combat) sur 1 seed : logique désactivée |
-| Balatro | BurndiL/BalatroAP v0.1.9f | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ⚠️ 5/5 seeds, e2e à faire | Adaptateur : decks, mises et lots de jokers rejoués depuis `slot_data`. Logique pas encore activée |
+| Balatro | BurndiL/BalatroAP v0.1.9f | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 5/5 aléatoires + 5/5 yaml de Romain + e2e | Adaptateur : decks, mises et lots de jokers rejoués depuis `slot_data`. Yaml nécessaire. Logique activée |
 | Slay the Spire | cjmang/StS-AP-World 2.3.5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Logique activée |
 | Kingdom Hearts: Birth by Sleep Final Mix | gaithernOrg/ArchipelagoKHBBS 0.2.0 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Nom « Kingdom Hearts Birth by Sleep ». Logique activée |
 | Jak 3 | Blake645/Archipelago 2.1.0 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Logique activée |
-| The Legend of Zelda: Phantom Hourglass | carrotinator/Archipelago ph-v0.10.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ⚠️ 4/4 comparables, e2e à faire | Nom « The Legend of Zelda - Phantom Hourglass ». Adaptateur : entrées de `slot_data["er_pairings"]` connectées, règles de clés du générateur (pas la variante prudente d'UT). Logique pas encore activée |
+| The Legend of Zelda: Phantom Hourglass | carrotinator/Archipelago ph-v0.10.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 4/4 aléatoires + 5/5 yaml de Romain + e2e | Nom « The Legend of Zelda - Phantom Hourglass ». Adaptateur : entrées de `slot_data["er_pairings"]` connectées, règles de clés du générateur (pas la variante prudente d'UT). Logique activée |
 | Pokémon Platinum | ljtpetersen/platinum_archipelago v0.2.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Platinum ». Beaucoup d'options aléatoires ne génèrent pas. Logique activée |
 | Pokémon Black and White | BlastSlimey/PokemonBWAP 0.3.37 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Black and White ». Logique activée |
 | PokéPark Wii: Pikachu's Adventure | Mekurushi/Archipelago_Pokepark 1.2.8 | ✅ | ✅ | ✅ | ✅ | ⏳ | ⏳ | Nom « PokePark ». Stub `dolphin_memory_engine`. En cours d'analyse |
@@ -42,4 +42,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ 0/5 | **Logique impossible sans spoiler** : les récompenses de donjon (pierres/médaillons, y compris celle de la Poche de Link) sont des événements sans adresse placés au hasard ; ni le `slot_data` ni le serveur ne les transmettent. La régénération les place autrement → écarts dès la sphère 0, même avec les options par défaut. Niveau 1 seulement |
 
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
+Validation avec les vrais yamls de Romain : `validate_logic.py "<jeu>" --yaml config/players/romain/<fichier>`
+(ses options, tirages aléatoires compris, sur des seeds différentes).
+
 Résultats bruts des campagnes : `test-output/logs/campaign.summary` et `test-output/logic_validation/` (non commités).

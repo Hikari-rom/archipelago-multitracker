@@ -22,6 +22,11 @@ for (const [name, viewport] of [['mobile', { width: 390, height: 844 }], ['deskt
       await page.screenshot({ path: `${out}/${name}-${scheme}-detail.png`, fullPage: true })
     }
     await page.close()
+    const cfgPage = await browser.newPage({ viewport, colorScheme: scheme })
+    await cfgPage.goto(`${url}/#config`, { waitUntil: 'networkidle' })
+    await cfgPage.waitForTimeout(1000)
+    await cfgPage.screenshot({ path: `${out}/${name}-${scheme}-config.png`, fullPage: true })
+    await cfgPage.close()
   }
 }
 await browser.close()

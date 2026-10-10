@@ -13,16 +13,19 @@
 #   filename          optional: name to save the asset as in custom_worlds/
 #   logic             true = show "checks en logique" for this game (only once validated, see docs/COMPAT.md);
 #                     false/absent = "Logique indisponible" (level 1 tracking only)
+#   needs_yaml        true = the logic needs the player's yaml (the world cannot be rebuilt from slot_data alone);
+#                     the Configuration page warns when such a slot has no yaml
 
 apworlds:
-  celeste_open_world: {game: "Celeste (Open World)", source: core, logic: true}
-  kh2: {game: "Kingdom Hearts 2", source: core, logic: true}
-  jakanddaxter: {game: "Jak and Daxter: The Precursor Legacy", source: core, logic: true}
-  sm64ex: {game: "Super Mario 64", source: core, logic: true}
-  oot: {game: "Ocarina of Time", source: core}
+  celeste_open_world: {game: "Celeste (Open World)", source: core, logic: true, needs_yaml: true}
+  kh2: {game: "Kingdom Hearts 2", source: core, logic: true, needs_yaml: true}
+  jakanddaxter: {game: "Jak and Daxter: The Precursor Legacy", source: core, logic: true, needs_yaml: true}
+  sm64ex: {game: "Super Mario 64", source: core, logic: true, needs_yaml: true}
+  oot: {game: "Ocarina of Time", source: core, needs_yaml: true}
 
   twwhd:
     game: "The Wind Waker HD"
+    needs_yaml: true
     source: github
     repo: Teotia444/twwhd-apworld
     tag: latest
@@ -30,6 +33,7 @@ apworlds:
     logic: true
   smo:
     game: "Spicy Meatball Overdrive"  # SMO apworld registers under this name
+    needs_yaml: true
     source: github
     repo: mdietz94/smo_archipelago
     tag: v1.5.3
@@ -37,6 +41,7 @@ apworlds:
     logic: true
   oribf:
     game: "Ori and the Blind Forest"
+    needs_yaml: true
     source: github
     repo: c-ostic/Archipelago
     tag: latest
@@ -44,16 +49,19 @@ apworlds:
     logic: true
   ori_wotw:
     game: "Ori and the Will of the Wisps"
+    needs_yaml: true
     source: github
     repo: Satisha10/APwotw_release
     tag: latest
     asset: "*.apworld"
   balatro:
     game: "Balatro"
+    needs_yaml: true
     source: github
     repo: BurndiL/BalatroAP
     tag: latest
     asset: "*.apworld"
+    logic: true
   slay_the_spire:
     game: "Slay the Spire"
     source: github
@@ -63,6 +71,7 @@ apworlds:
     logic: true
   khbbs:
     game: "Kingdom Hearts Birth by Sleep"
+    needs_yaml: true
     source: github
     repo: gaithernOrg/ArchipelagoKHBBS
     tag: latest
@@ -70,6 +79,7 @@ apworlds:
     logic: true
   jak3:
     game: "Jak 3"
+    needs_yaml: true
     source: github
     repo: Blake645/Archipelago
     tag: latest
@@ -81,6 +91,7 @@ apworlds:
     repo: carrotinator/Archipelago
     tag: ph-v0.10.1
     asset: "tloz_ph*.apworld"
+    logic: true
   pokemon_platinum:
     game: "Pokemon Platinum"
     source: github
@@ -103,6 +114,7 @@ apworlds:
     asset: "*.apworld"
   rac2:
     game: "Ratchet & Clank 2"
+    needs_yaml: true
     source: github
     repo: evilwb/APRac2
     tag: latest
@@ -117,6 +129,7 @@ apworlds:
     logic: true
   aeminecraft:
     game: "AEMinecraft"
+    needs_yaml: true
     source: github
     repo: KuroLynx/AEMinecraft
     tag: v0.6.2

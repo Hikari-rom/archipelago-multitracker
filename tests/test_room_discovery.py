@@ -20,6 +20,8 @@ class FakeWebHost:
     def __init__(self) -> None:
         self.port_value: int | None = PORT_A
         self.wakes = 0
+        self.last_activity: str | None = None  # e.g. "Sat, 11 Oct 2026 00:00:00 GMT"
+        self.timeout = 7200
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -29,12 +31,14 @@ class FakeWebHost:
             def do_GET(self):
                 if self.path == f"/room/{ROOM_ID}":
                     fake.wakes += 1
+                    fake.last_activity = None  # loading the room page starts it
                     body, ctype = b"<html>room</html>", "text/html"
                 elif self.path == f"/api/room_status/{ROOM_ID}":
                     body = json.dumps({"players": [["Celeste", "Celeste (Open World)"], ["KH2", "Kingdom Hearts 2"],
                                                    ["Jak", "Jak and Daxter: The Precursor Legacy"],
                                                    ["TWWHD", "The Wind Waker HD"], ["SM64", "Super Mario 64"]],
-                                       "last_port": fake.port_value, "tracker": "x", "downloads": []}).encode()
+                                       "last_port": fake.port_value, "tracker": "x", "downloads": [],
+                                       "last_activity": fake.last_activity, "timeout": fake.timeout}).encode()
                     ctype = "application/json"
                 else:
                     self.send_response(404)
@@ -116,8 +120,6 @@ async def test_config_api_discover_and_save(webhost, tmp_path, monkeypatch):
     players_dir.mkdir()
     (players_dir / "kh2.yaml").write_text("name: KH2\ngame: Kingdom Hearts 2\n")
     monkeypatch.setattr(config_mod, "PLAYERS_DIR", players_dir)
-    import multitracker.api as api_mod
-    monkeypatch.setattr(api_mod, "PLAYERS_DIR", players_dir)
 
     cfg = RoomConfig(server="127.0.0.1:1", password="secret", slots=[], path=tmp_path / "room.yaml")
     app = create_app(lambda: Service(cfg, Store(tmp_path / "db.sqlite3")), frontend_dist=None)

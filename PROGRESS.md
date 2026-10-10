@@ -56,6 +56,20 @@
 - Robustesse : reconnexion, room qui change de port, mauvais mot de passe, worker de logique qui meurt (tests).
 - Perf sur le Pi, 22 slots : 13 s au démarrage, 0,5 s pour tout recalculer, worker ~400 Mo (`scripts/testenv/perf_all22.py`).
 
+### Nuit du 2026-10-11
+- Balatro et Phantom Hourglass : bout en bout OK (lot `tests/fixtures/m7c`), 5/5 seeds avec les **vrais yamls de Romain**
+  (`validate_logic.py --yaml`), logique activée → 19 jeux avec logique.
+- M9 backend : yamls (liste récursive, upload), test de connexion, sauvegarde/restauration de la config, option
+  « Réveiller la room » coupée par défaut (la vraie room dort : timeout 2 h). Tests `tests/test_config_m9.py`.
+- Audit de la page Configuration (captures `test-output/screenshots/audit-m9/`). Frictions :
+  1. page blanche quand la config n'a pas de `room_url` (corrigé) ; `#config` tapé dans la barre d'adresse ignoré ;
+  2. yamls des sous-dossiers (`config/players/romain/`) invisibles ; aucun import depuis le navigateur ;
+  3. yaml à choisir à la main pour chaque slot, sans contrôle (jeu ou nom différent acceptés) ;
+  4. rien n'indique quels jeux ont besoin d'un yaml ou n'ont pas de logique ;
+  5. 142 slots : le champ « Nom contenant… » ne filtre pas la liste, pas de filtre par jeu ;
+  6. « Découvrir » réveillait la room ; pas d'info sur la room (endormie, nombre de jeux) ;
+  7. pas de test du mot de passe avant d'enregistrer, pas de retour en arrière.
+
 ## À faire par Romain
 - **Brancher la vraie room** : ouvrir l'app → Configuration → coller le lien de la room archipelago.gg,
   le mot de passe, cocher tes slots, choisir les yamls. Les yamls doivent être copiés avant dans
@@ -73,11 +87,6 @@
 - Serveur de test local (port 38281) lancé pour la démo : `.venv/bin/python scripts/testenv/serve.py stop` pour l'arrêter.
 
 ## Prochaines étapes
-Ordre conseillé pour la prochaine session de nuit (décidé avec Romain le 2026-10-11) :
-1. Balatro et Phantom Hourglass : la référence est validée, il reste le bout en bout puis `logic: true` (rapide).
-2. M9 Configuration : améliorer la page (dont le parcours « lien de room »), puis brancher la vraie room avec
-   les yamls de `config/players/romain/` et `config/room.real.yaml`.
-3. M10 : historique des items reçus, tri « actifs d'abord puis le plus de checks en logique ».
-4. PokePark, puis Ori WotW (événements de combat).
-5. M11 : logique pour d'autres jeux de la room, seulement quand tout le reste est fini ou bloqué.
+Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
+et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
 OoT est mis de côté à la demande de Romain.

@@ -83,6 +83,7 @@ class SlotTracker:
         self._task: asyncio.Task | None = None
         self._stopping = False
         self._had_session = False
+        self._retry = asyncio.Event()
 
     # -- lifecycle -------------------------------------------------------------------------
     def start(self) -> None:
@@ -100,6 +101,10 @@ class SlotTracker:
                 await self._task
             except (asyncio.CancelledError, Exception):
                 pass
+
+    def retry_now(self) -> None:
+        """Skip the current reconnection delay (e.g. right after waking the room up)."""
+        self._retry.set()
 
     async def _run(self) -> None:
         delay = self.min_delay
@@ -146,8 +151,12 @@ class SlotTracker:
                     self._sock = None
             if self._stopping:
                 break
-            await asyncio.sleep(delay)
-            delay = min(delay * 2, self.max_delay)
+            self._retry.clear()
+            try:
+                await asyncio.wait_for(self._retry.wait(), delay)
+                delay = self.min_delay  # retry_now(): the room was just woken up
+            except asyncio.TimeoutError:
+                delay = min(delay * 2, self.max_delay)
 
     # -- protocol --------------------------------------------------------------------------
     async def _send(self, *msgs: dict[str, Any]) -> None:
@@ -300,3 +309,42 @@ class DataPackageProvider:
 
 __all__ = ["SlotTracker", "SlotState", "DataPackageProvider", "ALLOWED_COMMANDS", "ForbiddenCommand"]
 _ = Awaitable  # typing re-export guard
+
+
+async def probe(address: str, password: str | None, name: str, timeout: float = 20.0) -> dict[str, Any]:
+    """One-shot connection test (room reachable, password and slot name accepted), then disconnect.
+    Same read-only rules as SlotTracker: only allow-listed commands, `Tracker` tag."""
+    async def send(sock, msg: dict[str, Any]) -> None:
+        if msg.get("cmd") not in ALLOWED_COMMANDS:
+            raise ForbiddenCommand(f"read-only tracker may not send {msg.get('cmd')!r}")
+        await sock.send(net.encode([msg]))
+
+    async def run() -> dict[str, Any]:
+        sock, url = await net.open_socket(address)
+        try:
+            async for data in sock:
+                for msg in net.decode(data):
+                    cmd = msg.get("cmd")
+                    if cmd == "RoomInfo":
+                        await send(sock, {"cmd": "Connect", "password": password or None, "game": "", "name": name,
+                                          "uuid": uuid.uuid4().hex, "version": net.AP_VERSION,
+                                          "items_handling": 0, "tags": ["Tracker", "NoText"], "slot_data": False})
+                    elif cmd == "ConnectionRefused":
+                        return {"ok": False, "url": url, "errors": list(msg.get("errors") or ["unknown"])}
+                    elif cmd == "Connected":
+                        slot_info = {int(k): v for k, v in (msg.get("slot_info") or {}).items()}
+                        game = slot_info.get(msg.get("slot"), {}).get("game")
+                        return {"ok": True, "url": url, "errors": [], "game": game,
+                                "players": len(msg.get("players") or [])}
+            return {"ok": False, "url": url, "errors": ["connexion fermée par le serveur"]}
+        finally:
+            await sock.close()
+
+    try:
+        return await asyncio.wait_for(run(), timeout)
+    except asyncio.TimeoutError:
+        return {"ok": False, "url": None, "errors": ["pas de réponse du serveur"]}
+    except ForbiddenCommand:
+        raise
+    except Exception as exc:  # unreachable server, closed socket, malformed packet
+        return {"ok": False, "url": None, "errors": [f"{exc}"[:300] or type(exc).__name__]}

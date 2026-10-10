@@ -31,6 +31,7 @@ class RoomConfig:
     slots: list[SlotConfig] = field(default_factory=list)
     path: Path | None = None
     room_url: str | None = None  # archipelago.gg room link: the port is refreshed from it
+    wake_room: bool = False  # load the room page (which starts a sleeping room) when the server is unreachable
 
     def slot(self, name: str) -> SlotConfig | None:
         return next((s for s in self.slots if s.name == name), None)
@@ -66,7 +67,7 @@ def load(path: Path | None = None) -> RoomConfig:
                 yaml_path = ROOT / yaml_path
         slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner")))
     return RoomConfig(server=str(raw.get("server") or ""), password=str(raw.get("password") or ""), slots=slots,
-                      path=path, room_url=raw.get("room_url") or None)
+                      path=path, room_url=raw.get("room_url") or None, wake_room=raw.get("wake_room") is True)
 
 
 PLAYERS_DIR = ROOT / "config" / "players"
@@ -94,6 +95,7 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
     if cfg.server:
         data["server"] = cfg.server
     data["password"] = cfg.password
+    data["wake_room"] = cfg.wake_room
     data["slots"] = []
     for slot in cfg.slots:
         entry: dict = {"name": slot.name}
@@ -108,15 +110,44 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
             entry["owner"] = slot.owner
         data["slots"].append(entry)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
     content = ("# Écrit par l'app (page Configuration). Modifiable à la main.\n"
                + yaml.safe_dump(data, allow_unicode=True, sort_keys=False)).encode("utf-8")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)  # never readable by others (password)
+    if path.exists():
+        previous = path.read_bytes()
+        if previous != content:
+            _write_private(backup_path(path), previous)  # one step back: "Restaurer la configuration précédente"
+    _write_private(path, content)
+    cfg.path = path
+    return path
+
+
+def backup_path(path: Path | None = None) -> Path:
+    path = Path(path or config_path())
+    return path.with_name(path.name + ".bak")
+
+
+def restore_backup(path: Path | None = None) -> RoomConfig:
+    """Swap the config file and its backup (so a restore can itself be undone); returns the restored config."""
+    path = Path(path or config_path())
+    bak = backup_path(path)
+    if not bak.exists():
+        raise ConfigError("aucune configuration précédente")
+    restored = load(bak)  # refuse a broken backup before touching anything
+    current = path.read_bytes() if path.exists() else None
+    _write_private(path, bak.read_bytes())
+    if current is not None:
+        _write_private(bak, current)
+    restored.path = path
+    return restored
+
+
+def _write_private(path: Path, content: bytes) -> None:
+    """Atomic replace, mode 0600 (the file holds the room password)."""
+    tmp = path.with_name(path.name + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
         os.write(fd, content)
         os.fsync(fd)
     finally:
         os.close(fd)
     tmp.replace(path)
-    cfg.path = path
-    return path

@@ -95,7 +95,7 @@ export const mockConfig: ConfigResponse = {
   player_yamls: ['config/players/kh2.yaml', 'config/players/celeste.yaml'],
 }
 export const mockDiscover: DiscoverResponse = {
-  room_url: mockConfig.room_url,
+  room_url: mockConfig.room_url ?? '',
   server: 'archipelago.gg:38281',
   players: [
     { name: 'Romain_KH2', game: 'Kingdom Hearts 2' },

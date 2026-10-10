@@ -160,3 +160,10 @@ async def test_bot_finishes_m7b_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m7b", 13, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m7b.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m7c_batch_using_only_in_logic_locations(tmp_path):
+    """Balatro, The Legend of Zelda - Phantom Hourglass."""
+    result = await play_until_done("m7c", 17, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m7c.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

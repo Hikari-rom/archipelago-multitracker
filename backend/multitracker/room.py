@@ -10,9 +10,12 @@ import json
 import os
 import re
 import socket
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlparse
 
 ROOM_PATH = re.compile(r"^/room/(?P<id>[A-Za-z0-9_-]{8,40})/?$")
@@ -63,10 +66,34 @@ class RoomInfo:
     host: str
     port: int | None
     players: list[tuple[str, str]]  # (slot name, game)
+    last_activity: float | None = None  # epoch seconds
+    timeout: int | None = None  # the room's server stops this long after the last activity
 
     @property
     def server(self) -> str | None:
         return f"{self.host}:{self.port}" if self.port else None
+
+    @property
+    def sleeping(self) -> bool:
+        """The room's server has (most likely) stopped: no activity for longer than its timeout."""
+        if self.last_activity is None or not self.timeout:
+            return False
+        return time.time() - self.last_activity > self.timeout
+
+
+def _parse_time(value: object) -> float | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        dt = parsedate_to_datetime(value)  # Flask's JSON dates: "Sat, 11 Oct 2026 00:12:00 GMT"
+    except (TypeError, ValueError):
+        try:
+            dt = datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
 
 
 def parse_room_url(url: str) -> tuple[str, str, str]:
@@ -106,4 +133,7 @@ def fetch_room(url: str, timeout: float = 15.0, wake: bool = False) -> RoomInfo:
     players = [(str(p[0]), str(p[1])) for p in data.get("players", []) if isinstance(p, (list, tuple)) and len(p) >= 2]
     port = data.get("last_port")
     port = int(port) if isinstance(port, int) and port > 0 else None
-    return RoomInfo(url=f"{base}/room/{room_id}", host=host, port=port, players=players)
+    timeout = data.get("timeout")
+    return RoomInfo(url=f"{base}/room/{room_id}", host=host, port=port, players=players,
+                    last_activity=_parse_time(data.get("last_activity")),
+                    timeout=int(timeout) if isinstance(timeout, int) and timeout > 0 else None)

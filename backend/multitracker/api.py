@@ -16,7 +16,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .apenv import ROOT
-from .config import PLAYERS_DIR, ConfigError, RoomConfig, SlotConfig, safe_yaml_path
+from . import players as player_yamls
+from .config import ConfigError, RoomConfig, SlotConfig, backup_path, restore_backup, safe_yaml_path
 from .config import save as save_config
 from .service import Service
 
@@ -31,6 +32,20 @@ class SeenBody(BaseModel):
 
 class DiscoverBody(BaseModel):
     url: str
+    wake: bool = False  # load the room page first (starts a sleeping room)
+
+
+class ProbeBody(BaseModel):
+    room_url: str | None = None
+    server: str | None = None
+    password: str | None = None  # None = the saved password
+    slot: str
+
+
+class YamlUploadBody(BaseModel):
+    filename: str
+    content: str
+    overwrite: bool = False
 
 
 class SlotBody(BaseModel):
@@ -44,6 +59,7 @@ class ConfigBody(BaseModel):
     room_url: str | None = None
     server: str | None = None
     password: str | None = None  # None = keep the current password
+    wake_room: bool | None = None  # None = keep the current setting
     slots: list[SlotBody]
 
 
@@ -86,26 +102,86 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
     async def slots(request: Request) -> dict[str, Any]:
         service = get_service(request)
         return {"server": service.current_server, "room_url": service.config.room_url,
-                "room_error": service.room_error, "slots": [service.summary(n) for n in service.trackers]}
+                "room_error": service.room_error, "room_sleeping": service.room_sleeping,
+                "wake_room": service.config.wake_room,
+                "slots": [service.summary(n) for n in service.trackers]}
 
     @app.get("/api/config")
     async def get_config(request: Request) -> dict[str, Any]:
+        from .logic.engine import game_catalog
         cfg = get_service(request).config
+        yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
+                "wake_room": cfg.wake_room, "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml)} for s in cfg.slots],
-                "player_yamls": sorted(_rel(p) for p in PLAYERS_DIR.glob("*.y*ml"))}
+                "player_yamls": [y["path"] for y in yamls], "yamls": yamls, "games": game_catalog()}
 
     @app.post("/api/discover")
     async def discover(body: DiscoverBody, request: Request) -> dict[str, Any]:
         same_origin(request)
         from .room import RoomError, fetch_room
         try:
-            info = await asyncio.to_thread(fetch_room, body.url, 15.0, True)
+            info = await asyncio.to_thread(fetch_room, body.url, 15.0, body.wake)
         except RoomError as exc:
             raise HTTPException(400, str(exc)) from exc
-        return {"room_url": info.url, "server": info.server,
+        return {"room_url": info.url, "server": info.server, "sleeping": info.sleeping,
                 "players": [{"name": n, "game": g} for n, g in info.players]}
+
+    @app.post("/api/room/wake")
+    async def wake_room(request: Request) -> dict[str, Any]:
+        same_origin(request)
+        service = get_service(request)
+        try:
+            await service.wake_room_now()
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"ok": service.room_error is None, "server": service.current_server, "room_error": service.room_error}
+
+    @app.post("/api/config/test")
+    async def test_connection(body: ProbeBody, request: Request) -> dict[str, Any]:
+        """Connect once as a read-only tracker to check the address, the password and one slot name."""
+        same_origin(request)
+        from .ap.tracker import probe
+        from .room import RoomError, fetch_room
+        service = get_service(request)
+        address = (body.server or "").strip()
+        if body.room_url:
+            try:
+                info = await asyncio.to_thread(fetch_room, body.room_url, 15.0, False)
+            except RoomError as exc:
+                return {"ok": False, "errors": [str(exc)]}
+            if info.sleeping or not info.server:
+                return {"ok": False, "sleeping": True,
+                        "errors": ["room endormie : réveille-la (ouvre son lien) puis réessaie"]}
+            address = info.server
+        if not address:
+            raise HTTPException(400, "indique l'URL de la room ou l'adresse du serveur")
+        password = service.config.password if body.password is None else body.password
+        result = await probe(address, password, body.slot)
+        result["server"] = address
+        return result
+
+    @app.post("/api/yamls")
+    async def upload_yaml(body: YamlUploadBody, request: Request) -> dict[str, Any]:
+        same_origin(request)
+        try:
+            return await asyncio.to_thread(player_yamls.save_upload, body.filename, body.content, body.overwrite)
+        except FileExistsError as exc:
+            raise HTTPException(409, f"{exc} existe déjà avec un autre contenu") from exc
+        except ConfigError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    @app.post("/api/config/restore")
+    async def restore_config(request: Request) -> dict[str, Any]:
+        same_origin(request)
+        service = get_service(request)
+        try:
+            restored = await asyncio.to_thread(restore_backup, service.config.path)
+        except ConfigError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        await service.reload(restored)
+        return {"ok": True, "slots": len(restored.slots)}
 
     def same_origin(request: Request) -> None:
         """Refuse cross-site writes (a page on another site making the browser call this API)."""
@@ -139,7 +215,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             raise HTTPException(400, str(exc)) from exc
         new = RoomConfig(server=(body.server or "").strip(), slots=slots, path=current.path,
                          password=current.password if body.password is None else body.password,
-                         room_url=(body.room_url or "").strip() or None)
+                         room_url=(body.room_url or "").strip() or None,
+                         wake_room=current.wake_room if body.wake_room is None else body.wake_room)
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 

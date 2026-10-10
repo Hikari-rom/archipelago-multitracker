@@ -32,6 +32,16 @@ def enabled_games(path: Path = APWORLDS_CONFIG) -> dict[str, bool]:
             for entry in (config.get("apworlds") or {}).values() if entry.get("game")}
 
 
+def game_catalog(path: Path = APWORLDS_CONFIG) -> dict[str, dict[str, bool]]:
+    """game name -> {"logic": enabled, "needs_yaml": the logic needs the player's yaml}, from config/apworlds.yaml."""
+    try:
+        config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except OSError:
+        return {}
+    return {entry["game"]: {"logic": bool(entry.get("logic", False)), "needs_yaml": bool(entry.get("needs_yaml", False))}
+            for entry in (config.get("apworlds") or {}).values() if entry.get("game")}
+
+
 class UTLogicEngine(LogicEngine):
     def __init__(self, games: dict[str, bool] | None = None, timeout: float = 300.0) -> None:
         self.games = enabled_games() if games is None else games

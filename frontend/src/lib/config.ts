@@ -7,8 +7,8 @@ export interface ConfigSlot {
   yaml?: string | null
 }
 export interface ConfigResponse {
-  room_url: string
-  server: string
+  room_url: string | null
+  server: string | null
   has_password: boolean
   slots: ConfigSlot[]
   player_yamls: string[]
