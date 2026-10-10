@@ -67,7 +67,15 @@
   et `sudo loginctl enable-linger romain`.
 - **Tailscale** n'est pas installé sur le Pi : `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`.
   Ensuite `http://<ip-tailscale-du-pi>:42753` fonctionne (l'app écoute sur `0.0.0.0`).
+- **Avant la nuit** : déposer tes yamls dans `config/players/romain/` et créer `config/room.real.yaml` avec
+  `room_url: "https://archipelago.gg/room/..."` et `password: "..."` (fichier gitignoré). Puis, juste avant de lancer
+  la session : `rm -f .overnight/STOP .overnight/continues`.
 - Serveur de test local (port 38281) lancé pour la démo : `.venv/bin/python scripts/testenv/serve.py stop` pour l'arrêter.
 
 ## Prochaines étapes
-- Session interrompue par la limite d'usage : reprendre Balatro / PokePark / Phantom Hourglass (adaptateurs partiels dans backend/multitracker/logic/adapters_m7.py, logique non activée), puis retenter Ori WotW (événements de combat).
+Ordre conseillé pour la prochaine session de nuit (décidé avec Romain le 2026-10-11) :
+1. Balatro et Phantom Hourglass : la référence est validée, il reste le bout en bout puis `logic: true` (rapide).
+2. M9 Configuration : améliorer la page, puis brancher la vraie room avec les yamls de `config/players/romain/`
+   et `config/room.real.yaml`.
+3. PokePark, puis Ori WotW (événements de combat).
+OoT est mis de côté à la demande de Romain.

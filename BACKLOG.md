@@ -57,21 +57,21 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Super Mario 64 (sm64ex) — adaptateur area rando, 6/6 seeds
 - [x] Super Mario Odyssey
 - [x] Ori and the Blind Forest
-- [ ] Ori and the Will of the Wisps
-- [ ] Balatro
+- [ ] Ori and the Will of the Wisps — 3/4 seeds, surestimation sur des événements de combat (à traiter en dernier)
+- [ ] Balatro — adaptateur `_balatro` (adapters_m7.py) : référence OK 5/5 (runs 41–45). Reste : lot bout en bout, `logic: true`, COMPAT
 - [x] Slay the Spire
 - [x] Kingdom Hearts: Birth by Sleep Final Mix
 - [x] Jak 3
-- [ ] The Legend of Zelda: Phantom Hourglass
+- [ ] The Legend of Zelda: Phantom Hourglass — adaptateur `_tloz_ph` (adapters_m7.py) : référence OK 4/4 comparables (runs 41, 42, 44, 45 ; 43 = GEN). Reste : lot bout en bout, `logic: true`, COMPAT
 - [x] Pokémon Platinum
 - [x] Pokémon Black and White
-- [ ] PokéPark Wii: Pikachu's Adventure
+- [ ] PokéPark Wii: Pikachu's Adventure — pas commencé (les options aléatoires ne génèrent pas : commencer par `--default-options`)
 - [x] Ratchet & Clank 2
 - [x] Ratchet & Clank 3
 - [x] AEMinecraft
 - [x] The Binding of Isaac: Repentance
 - [x] Mario Kart Wii — adaptateur
-- [!] The Legend of Zelda: Ocarina of Time (en dernier) — bloqué : les récompenses de donjon (y compris la Poche de Link) sont des événements sans adresse placés au hasard ; ni le slot_data ni le serveur ne les donnent, donc la logique régénérée diverge dès la sphère 0 (2/2 seeds aux options par défaut, 3/3 aléatoires). Niveau 1 OK, logique désactivée. Voir COMPAT.md
+- [!] The Legend of Zelda: Ocarina of Time (en dernier) — bloqué : les récompenses de donjon (y compris la Poche de Link) sont des événements sans adresse placés au hasard ; ni le slot_data ni le serveur ne les donnent, donc la logique régénérée diverge dès la sphère 0 (2/2 seeds aux options par défaut, 3/3 aléatoires). Niveau 1 OK, logique désactivée. Voir COMPAT.md. **Mis de côté à la demande de Romain (2026-10-11) : ne pas y retravailler.**
 - [x] Relecture M7 + commit/push + notif
 
 ## M8 — Bonus
@@ -80,3 +80,17 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Finitions UX — inventaire de départ, groupes de locations, ordre stable des cartes, reconnexion SSE, thème sans flash
 - [x] Robustesse (coupures réseau, room qui redémarre) — reconnexion, changement de port de room, mauvais mot de passe, crash du worker : tests dédiés
 - [x] Performance de la régénération sur le Pi — 22 slots : 13 s au démarrage, 0,5 s pour tout recalculer, worker ~400 Mo (scripts/testenv/perf_all22.py)
+
+## M9 — Configuration (demandé par Romain le 2026-10-11)
+Prérequis déposés par Romain avant la nuit : ses yamls dans `config/players/romain/`, et le lien de la room + le mot de
+passe dans `config/room.real.yaml` (gitignoré ; clés `room_url` et `password`). Si un prérequis manque au moment de
+brancher la room, marquer cette tâche `- [!]` et continuer le reste.
+Lecture seule absolue vers la vraie room : seule l'app s'y connecte, jamais le bot de test ni les tests pytest.
+- [ ] Audit de la page Configuration : parcours complet en captures mobile + desktop, frictions notées dans PROGRESS.md
+- [ ] Import des yamls depuis le navigateur : upload d'un ou plusieurs fichiers (yamls multi-documents compris), écriture dans `config/players/` (noms de fichiers sûrs, .yaml/.yml uniquement, taille max, même origine, pas d'écrasement silencieux), tests backend + front
+- [ ] Association automatique slot ↔ yaml par le `name` du yaml et le jeu (multi-documents, noms avec `{player}`/`{number}`), choix manuel toujours possible
+- [ ] Diagnostic par slot dans la page : jeu sans apworld ou sans logique, yaml absent alors que nécessaire (jeux « UT avec yaml » de COMPAT.md), yaml d'un autre jeu ou d'un autre nom, options `random` non résolues par le `slot_data`
+- [ ] Test de connexion avant enregistrement (mot de passe, slots trouvés), sauvegarde de l'ancienne config (`config/room.yaml.bak`) et retour possible à la config de test
+- [ ] Brancher la vraie room de Romain via la page Configuration (Playwright ou API) : tous ses slots connectés, logique calculée pour les jeux activés, aucune erreur dans `data/logs/app.log`, RAM et temps de calcul relevés, captures, écarts avec la room de test notés ; arrêter ensuite le serveur de test local
+- [ ] README et « À faire par Romain » mis à jour avec la procédure réelle
+- [ ] Relecture M9 + commit/push + notif

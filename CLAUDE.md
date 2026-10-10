@@ -16,6 +16,9 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - Ouvert : Balatro, PokePark, Phantom Hourglass (adaptateurs partiels dans
   `backend/multitracker/logic/adapters_m7.py`, logique désactivée), Ori WotW (3/4 seeds, surestime des événements
   de combat, logique désactivée). OoT bloqué (`[!]`) : récompenses de donjon impossibles à connaître sans spoiler.
+- 2026-10-11 : Balatro (5/5) et Phantom Hourglass (4/4) validés en référence, e2e à faire. OoT mis de côté par
+  Romain. Nouveau jalon M9 « Configuration » (page Configuration + branchement de la vraie room, prérequis dans
+  `config/players/romain/` et `config/room.real.yaml`, gitignoré) : voir BACKLOG.md et l'ordre conseillé dans PROGRESS.md.
 - `config/room.yaml` (gitignoré) pointe encore sur le multiworld de **test** ; la vraie room se branche via la page
   Configuration de l'app (lien archipelago.gg) ou en éditant ce fichier.
 
