@@ -1,4 +1,4 @@
-import type { ConfigResponse, DiscoverResponse, PutConfigBody } from './config'
+import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
 import type { SlotDetail, SlotSummary } from './types'
 
 export interface SlotsResponse {
@@ -6,6 +6,17 @@ export interface SlotsResponse {
   slots: SlotSummary[]
   room_url?: string | null
   room_error?: string | null
+  room_sleeping?: boolean
+  wake_room?: boolean
+}
+
+export class HttpError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message)
+  }
 }
 
 async function json<T>(r: Response): Promise<T> {
@@ -17,7 +28,7 @@ async function json<T>(r: Response): Promise<T> {
     } catch {
       /* ignore */
     }
-    throw new Error(msg)
+    throw new HttpError(msg, r.status)
   }
   return r.json() as Promise<T>
 }
@@ -26,7 +37,7 @@ export interface MockApi {
   getSlot(name: string): Promise<SlotDetail>
   markSeen(name: string): Promise<{ seen: number }>
   getConfig?(): Promise<ConfigResponse>
-  discover?(url: string): Promise<DiscoverResponse>
+  discover?(url: string, wake?: boolean): Promise<DiscoverResponse>
   putConfig?(b: PutConfigBody): Promise<unknown>
 }
 let mock: MockApi | null = null
@@ -55,8 +66,23 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
 export const getConfig = () =>
   mock?.getConfig ? mock.getConfig() : fetch('/api/config').then((r) => json<ConfigResponse>(r))
 
-export const discover = (url: string) =>
-  mock?.discover ? mock.discover(url) : fetch('/api/discover', jsonInit('POST', { url })).then((r) => json<DiscoverResponse>(r))
+export const discover = (url: string, wake = false) =>
+  mock?.discover
+    ? mock.discover(url, wake)
+    : fetch('/api/discover', jsonInit('POST', { url, wake })).then((r) => json<DiscoverResponse>(r))
+
+export const testConnection = (b: { room_url?: string; server?: string; password: string | null; slot: string }) =>
+  fetch('/api/config/test', jsonInit('POST', b)).then((r) => json<ProbeResponse>(r))
+
+export const uploadYaml = (filename: string, content: string, overwrite = false) =>
+  fetch('/api/yamls', jsonInit('POST', { filename, content, overwrite })).then((r) => json<UploadResponse>(r))
+
+export const restoreConfig = () => fetch('/api/config/restore', jsonInit('POST', {})).then((r) => json<unknown>(r))
+
+export const wakeRoom = () =>
+  fetch('/api/room/wake', jsonInit('POST', {})).then((r) =>
+    json<{ ok: boolean; server: string | null; room_error: string | null }>(r),
+  )
 
 export const putConfig = (b: PutConfigBody) =>
   mock?.putConfig ? mock.putConfig(b) : fetch('/api/config', jsonInit('PUT', b)).then((r) => json<unknown>(r))

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ChevronRight } from 'lucide-vue-next'
+import { ChevronRight } from '@lucide/vue'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +18,6 @@ const open = ref(props.startOpen)
         {{ title }}
       </CollapsibleTrigger>
     </h3>
-    <CollapsibleContent class="px-3 pb-2.5"><slot /></CollapsibleContent>
+    <CollapsibleContent force-mount class="px-3 pb-2.5 data-[state=closed]:hidden"><slot /></CollapsibleContent>
   </Collapsible>
 </template>

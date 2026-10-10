@@ -261,6 +261,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 yield "retry: 3000\n\n"
                 snapshot = {"type": "snapshot", "slots": [service.summary(n) for n in service.trackers]}
                 yield f"event: snapshot\ndata: {json.dumps(snapshot)}\n\n"
+                yield f"event: room\ndata: {json.dumps(service.room_event())}\n\n"
                 while True:
                     if await request.is_disconnected():
                         break

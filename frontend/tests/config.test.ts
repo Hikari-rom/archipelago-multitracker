@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ALL_OWNERS, NO_OWNER, buildPutBody, checkByName, distinctOwners, filterByOwner, mergeDiscovered, mergeRows,
-  passwordPayload, setAll, showOwnerFilter,
+  ALL_OWNERS, NO_OWNER, autoAssociate, buildPutBody, checkByName, diagnose, distinctGames, distinctOwners,
+  filterByOwner, filterRows, mergeDiscovered, mergeRows, nameMatches, passwordPayload, probeMessage, roomFromLocation,
+  setAll, setChecked, showOwnerFilter,
 } from '../src/lib/config'
 import { summaryText } from '../src/lib/logic'
 import { mk } from './helpers'
@@ -88,5 +89,70 @@ describe('owner filter', () => {
   it('summary counts only visible slots', () => {
     expect(summaryText(slots)).toBe('3 jeux où avancer')
     expect(summaryText(filterByOwner(slots, 'Romain'))).toBe('1 jeu où avancer')
+  })
+})
+
+describe('yaml association and diagnosis', () => {
+  const yamls = [
+    { path: 'config/players/romain/kh2.yaml', players: [{ name: 'romain_kh2', game: 'Kingdom Hearts 2' }], error: null },
+    { path: 'config/players/multi.yaml', players: [{ name: 'Bob{number}', game: 'Celeste (Open World)' }, { name: 'Bob', game: 'Jak 3' }], error: null },
+    { path: 'config/players/bad.yaml', players: [], error: 'yaml illisible' },
+    { path: 'config/players/other.yaml', players: [{ name: 'romain_kh2', game: 'Kingdom Hearts 2' }], error: null },
+  ]
+  const games = {
+    'Kingdom Hearts 2': { logic: true, needs_yaml: true },
+    'Celeste (Open World)': { logic: true, needs_yaml: true },
+    PokePark: { logic: false, needs_yaml: false },
+  }
+  const row = (name: string, game: string, yaml = '') => ({ name, game, yaml, checked: false, owner: '' })
+
+  it('name placeholders', () => {
+    expect(nameMatches('Bob{number}', 'Bob2')).toBe(true)
+    expect(nameMatches('Bob{number}', 'Bob')).toBe(true)
+    expect(nameMatches('Bob{number}', 'Bobby')).toBe(false)
+    expect(nameMatches('a.b', 'axb')).toBe(false)
+    expect(nameMatches('P{player}_x', 'P12_x')).toBe(true)
+  })
+  it('associates only unambiguous matches', () => {
+    const rows = [row('romain_kh2', 'Kingdom Hearts 2'), row('Bob3', 'Celeste (Open World)'), row('Bob', 'Hades')]
+    const { rows: out, matched } = autoAssociate(rows, yamls, true)
+    expect(matched).toBe(1)
+    expect(out[0].yaml).toBe('') // two yamls describe romain_kh2: ambiguous
+    expect(out[1]).toMatchObject({ yaml: 'config/players/multi.yaml', checked: true })
+    expect(out[2].yaml).toBe('')
+  })
+  it('diagnoses', () => {
+    const texts = (r: ReturnType<typeof row>) => diagnose(r, yamls, games).map((d) => `${d.level}:${d.text}`)
+    expect(texts(row('x', 'Kingdom Hearts 2'))).toEqual(['warn:yaml nécessaire pour la logique'])
+    expect(texts(row('x', 'Hades'))).toEqual(["info:pas d'apworld : suivi des checks seulement"])
+    expect(texts(row('x', 'PokePark'))).toEqual(['info:logique pas encore validée pour ce jeu'])
+    expect(texts(row('romain_kh2', 'Celeste (Open World)', 'config/players/romain/kh2.yaml'))).toEqual([
+      'error:ce yaml est pour Kingdom Hearts 2',
+    ])
+    expect(texts(row('Alice', 'Kingdom Hearts 2', 'config/players/romain/kh2.yaml'))).toEqual([
+      'warn:nom différent dans le yaml (romain_kh2)',
+    ])
+    expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/bad.yaml'))[0]).toMatch(/^error:yaml illisible/)
+    expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/romain/kh2.yaml'))).toEqual([])
+    expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/gone.yaml'))).toEqual([
+      'warn:yaml introuvable dans config/players/',
+    ])
+  })
+  it('filters and bulk checks visible rows', () => {
+    const rows = [row('romain_kh2', 'Kingdom Hearts 2'), row('Bob', 'Hades'), { ...row('Ann', 'Hades'), checked: true }]
+    expect(filterRows(rows, { text: 'hades', game: '', checkedOnly: false }).map((r) => r.name)).toEqual(['Bob', 'Ann'])
+    expect(filterRows(rows, { text: '', game: 'Hades', checkedOnly: true }).map((r) => r.name)).toEqual(['Ann'])
+    const out = setChecked(rows, new Set(['Bob']), true)
+    expect(out.filter((r) => r.checked).map((r) => r.name)).toEqual(['Bob', 'Ann'])
+    expect(distinctGames(rows)).toEqual(['Hades', 'Kingdom Hearts 2'])
+  })
+  it('room link from the location', () => {
+    expect(roomFromLocation('#config?room=https%3A%2F%2Farchipelago.gg%2Froom%2FAbc', '')).toBe('https://archipelago.gg/room/Abc')
+    expect(roomFromLocation('#config', '?room=https://archipelago.gg/room/X')).toBe('https://archipelago.gg/room/X')
+    expect(roomFromLocation('#config', '')).toBe('')
+  })
+  it('probe messages', () => {
+    expect(probeMessage({ ok: false, errors: ['InvalidPassword'] }, 'a')).toBe('Échec : mot de passe refusé')
+    expect(probeMessage({ ok: true, errors: [], game: 'Jak 3' }, 'a')).toBe('Connexion réussie (slot a, Jak 3).')
   })
 })

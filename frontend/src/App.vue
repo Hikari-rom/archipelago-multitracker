@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Monitor, Moon, Settings, Sun } from 'lucide-vue-next'
+import { Monitor, Moon, Settings, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,8 @@ import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOw
 import { stableOrder } from './lib/order'
 import { sortSlots, summaryText } from './lib/logic'
 import { applyTheme, loadTheme, nextTheme, saveTheme, themeLabel } from './lib/theme'
-import { setView, tracker } from './stores/tracker'
+import { wakeRoom } from './lib/api'
+import { refreshMeta, setView, tracker } from './stores/tracker'
 
 const theme = ref(loadTheme())
 const hideDone = ref(false)
@@ -46,6 +47,20 @@ function pick(k: unknown) {
   ownerChoice.value = k
   saveOwnerChoice(k)
 }
+const waking = ref(false)
+const wakeError = ref('')
+async function onWake() {
+  waking.value = true
+  wakeError.value = ''
+  try {
+    await wakeRoom()
+  } catch (e) {
+    wakeError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    await refreshMeta()
+    waking.value = false
+  }
+}
 const themeIcon = computed(() => ({ auto: Monitor, light: Sun, dark: Moon })[theme.value])
 const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
@@ -71,7 +86,7 @@ const sseLabel = computed(
           </template>
         </p>
       </div>
-      <StatusDot :status="tracker.sse" :label="sseLabel" />
+      <StatusDot :status="tracker.sse" :label="sseLabel" live />
       <Button
         variant="outline"
         size="sm"
@@ -91,6 +106,7 @@ const sseLabel = computed(
         variant="outline"
         size="sm"
         class="flex-wrap"
+        :spacing="1"
         :model-value="activeChip"
         aria-label="Filtrer par joueur"
         @update:model-value="pick"
@@ -111,7 +127,13 @@ const sseLabel = computed(
     <ConfigView v-if="showConfig" />
     <template v-else>
       <Alert v-if="tracker.roomError" class="bg-warn text-warn-foreground mb-3 border-transparent" role="alert">
-        <AlertDescription class="text-warn-foreground">Room : {{ tracker.roomError }}</AlertDescription>
+        <AlertDescription class="text-warn-foreground flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span>Room : {{ tracker.roomError }}</span>
+          <Button v-if="tracker.roomSleeping" size="sm" variant="outline" :disabled="waking" @click="onWake">
+            {{ waking ? 'Réveil…' : 'Réveiller maintenant' }}
+          </Button>
+          <span v-if="wakeError" class="text-destructive">{{ wakeError }}</span>
+        </AlertDescription>
       </Alert>
       <Alert v-if="tracker.loadError && !tracker.slots.length" variant="destructive" role="alert">
         <AlertDescription>Impossible de joindre le serveur : {{ tracker.loadError }}</AlertDescription>

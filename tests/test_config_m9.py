@@ -172,6 +172,7 @@ async def test_sleeping_room_is_not_woken_by_default(webhost, tmp_path):
         service = box["s"]
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
             await _eventually(lambda: service.room_sleeping)
+            assert service._last_room_event["room_sleeping"] is True  # pushed to the dashboards (SSE "room")
             for _ in range(3):  # connection failures re-read the room status, never the room page
                 service._room_checked_at = 0
                 service.refresh_room()

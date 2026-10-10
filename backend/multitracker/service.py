@@ -45,6 +45,7 @@ class Service:
         self.room_error: str | None = None
         self.room_sleeping = False
         self._wake_lock = asyncio.Lock()
+        self._last_room_event: dict[str, Any] | None = None
         self._room_task: asyncio.Task | None = None
         self._room_checked_at = 0.0
         self._room_woken_at = 0.0
@@ -96,6 +97,7 @@ class Service:
             self.room_sleeping = False
             self._start_trackers()
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
+        self._publish_room()
 
     # -- archipelago.gg room: the port changes when a sleeping room wakes up ------------------
     def refresh_room(self, force: bool = False, min_interval: float = 60.0) -> None:
@@ -135,6 +137,7 @@ class Service:
         except Exception as exc:  # RoomError, or an unexpected answer from the site
             self.room_error = str(exc) if isinstance(exc, RoomError) else f"réponse inattendue du site : {exc}"[:300]
             log.warning("room refresh failed: %s", exc)
+            self._publish_room()
             return
         self.room_sleeping = info.sleeping and not wake
         if self.room_sleeping:
@@ -145,12 +148,14 @@ class Service:
         if info.server and info.server != self.current_server:
             log.info("room server is now %s (was %s)", info.server, self.current_server)
             self.current_server = info.server
+        self._publish_room()
 
     # -- change handling -----------------------------------------------------------------
     def _on_change(self, tracker: SlotTracker, kinds: set[str]) -> None:
         name = tracker.state.name
         if "connected" in kinds and self.room_sleeping:  # someone woke the room up
             self.room_sleeping, self.room_error = False, None
+            self._publish_room()
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
@@ -212,6 +217,17 @@ class Service:
                     self._broadcast({"type": "slot", "slot": self.summary(name)})
                 except Exception:
                     log.exception("could not publish %s", name)
+
+    def room_event(self) -> dict[str, Any]:
+        return {"type": "room", "server": self.current_server, "room_url": self.config.room_url,
+                "room_error": self.room_error, "room_sleeping": self.room_sleeping}
+
+    def _publish_room(self) -> None:
+        """Push the room status (error, sleeping, port) to the dashboards when it changed."""
+        event = self.room_event()
+        if event != self._last_room_event:
+            self._last_room_event = event
+            self._broadcast(event)
 
     def _broadcast(self, event: dict[str, Any]) -> None:
         for queue in list(self.subscribers):

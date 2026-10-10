@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { cn } from '@/lib/utils'
 
-const props = defineProps<{ status: string; label: string; title?: string }>()
+const props = defineProps<{ status: string; label: string; title?: string; live?: boolean }>()
 const dot = computed(
   () =>
     ({
@@ -19,7 +19,7 @@ const dot = computed(
   <span
     :class="cn('text-muted-foreground inline-flex shrink-0 items-center gap-1.5 text-xs whitespace-nowrap', status === 'error' && 'text-destructive')"
     :title="title"
-    role="status"
+    :role="live ? 'status' : undefined"
   >
     <span :class="cn('inline-block size-2 rounded-full', dot)" aria-hidden="true"></span>{{ label }}
   </span>

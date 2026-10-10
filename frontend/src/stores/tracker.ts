@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import * as api from '../lib/api'
+import { roomFromLocation } from '../lib/config'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { SlotDetail, SseState } from '../lib/types'
@@ -10,13 +11,28 @@ export const tracker = reactive({
   loadError: '' as string,
   roomUrl: '' as string,
   roomError: '' as string,
-  view: (typeof location !== 'undefined' && location.hash === '#config' ? 'config' : 'dashboard') as 'dashboard' | 'config',
+  view: viewFromHash(),
+  /** room link from "#config?room=..." (pre-fills the Configuration page) */
+  prefillRoom: typeof location !== 'undefined' ? roomFromLocation(location.hash, location.search) : '',
+  roomSleeping: false,
   details: {} as Record<string, SlotDetail>,
   open: {} as Record<string, boolean>,
   detailError: {} as Record<string, string>,
   /** true during the short window after "Marquer comme vu" (dashboard order frozen) */
   seenFreeze: false,
 })
+
+function viewFromHash(): 'dashboard' | 'config' {
+  return typeof location !== 'undefined' && /^#config(\?|$)/.test(location.hash) ? 'config' : 'dashboard'
+}
+if (typeof window !== 'undefined') {
+  // "#config" typed in the address bar of an open page
+  window.addEventListener('hashchange', () => {
+    tracker.view = viewFromHash()
+    const room = roomFromLocation(location.hash, location.search)
+    if (room) tracker.prefillRoom = room
+  })
+}
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
 const detailSeq = new Map<string, number>()
@@ -53,6 +69,7 @@ export async function refreshMeta(): Promise<void> {
     tracker.server = r.server
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
+    tracker.roomSleeping = !!r.room_sleeping
   } catch {
     /* ignore */
   }
@@ -162,6 +179,14 @@ export function connect(): void {
     const d = parse(e)
     if (d && Array.isArray(d.slots)) dispatch({ type: 'snapshot', slots: d.slots })
   })
+  cur.addEventListener('room', (e) => {
+    const d = parse(e)
+    if (!d) return
+    if (typeof d.server === 'string') tracker.server = d.server
+    tracker.roomUrl = d.room_url ?? ''
+    tracker.roomError = d.room_error ?? ''
+    tracker.roomSleeping = !!d.room_sleeping
+  })
   cur.addEventListener('slot', (e) => {
     const d = parse(e)
     if (d && d.slot) dispatch({ type: 'slot', slot: d.slot })
@@ -176,6 +201,7 @@ export async function start(): Promise<void> {
     dispatch({ type: 'snapshot', slots: r.slots, server: r.server })
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
+    tracker.roomSleeping = !!r.room_sleeping
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)
   }
