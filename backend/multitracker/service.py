@@ -44,6 +44,7 @@ class Service:
         self.current_server = config.server
         self.room_error: str | None = None
         self.room_sleeping = False
+        self._wake_lock = asyncio.Lock()
         self._room_task: asyncio.Task | None = None
         self._room_checked_at = 0.0
         self._room_woken_at = 0.0
@@ -113,14 +114,17 @@ class Service:
         self._room_task = asyncio.create_task(self._refresh_room(wake))
 
     async def wake_room_now(self) -> None:
-        """One explicit wake-up ("Réveiller maintenant"), whatever the wake_room option says."""
+        """One explicit wake-up ("Réveiller maintenant"), whatever the wake_room option says. Serialised and
+        rate-limited: the room page is loaded at most every 30 seconds."""
         if not self.config.room_url:
             raise ValueError("aucune room archipelago.gg configurée")
-        if self._room_task is not None and not self._room_task.done():
-            await asyncio.gather(self._room_task, return_exceptions=True)
-        self._room_checked_at = self._room_woken_at = time.monotonic()
-        self._room_task = asyncio.create_task(self._refresh_room(True))
-        await self._room_task
+        async with self._wake_lock:
+            if self._room_task is not None and not self._room_task.done():
+                await asyncio.gather(self._room_task, return_exceptions=True)
+            if time.monotonic() - self._room_woken_at > 30:
+                self._room_checked_at = self._room_woken_at = time.monotonic()
+                self._room_task = asyncio.create_task(self._refresh_room(True))
+                await self._room_task
         for tracker in self.trackers.values():
             tracker.retry_now()
 
@@ -128,8 +132,8 @@ class Service:
         from .room import RoomError, fetch_room
         try:
             info = await asyncio.to_thread(fetch_room, self.config.room_url, 15.0, wake)
-        except RoomError as exc:
-            self.room_error = str(exc)
+        except Exception as exc:  # RoomError, or an unexpected answer from the site
+            self.room_error = str(exc) if isinstance(exc, RoomError) else f"réponse inattendue du site : {exc}"[:300]
             log.warning("room refresh failed: %s", exc)
             return
         self.room_sleeping = info.sleeping and not wake

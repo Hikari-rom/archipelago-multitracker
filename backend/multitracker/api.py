@@ -157,6 +157,13 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             address = info.server
         if not address:
             raise HTTPException(400, "indique l'URL de la room ou l'adresse du serveur")
+        if body.password is None:
+            # The saved password only goes to the room/server it was saved for.
+            cfg = service.config
+            same_target = (bool(body.room_url) and body.room_url.rstrip("/") == (cfg.room_url or "").rstrip("/")) or \
+                (not body.room_url and address in {cfg.server, service.current_server})
+            if not same_target:
+                return {"ok": False, "errors": ["indique le mot de passe de cette room"], "server": address}
         password = service.config.password if body.password is None else body.password
         result = await probe(address, password, body.slot)
         result["server"] = address
@@ -176,11 +183,18 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
     async def restore_config(request: Request) -> dict[str, Any]:
         same_origin(request)
         service = get_service(request)
+        from .config import load as load_config
+        path = service.config.path
+        if not backup_path(path).exists():
+            raise HTTPException(400, "aucune configuration précédente")
         try:
-            restored = await asyncio.to_thread(restore_backup, service.config.path)
+            restored = load_config(backup_path(path))
+            for slot in restored.slots:  # same rule as PUT /api/config
+                slot.yaml = safe_yaml_path(str(slot.yaml)) if slot.yaml else None
         except ConfigError as exc:
             raise HTTPException(400, str(exc)) from exc
-        await service.reload(restored)
+        restored.path = path
+        await service.reload(restored, before_start=lambda: restore_backup(path))
         return {"ok": True, "slots": len(restored.slots)}
 
     def same_origin(request: Request) -> None:

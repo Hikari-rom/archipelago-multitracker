@@ -22,6 +22,9 @@ ROOM_PATH = re.compile(r"^/room/(?P<id>[A-Za-z0-9_-]{8,40})/?$")
 USER_AGENT = "archipelago-multitracker (read-only tracker)"
 
 
+SLEEP_MARGIN = 300
+
+
 class RoomError(ValueError):
     pass
 
@@ -75,10 +78,11 @@ class RoomInfo:
 
     @property
     def sleeping(self) -> bool:
-        """The room's server has (most likely) stopped: no activity for longer than its timeout."""
+        """The room's server has (most likely) stopped: no activity for longer than its timeout
+        (+ 5 minutes of margin for clock differences between the Pi and the site)."""
         if self.last_activity is None or not self.timeout:
             return False
-        return time.time() - self.last_activity > self.timeout
+        return time.time() - self.last_activity > self.timeout + SLEEP_MARGIN
 
 
 def _parse_time(value: object) -> float | None:

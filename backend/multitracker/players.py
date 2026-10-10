@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import re
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -83,20 +84,34 @@ def save_upload(filename: str, content: str, overwrite: bool = False, base: Path
         raise ConfigError(f"fichier trop gros (max {MAX_YAML_BYTES // 1024} Ko)")
     players = describe(content)
     path = base / safe_filename(filename)
-    status = "created"
+    base.mkdir(parents=True, exist_ok=True)
     if path.exists():
         if path.read_bytes() == data:
             return {"path": rel(path), "players": players, "status": "unchanged"}
         if not overwrite:
             raise FileExistsError(rel(path))
-        status = "replaced"
-    base.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        _atomic_write(path, data)
+        return {"path": rel(path), "players": players, "status": "replaced"}
+    if sum(1 for p in base.rglob("*") if p.suffix.lower() in (".yaml", ".yml")) >= MAX_YAML_FILES:
+        raise ConfigError(f"trop de yamls dans config/players/ (max {MAX_YAML_FILES})")
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)  # never replace a file created meanwhile
+    except FileExistsError:
+        raise FileExistsError(rel(path)) from None
+    try:
+        os.write(fd, data)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    return {"path": rel(path), "players": players, "status": "created"}
+
+
+def _atomic_write(path: Path, data: bytes) -> None:
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
         os.write(fd, data)
         os.fsync(fd)
     finally:
         os.close(fd)
     tmp.replace(path)
-    return {"path": rel(path), "players": players, "status": status}

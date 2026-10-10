@@ -110,6 +110,7 @@ class SlotTracker:
         delay = self.min_delay
         while not self._stopping:
             try:
+                self._retry.clear()  # a retry_now() during this attempt skips the next delay
                 self._set_status("connecting")
                 address = self.server() if callable(self.server) else self.server
                 if not address:
@@ -151,7 +152,6 @@ class SlotTracker:
                     self._sock = None
             if self._stopping:
                 break
-            self._retry.clear()
             try:
                 await asyncio.wait_for(self._retry.wait(), delay)
                 delay = self.min_delay  # retry_now(): the room was just woken up

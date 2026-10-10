@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 import httpx
 import pytest
@@ -119,6 +120,47 @@ async def test_save_keeps_a_backup_and_restore_swaps(players_dir, tmp_path):
     assert oct(config_mod.backup_path(path).stat().st_mode & 0o777) == "0o600"
 
 
+async def test_restore_refuses_yaml_outside_players(players_dir, tmp_path):
+    from multitracker import config as config_mod
+    from multitracker.config import RoomConfig, SlotConfig
+    path = tmp_path / "room.yaml"
+    config_mod.save(RoomConfig(server="127.0.0.1:1", slots=[SlotConfig("A", yaml=Path("/etc/passwd.yaml"))], path=path))
+    config_mod.save(RoomConfig(server="127.0.0.1:1", slots=[SlotConfig("B")], path=path))
+    app, box = make_app(config_mod.load(path), tmp_path)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            assert (await client.post("/api/config/restore")).status_code == 400
+            assert [s.name for s in config_mod.load(path).slots] == ["B"]  # nothing swapped
+
+
+async def test_retry_now_during_an_attempt_skips_the_next_delay(tmp_path):
+    from multitracker.ap.tracker import SlotTracker
+    from multitracker.datapackage import DataPackageCache
+    from multitracker.store import Store
+    attempts = []
+
+    def server():
+        attempts.append(1)
+        tracker.retry_now()  # e.g. the room was woken up while this attempt runs
+        return "127.0.0.1:1"
+    tracker = SlotTracker(server, "", "X", "", DataPackageCache(Store(tmp_path / "db.sqlite3")),
+                          min_delay=30, max_delay=60)
+    tracker.start()
+    try:
+        await _eventually(lambda: len(attempts) >= 3, timeout=10)
+    finally:
+        await tracker.stop()
+
+
+def test_sleeping_has_a_clock_margin():
+    import time
+    from multitracker.room import SLEEP_MARGIN, RoomInfo
+    info = RoomInfo(url="u", host="h", port=1, players=[], last_activity=time.time() - 7200 - 60, timeout=7200)
+    assert info.sleeping is False
+    info.last_activity -= SLEEP_MARGIN
+    assert info.sleeping is True
+
+
 # -- room wake-up option ---------------------------------------------------------------------------
 async def test_sleeping_room_is_not_woken_by_default(webhost, tmp_path):
     from multitracker.config import RoomConfig, SlotConfig
@@ -201,7 +243,7 @@ async def test_connection_test_api(webhost, tmp_path):
     from multitracker.config import RoomConfig
     start_server(generated_seed("multi5"), PORT_A)
     try:
-        cfg = RoomConfig(server="127.0.0.1:1", password="test", path=tmp_path / "room.yaml")
+        cfg = RoomConfig(server="", room_url=webhost.url, password="test", path=tmp_path / "room.yaml")
         app, _ = make_app(cfg, tmp_path)
         async with app.router.lifespan_context(app):
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t",
@@ -211,6 +253,12 @@ async def test_connection_test_api(webhost, tmp_path):
                 r = (await client.post("/api/config/test", json={"room_url": webhost.url, "slot": "Jak",
                                                                  "password": "bad"})).json()
                 assert r["errors"] == ["InvalidPassword"]
+                # the saved password is never sent to another server
+                r = (await client.post("/api/config/test", json={"server": f"localhost:{PORT_A}", "slot": "Jak"})).json()
+                assert r["ok"] is False and "mot de passe" in r["errors"][0]
+                r = (await client.post("/api/config/test", json={"server": f"localhost:{PORT_A}", "slot": "Jak",
+                                                                 "password": "test"})).json()
+                assert r["ok"] is True, r
                 webhost.last_activity = OLD
                 r = (await client.post("/api/config/test", json={"room_url": webhost.url, "slot": "Jak"})).json()
                 assert r["ok"] is False and r["sleeping"] is True and webhost.wakes == 0
