@@ -67,8 +67,8 @@
   et `sudo loginctl enable-linger romain`.
 - **Tailscale** n'est pas installé sur le Pi : `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`.
   Ensuite `http://<ip-tailscale-du-pi>:42753` fonctionne (l'app écoute sur `0.0.0.0`).
-- **Avant la nuit** : déposer tes yamls dans `config/players/romain/` et créer `config/room.real.yaml` avec
-  `room_url: "https://archipelago.gg/room/..."` et `password: "..."` (fichier gitignoré). Puis, juste avant de lancer
+- **Avant la nuit** : remplir `room_url` et `password` dans `config/room.real.yaml` (gitignoré, déjà créé avec
+  tes 22 slots ; les yamls sont copiés de `~/romaing` et `~/romaing/Validés` dans `config/players/romain/`). Puis, juste avant de lancer
   la session : `rm -f .overnight/STOP .overnight/continues`.
 - Serveur de test local (port 38281) lancé pour la démo : `.venv/bin/python scripts/testenv/serve.py stop` pour l'arrêter.
 
