@@ -77,3 +77,30 @@ Corps optionnel `{"count": N}` (par défaut : tout ce qui a été reçu). Répon
 - Commentaires `: keepalive` toutes les 20 s. `retry: 3000`.
 
 Quand un `slot` arrive pour le slot affiché en détail, le front refait `GET /api/slots/{name}`.
+
+## Configuration depuis l'interface
+
+### `GET /api/config`
+```json
+{"room_url": "https://archipelago.gg/room/AbC...", "server": "", "has_password": true,
+ "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}],
+ "player_yamls": ["config/players/kh2.yaml", "config/players/celeste.yaml"]}
+```
+Le mot de passe n'est jamais renvoyé.
+
+### `POST /api/discover` — `{"url": "https://archipelago.gg/room/AbC..."}`
+Réveille la room si besoin et lit son statut public. Réponse :
+`{"room_url": "...", "server": "archipelago.gg:38281", "players": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2"}]}`.
+400 avec `{"detail": "message"}` si l'URL est invalide ou la room introuvable.
+
+### `PUT /api/config`
+```json
+{"room_url": "https://archipelago.gg/room/AbC...",   // ou "server": "host:port" (au moins l'un des deux)
+ "password": "…",                                    // omis ou null = garder le mot de passe actuel
+ "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}]}
+```
+Écrit `config/room.yaml` et recharge les connexions (un `snapshot` SSE suit). `yaml` doit être un fichier de
+`config/players/` (sinon 400). Avec `room_url`, le port est relu automatiquement quand la room change de port.
+
+### Champs ajoutés à `GET /api/slots`
+`room_url` (ou null) et `room_error` (message si la room n'a pas pu être lue). `owner` est déjà dans chaque SlotSummary.
