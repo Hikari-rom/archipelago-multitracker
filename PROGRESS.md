@@ -75,7 +75,9 @@
 ## Prochaines étapes
 Ordre conseillé pour la prochaine session de nuit (décidé avec Romain le 2026-10-11) :
 1. Balatro et Phantom Hourglass : la référence est validée, il reste le bout en bout puis `logic: true` (rapide).
-2. M9 Configuration : améliorer la page, puis brancher la vraie room avec les yamls de `config/players/romain/`
-   et `config/room.real.yaml`.
-3. PokePark, puis Ori WotW (événements de combat).
+2. M9 Configuration : améliorer la page (dont le parcours « lien de room »), puis brancher la vraie room avec
+   les yamls de `config/players/romain/` et `config/room.real.yaml`.
+3. M10 : historique des items reçus, tri « actifs d'abord puis le plus de checks en logique ».
+4. PokePark, puis Ori WotW (événements de combat).
+5. M11 : logique pour d'autres jeux de la room, seulement quand tout le reste est fini ou bloqué.
 OoT est mis de côté à la demande de Romain.

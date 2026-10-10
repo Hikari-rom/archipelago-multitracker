@@ -75,3 +75,15 @@ Chaque choix non trivial, avec sa raison et les alternatives écartées.
 - La génération AP n'est pas thread-safe et garde de l'état global : un process `spawn` dédié, requêtes sérialisées,
   redémarré s'il meurt ou dépasse 300 s. Un monde régénéré est gardé en mémoire par slot (clé : jeu, slot,
   `slot_data`, contenu du yaml). Sur la seed de test : ~8 s pour le premier calcul (import des mondes), puis < 0,1 s.
+
+## D11 — « Actif » = check récent, pas le statut client (2026-10-11)
+Le tri demandé par Romain met les jeux « connectés » d'abord. Le statut client du serveur ne le dit pas de façon
+fiable : la connexion de l'app (tag Tracker) fait passer le slot à CLIENT_CONNECTED, et tant qu'elle reste ouverte
+le serveur ne remet pas le statut à CLIENT_UNKNOWN quand le jeu se déconnecte. Un slot est donc « actif » s'il a fait
+un check dans les 30 dernières minutes (horodatage vu par l'app, persisté). « Le plus de checks » = le plus de checks
+en logique (ce qu'il y a à faire tout de suite), puis le plus de checks restants.
+
+## D12 — Logique d'autres jeux seulement à version identique (2026-10-11)
+Pour un apworld non core, la logique n'est activée que si le checksum du datapackage du jeu dans la room est
+identique à celui de l'apworld installé : sinon la logique pourrait venir d'une autre version que celle de la
+génération et mentir.
