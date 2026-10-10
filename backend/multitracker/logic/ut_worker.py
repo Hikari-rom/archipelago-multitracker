@@ -47,10 +47,25 @@ def _yaml_documents(text: str) -> list[dict[str, Any]]:
     return [d for d in yaml.safe_load_all(text) if isinstance(d, dict)]
 
 
-def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Path) -> Path:
+def _is_random(value: Any) -> bool:
+    """A yaml option value that is rolled at generation time (so possibly not what the seed got)."""
+    if isinstance(value, str):
+        return value.strip().lower().startswith("random")
+    if isinstance(value, dict) and value:
+        weighted = [k for k, w in value.items() if isinstance(w, (int, float)) and w > 0]
+        if len(weighted) == len(value):  # a weights table, not a plain dict option
+            return len(weighted) > 1 or any(_is_random(k) for k in weighted)
+    return False
+
+
+def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Path,
+                        slot_data: dict[str, Any] | None = None,
+                        option_names: set[str] | None = None) -> tuple[Path, list[str]]:
     """Copy the player's yaml for this game into out_dir, with `name` forced to the slot name.
 
     A yaml file may hold several documents (one per game): keep the one for this game.
+    Options left to chance in the yaml (`random`, weights) are replaced by the value the seed really
+    got when the world puts it in slot_data under the option's name. Returns (path, options still random).
     """
     import yaml
     docs = _yaml_documents(yaml_path.read_text(encoding="utf-8-sig"))
@@ -70,9 +85,22 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
     doc["name"] = slot_name
     if isinstance(doc.get("game"), dict):  # weighted game choice: pin the slot's actual game
         doc["game"] = game
+    still_random: list[str] = []
+    section = doc.get(game)
+    if isinstance(section, dict):
+        section = dict(section)
+        for option, value in section.items():
+            if option == "progression_balancing" or not _is_random(value):
+                continue
+            real = (slot_data or {}).get(option)
+            if option in (option_names or set()) and isinstance(real, (bool, int, str)):
+                section[option] = real
+            else:
+                still_random.append(option)
+        doc[game] = section
     out = out_dir / "player.yaml"
     out.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    return out
+    return out, still_random
 
 
 class SlotLogic:
@@ -85,6 +113,7 @@ class SlotLogic:
         from worlds.tracker.TrackerCore import TrackerCore
 
         self.slot_name, self.game, self.team, self.slot = slot_name, game, team, slot
+        self.random_options: list[str] = []
         world_cls = AutoWorldRegister.world_types.get(game)
         if world_cls is None:
             raise LogicUnavailable(f"apworld non installé pour « {game} »")
@@ -115,7 +144,9 @@ class SlotLogic:
             if not Path(yaml_path).is_file():
                 raise LogicUnavailable(f"yaml introuvable : {yaml_path}")
             with tempfile.TemporaryDirectory(prefix="mt-yaml-") as tmp:
-                prepare_player_yaml(Path(yaml_path), slot_name, game, Path(tmp))
+                _, self.random_options = prepare_player_yaml(
+                    Path(yaml_path), slot_name, game, Path(tmp), slot_data,
+                    set(world_cls.options_dataclass.type_hints))
                 core.player_id = 1
                 core.run_generator(None, tmp)  # single-player regeneration from the yaml
                 if core.multiworld is not None:
@@ -245,6 +276,9 @@ class Worker:
         except Exception as exc:
             log.warning("logic update failed for %s: %s", name, traceback.format_exc())
             return {"state": "error", "message": f"{type(exc).__name__}: {exc}"[:400]}
+        if logic.random_options:
+            result["errors"] = [f"options aléatoires dans le yaml, logique peut-être approximative : "
+                                f"{', '.join(logic.random_options[:5])}"] + result.get("errors", [])
         return {"state": "ok", "mode": logic.mode, **result}
 
 

@@ -14,9 +14,10 @@ export function logicBadge(s: SlotSummary): Badge {
       return {
         text: `Tu peux avancer : ${l.count} ${l.count === 1 ? 'check' : 'checks'} en logique`,
         variant: 'good',
+        secondary: l.message ?? undefined,
       }
     }
-    return { text: "Rien en logique pour l'instant", variant: 'neutral' }
+    return { text: "Rien en logique pour l'instant", variant: 'neutral', secondary: l.message ?? undefined }
   }
   if (l.state === 'pending') return { text: 'Calcul de la logique…', variant: 'pending' }
   return {

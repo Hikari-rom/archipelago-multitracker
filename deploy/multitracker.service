@@ -1,0 +1,24 @@
+# systemd *user* unit for Archipelago Multitracker.
+# Install (as romain, no root):
+#   mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now multitracker
+# To keep it running after logout and start it at boot (needs root once):
+#   sudo loginctl enable-linger romain
+[Unit]
+Description=Archipelago Multitracker (port 42753)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/romain/archipelago-multitracker
+Environment=PYTHONPATH=/home/romain/archipelago-multitracker/backend
+ExecStart=/home/romain/archipelago-multitracker/.venv/bin/python -m multitracker --host 0.0.0.0 --port 42753
+Restart=on-failure
+RestartSec=5
+# The logic engine regenerates worlds in a child process: keep memory in check on the 8 GB Pi.
+MemoryMax=3G
+Nice=5
+
+[Install]
+WantedBy=default.target
