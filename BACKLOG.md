@@ -16,10 +16,10 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Relecture M1 + commit/push + notif
 
 ## M2 — Environnement de test
-- [ ] Yamls de test pour Celeste, KH2, Jak and Daxter, TWW HD (depuis les templates)
-- [ ] `scripts/testenv/generate.py` : multiworld 4-6 slots, `--skip_output`, spoiler
-- [ ] `scripts/testenv/serve.py` : MultiServer sur 127.0.0.1:38281 avec mot de passe, PID dans `.run/`
-- [ ] `scripts/testenv/bot.py` : client de jeu qui envoie des checks
+- [x] Yamls de test pour Celeste, KH2, Jak and Daxter, TWW HD (depuis les templates)
+- [x] `scripts/testenv/generate.py` : multiworld 4-6 slots, `--skip_output`, spoiler
+- [x] `scripts/testenv/serve.py` : MultiServer sur 127.0.0.1:38281 avec mot de passe, PID dans `.run/`
+- [x] `scripts/testenv/bot.py` : client de jeu qui envoie des checks
 - [ ] Relecture M2 + commit/push + notif
 
 ## M3 — Backend niveau 1
