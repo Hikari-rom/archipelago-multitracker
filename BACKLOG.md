@@ -20,7 +20,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] `scripts/testenv/generate.py` : multiworld 4-6 slots, `--skip_output`, spoiler
 - [x] `scripts/testenv/serve.py` : MultiServer sur 127.0.0.1:38281 avec mot de passe, PID dans `.run/`
 - [x] `scripts/testenv/bot.py` : client de jeu qui envoie des checks
-- [ ] Relecture M2 + commit/push + notif
+- [x] Relecture M2 + commit/push + notif
 
 ## M3 — Backend niveau 1
 - [ ] Squelette FastAPI + config (room.yaml) + SQLite

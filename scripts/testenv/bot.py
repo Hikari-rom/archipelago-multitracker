@@ -16,7 +16,9 @@ import asyncio
 import random
 import sys
 import uuid
+from contextlib import suppress
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,15 +27,20 @@ sys.path.insert(0, str(ROOT / "backend"))
 from multitracker.ap import net  # noqa: E402
 
 CLIENT_GOAL = 30
-LOCAL_HOSTS = ("ws://127.0.0.1:", "ws://localhost:")
+TEST_PORTS = range(38281, 38291)
+
+
+def check_local_test_server(server: str) -> None:
+    url = urlparse(server)
+    if url.scheme != "ws" or url.hostname != "127.0.0.1" or url.username or url.port not in TEST_PORTS:
+        raise ValueError("the test bot only talks to a local test server (ws://127.0.0.1:38281-38290)")
 
 
 class GameBot:
     """Minimal game client. Keeps the slot's checked/missing locations and received items up to date."""
 
     def __init__(self, server: str, slot: str, game: str, password: str = "test") -> None:
-        if not server.startswith(LOCAL_HOSTS):
-            raise ValueError("the test bot only talks to a local test server (ws://127.0.0.1:PORT)")
+        check_local_test_server(server)
         self.server, self.slot_name, self.game, self.password = server, slot, game, password
         self.sock = None
         self.reader: asyncio.Task | None = None
@@ -45,23 +52,42 @@ class GameBot:
         self._connected = asyncio.Event()
         self._refused: list[str] | None = None
         self._update = asyncio.Event()
+        self._closed: BaseException | None = None
+        self._synced = False
 
     async def connect(self, timeout: float = 30) -> "GameBot":
-        self.sock, _ = await net.open_socket(self.server)
-        self.reader = asyncio.create_task(self._read())
-        await self._send({"cmd": "Connect", "password": self.password, "game": self.game, "name": self.slot_name,
-                          "uuid": uuid.uuid4().hex, "version": net.AP_VERSION, "items_handling": 0b111,
-                          "tags": ["AP", "TestBot"], "slot_data": True})
-        await asyncio.wait_for(self._connected.wait(), timeout)
-        if self._refused is not None:
-            raise ConnectionError(f"connection refused: {self._refused}")
-        return self
+        try:
+            self.sock, _ = await net.open_socket(self.server)
+            self.reader = asyncio.create_task(self._read())
+            await self._send({"cmd": "Connect", "password": self.password, "game": self.game,
+                              "name": self.slot_name, "uuid": uuid.uuid4().hex, "version": net.AP_VERSION,
+                              "items_handling": 0b111, "tags": ["AP", "TestBot"], "slot_data": True})
+            await asyncio.wait_for(self._connected.wait(), timeout)
+            self._raise_if_closed()
+            if self._refused is not None:
+                raise ConnectionError(f"connection refused: {self._refused}")
+            # ReceivedItems follows Connected in a separate packet (and Sync gets no reply when there are no
+            # items): a Get round trip, answered in order, guarantees the items are current.
+            await self._send({"cmd": "Get", "keys": ["_read_race_mode"], "bot_sync": True})
+            await self.wait_for(lambda: self._synced, timeout)
+            return self
+        except BaseException:
+            await self.close()
+            raise
 
     async def close(self) -> None:
-        if self.sock is not None:
-            await self.sock.close()
-        if self.reader is not None:
-            self.reader.cancel()
+        try:
+            if self.sock is not None:
+                await self.sock.close()
+        finally:
+            if self.reader is not None:
+                self.reader.cancel()
+                with suppress(asyncio.CancelledError, Exception):
+                    await self.reader
+
+    def _raise_if_closed(self) -> None:
+        if self._closed is not None:
+            raise ConnectionError(f"connection to the test server lost: {self._closed!r}")
 
     async def __aenter__(self) -> "GameBot":
         return await self.connect()
@@ -73,30 +99,46 @@ class GameBot:
         await self.sock.send(net.encode(list(msgs)))
 
     async def _read(self) -> None:
-        async for data in self.sock:
-            for msg in net.decode(data):
-                cmd = msg.get("cmd")
-                if cmd == "Connected":
-                    self.team, self.slot = msg["team"], msg["slot"]
-                    self.checked = set(msg["checked_locations"])
-                    self.missing = set(msg["missing_locations"])
-                    self.slot_data = msg.get("slot_data") or {}
-                    self._connected.set()
-                elif cmd == "ConnectionRefused":
-                    self._refused = msg.get("errors", [])
-                    self._connected.set()
-                elif cmd == "ReceivedItems":
-                    if msg["index"] == 0:
-                        self.items = list(msg["items"])
-                    elif msg["index"] == len(self.items):
-                        self.items.extend(msg["items"])
-                    else:
-                        await self._send({"cmd": "Sync"})
-                elif cmd == "RoomUpdate" and "checked_locations" in msg:
-                    new = set(msg["checked_locations"])
-                    self.checked |= new
-                    self.missing -= new
-                self._update.set()
+        try:
+            async for data in self.sock:
+                for msg in net.decode(data):
+                    await self._handle(msg)
+            self._closed = ConnectionError("socket closed")
+        except asyncio.CancelledError:
+            raise
+        except BaseException as exc:
+            self._closed = exc
+        finally:
+            if self._closed is None:
+                self._closed = ConnectionError("reader stopped")
+            self._connected.set()
+            self._update.set()
+
+    async def _handle(self, msg: dict[str, Any]) -> None:
+        cmd = msg.get("cmd")
+        if cmd == "Connected":
+            self.team, self.slot = msg["team"], msg["slot"]
+            self.checked = set(msg["checked_locations"])
+            self.missing = set(msg["missing_locations"])
+            self.slot_data = msg.get("slot_data") or {}
+            self._connected.set()
+        elif cmd == "ConnectionRefused":
+            self._refused = msg.get("errors", [])
+            self._connected.set()
+        elif cmd == "ReceivedItems":
+            if msg["index"] == 0:
+                self.items = list(msg["items"])
+            elif msg["index"] == len(self.items):
+                self.items.extend(msg["items"])
+            else:
+                await self._send({"cmd": "Sync"})
+        elif cmd == "Retrieved" and msg.get("bot_sync"):
+            self._synced = True
+        elif cmd == "RoomUpdate" and "checked_locations" in msg:
+            new = set(msg["checked_locations"])
+            self.checked |= new
+            self.missing -= new
+        self._update.set()
 
     async def check(self, locations: Iterable[int]) -> list[int]:
         locs = sorted(set(locations) & self.missing)
@@ -118,6 +160,7 @@ class GameBot:
     async def wait_for(self, predicate, timeout: float = 30) -> None:
         async def _loop():
             while not predicate():
+                self._raise_if_closed()
                 self._update.clear()
                 await self._update.wait()
         await asyncio.wait_for(_loop(), timeout)

@@ -33,17 +33,26 @@ def _ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=certifi.where())
 
 
-async def open_socket(address: str, timeout: float = 15.0):
-    """Open a websocket to the AP server, trying each candidate URL. Returns (socket, url)."""
+async def open_socket(address: str, timeout: float = 15.0, secure_probe_timeout: float = 5.0):
+    """Open a websocket to the AP server, trying each candidate URL. Returns (socket, url).
+
+    When falling back is possible (no explicit scheme), the wss attempt gets a short timeout: a TLS
+    handshake against a plain ws server can otherwise hang. A certificate verification failure is
+    never a reason to fall back to plaintext: it is raised.
+    """
+    urls = candidate_urls(address)
     errors: list[str] = []
-    for url in candidate_urls(address):
+    for i, url in enumerate(urls):
+        attempt_timeout = secure_probe_timeout if i < len(urls) - 1 else timeout
         try:
             sock = await asyncio.wait_for(
                 websockets.connect(url, ssl=_ssl_context() if url.startswith("wss://") else None,
                                    max_size=MAX_MESSAGE_SIZE, ping_interval=30, ping_timeout=60,
-                                   open_timeout=timeout),
-                timeout=timeout + 1)
+                                   open_timeout=attempt_timeout),
+                timeout=attempt_timeout + 1)
             return sock, url
+        except ssl.SSLCertVerificationError as exc:
+            raise ConnectionError(f"{url}: certificat TLS invalide ({exc.verify_message})") from exc
         except (OSError, asyncio.TimeoutError, websockets.WebSocketException, ssl.SSLError) as exc:
             errors.append(f"{url}: {type(exc).__name__}: {exc}")
     raise ConnectionError("; ".join(errors))

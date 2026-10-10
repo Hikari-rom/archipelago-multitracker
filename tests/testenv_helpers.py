@@ -20,18 +20,26 @@ def generated_seed(fixture: str, seed: int = 42) -> Path:
     digest = hashlib.sha256()
     for path in sorted(players.glob("*.yaml")):
         digest.update(path.name.encode() + path.read_bytes())
+    digest.update((ROOT / "scripts/testenv/generate.py").read_bytes())
+    digest.update((ROOT / "config/apworlds.lock.yaml").read_bytes())
     out = SEEDS / f"{fixture}-{seed}-{digest.hexdigest()[:12]}"
     info = out / "generation.json"
     if not info.exists():
-        subprocess.run([sys.executable, str(ROOT / "scripts/testenv/generate.py"), str(players), str(out),
-                        "--seed", str(seed)], check=True, capture_output=True, timeout=1800)
+        proc = subprocess.run([sys.executable, str(ROOT / "scripts/testenv/generate.py"), str(players), str(out),
+                               "--seed", str(seed)], capture_output=True, text=True, timeout=1800)
+        if proc.returncode != 0:
+            raise RuntimeError(f"generation of {fixture} failed:\n{proc.stderr[-4000:]}")
     return Path(json.loads(info.read_text())["zip"])
 
 
 def start_server(zip_path: Path, port: int, password: str = "test") -> None:
+    import pytest
     import serve
     serve.stop(port)
-    serve.start(zip_path, port, password, keep_save=False)
+    try:
+        serve.start(zip_path, port, password, keep_save=False)
+    except SystemExit as exc:  # serve.start reports problems with SystemExit (CLI style)
+        pytest.fail(f"could not start the test server: {exc}")
 
 
 def stop_server(port: int) -> None:
