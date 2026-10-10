@@ -85,6 +85,8 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 Prérequis déposés par Romain avant la nuit : ses yamls dans `config/players/romain/`, et le lien de la room + le mot de
 passe dans `config/room.real.yaml` (gitignoré ; clés `room_url` et `password`). Si un prérequis manque au moment de
 brancher la room, marquer cette tâche `- [!]` et continuer le reste.
+Vérifié le 2026-10-11 : `config/room.real.yaml` est rempli ; les 22 slots existent dans la room avec le bon jeu.
+La room compte **142 slots** (120 d'autres joueurs) : surveiller la taille du datapackage, la RAM et le nombre de hints.
 Lecture seule absolue vers la vraie room : seule l'app s'y connecte, jamais le bot de test ni les tests pytest.
 - [ ] Audit de la page Configuration : parcours complet en captures mobile + desktop, frictions notées dans PROGRESS.md
 - [ ] Import des yamls depuis le navigateur : upload d'un ou plusieurs fichiers (yamls multi-documents compris), écriture dans `config/players/` (noms de fichiers sûrs, .yaml/.yml uniquement, taille max, même origine, pas d'écrasement silencieux), tests backend + front
