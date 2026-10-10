@@ -74,7 +74,7 @@
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
   se connecte dès que quelqu'un l'ouvre (ou bouton « Réveiller maintenant »). Pour revenir au multiworld de test :
   Configuration → « Restaurer la configuration précédente » (et relancer le serveur de test,
-  `.venv/bin/python scripts/testenv/serve.py start`).
+  `.venv/bin/python scripts/testenv/serve.py start "$(ls -t test-output/seeds/multi5-42-*/AP_*.zip | head -1)"`).
 - `config/room.real.yaml` a servi à la mise en place ; tu peux le supprimer (le mot de passe est dans `config/room.yaml`).
 - **Démarrage automatique** (optionnel) : `scripts/app.sh stop`, puis
   `mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now multitracker`
