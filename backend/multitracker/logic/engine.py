@@ -83,7 +83,8 @@ class UTLogicEngine(LogicEngine):
         req = {"op": "update", "slot_name": request.slot_name, "game": request.game, "team": request.team,
                "slot": request.slot, "slot_data": request.slot_data,
                "yaml": str(request.yaml) if request.yaml else None,
-               "items": request.items, "missing": sorted(request.missing)}
+               "items": request.items, "missing": sorted(request.missing),
+               "checked": sorted(request.checked)}
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)

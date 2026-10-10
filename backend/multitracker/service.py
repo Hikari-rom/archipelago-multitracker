@@ -99,6 +99,11 @@ class Service:
             self.logic[name] = result
             self.publish(name)
 
+    def logic_settled(self, name: str) -> bool:
+        """True when no logic recomputation is pending or running for this slot."""
+        task = self._logic_tasks.get(name)
+        return name not in self._logic_dirty and (task is None or task.done())
+
     def publish(self, name: str) -> None:
         self._publish_pending.add(name)
         if self._publish_task is None or self._publish_task.done():

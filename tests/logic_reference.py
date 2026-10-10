@@ -63,7 +63,8 @@ class Snapshot:
 def snapshots(multiworld, player: int) -> list[Snapshot]:
     """State of `player` at the start of each sphere of the playthrough."""
     all_addresses = {loc.address for loc in multiworld.get_locations(player) if loc.address is not None}
-    precollected = [{"item": it.code, "location": -2, "player": 0, "flags": int(it.classification)}
+    # The server sends the start inventory with location -2, player 0 and flags 0 (MultiServer.get_start_inventory)
+    precollected = [{"item": it.code, "location": -2, "player": 0, "flags": 0}
                     for it in multiworld.precollected_items[player] if it.code is not None]
     spheres = [list(s) for s in multiworld.get_spheres()]
     result: list[Snapshot] = []
@@ -99,7 +100,8 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
     from multitracker.logic.ut_worker import SlotLogic
     name = multiworld.player_name[player]
     game = multiworld.game[player]
-    logic = SlotLogic(name, game, 0, player, multidata["slot_data"][player], yaml_path)
+    all_locations = {loc.address for loc in multiworld.get_locations(player) if loc.address is not None}
+    logic = SlotLogic(name, game, 0, player, multidata["slot_data"][player], yaml_path, all_locations)
     snaps = snapshots(multiworld, player)
     if max_snapshots and len(snaps) > max_snapshots:
         step = (len(snaps) - 1) / (max_snapshots - 1)

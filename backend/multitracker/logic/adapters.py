@@ -1,0 +1,100 @@
+"""Per-game adapters for the single-player regeneration (worker process only).
+
+Some worlds make random choices during generation that change the logic (entrance shuffle...)
+and do not implement Universal Tracker's hooks (`interpret_slot_data` / `re_gen_passthrough`).
+When the result of those choices is in `slot_data` — sent by the server to every client, so no
+spoiler — an adapter replays it during the regeneration instead of rolling new random values.
+
+An adapter may also use the slot's list of locations (checked + missing), which the server sends
+on Connect. An adapter is a context manager factory, active only while that slot's world is
+regenerated.
+"""
+from __future__ import annotations
+
+import contextlib
+import importlib
+import logging
+from typing import Any, Callable, ContextManager
+
+log = logging.getLogger("multitracker.logic")
+
+
+@contextlib.contextmanager
+def _twwhd(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    with _twwhd_entrances(world_cls, slot_data), _twwhd_required_bosses(world_cls, location_ids):
+        yield
+
+
+@contextlib.contextmanager
+def _twwhd_required_bosses(world_cls: type, location_ids: set[int]):
+    """The Wind Waker HD, required bosses mode: the generator picks the required dungeons at random and
+    does not create the locations of the other ("banned") dungeons. The slot's location list, which the
+    server sends to every client (checked + missing), tells which dungeons are required: force them.
+    """
+    module = importlib.import_module(f"{world_cls.__module__}.randomizers.RequiredBosses")
+    names = {world_cls.location_id_to_name[i] for i in location_ids if i in world_cls.location_id_to_name}
+    zones = {module.split_location_name_by_zone(name)[0] for name in names
+             if module.TWWHDFlag.DUNGEON in module.LOCATION_TABLE[name].flags}
+    required = zones & set(module.DUNGEON_NAMES)  # the dungeons the generator chooses from
+    randomizer = module.RequiredBossesRandomizer
+    original = randomizer.randomize_required_bosses
+
+    def randomize_required_bosses(self) -> None:
+        options = self.world.options
+        if required and len(required) == options.num_required_bosses.value:
+            options.included_dungeons.value = set(required)  # nothing left to sample at random
+        else:
+            log.warning("TWWHD: could not infer the required dungeons (%s)", sorted(required))
+        original(self)
+
+    randomizer.randomize_required_bosses = randomize_required_bosses
+    try:
+        yield
+    finally:
+        randomizer.randomize_required_bosses = original
+
+
+@contextlib.contextmanager
+def _twwhd_entrances(world_cls: type, slot_data: dict[str, Any]):
+    """The Wind Waker HD: apply slot_data["entrances"] (entrance name -> exit name) instead of shuffling."""
+    mapping = slot_data.get("entrances")
+    if not mapping:
+        yield
+        return
+    module = importlib.import_module(f"{world_cls.__module__}.randomizers.Entrances")
+    randomizer = module.EntranceRandomizer
+    original = randomizer.randomize_entrances
+
+    def randomize_entrances(self) -> None:
+        done, done_reverse = dict(self.done_entrances_to_exits), dict(self.done_exits_to_entrances)
+        for entrance_name, exit_name in mapping.items():
+            zone_entrance = module.ZoneEntrance.all[entrance_name]
+            zone_exit = module.ZoneExit.all[exit_name]
+            done[zone_entrance] = zone_exit
+            done_reverse[zone_exit] = zone_entrance
+        self.done_entrances_to_exits, self.done_exits_to_entrances = done, done_reverse
+        try:
+            self.finalize_all_randomized_sets_of_entrances()
+        except AssertionError:
+            # Debug-only consistency check against the required bosses, which this regeneration rolled
+            # differently (they are not in slot_data and do not change which locations are reachable).
+            # It runs after every connection has been made.
+            pass
+
+    randomizer.randomize_entrances = randomize_entrances
+    try:
+        yield
+    finally:
+        randomizer.randomize_entrances = original
+
+
+ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
+    "The Wind Waker HD": _twwhd,
+}
+
+
+def regeneration_patch(game: str, world_cls: type, slot_data: dict[str, Any],
+                       location_ids: set[int]) -> ContextManager:
+    """location_ids: every location of the slot as known by the server (checked + missing)."""
+    adapter = ADAPTERS.get(game)
+    return adapter(world_cls, slot_data, location_ids) if adapter else contextlib.nullcontext()

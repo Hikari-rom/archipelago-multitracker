@@ -79,7 +79,7 @@ class SlotLogic:
     """One slot's regenerated world, kept between updates."""
 
     def __init__(self, slot_name: str, game: str, team: int, slot: int, slot_data: dict[str, Any],
-                 yaml_path: Path | None) -> None:
+                 yaml_path: Path | None, location_ids: set[int] | None = None) -> None:
         setup_ap()
         from worlds.AutoWorld import AutoWorldRegister
         from worlds.tracker.TrackerCore import TrackerCore
@@ -97,6 +97,17 @@ class SlotLogic:
         core.cached_slot_data = []
         core.set_slot_params(game, slot, slot_name, team)
         started = time.perf_counter()
+        from .adapters import regeneration_patch
+        with regeneration_patch(game, world_cls, slot_data, set(location_ids or ())):
+            self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path)
+        if core.multiworld is None or core.player_id is None:
+            tail = (core.gen_error or "").strip().splitlines()[-1:] or ["raison inconnue"]
+            raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
+        self.core = core
+        self.init_seconds = round(time.perf_counter() - started, 2)
+
+    def _regenerate(self, core, world_cls, slot_name: str, game: str, slot_data: dict[str, Any],
+                    yaml_path: Path | None) -> None:
         if getattr(world_cls, "ut_can_gen_without_yaml", False):
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "slot_data"
@@ -112,11 +123,6 @@ class SlotLogic:
             self.mode = "yaml"
         else:
             raise LogicUnavailable("ce jeu a besoin du yaml du joueur (clé `yaml` du slot dans config/room.yaml)")
-        if core.multiworld is None or core.player_id is None:
-            tail = (core.gen_error or "").strip().splitlines()[-1:] or ["raison inconnue"]
-            raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
-        self.core = core
-        self.init_seconds = round(time.perf_counter() - started, 2)
 
     def in_logic(self, items: list[dict[str, Any]], missing: set[int]) -> dict[str, Any]:
         """Locations of `missing` reachable with `items`.
@@ -125,6 +131,8 @@ class SlotLogic:
         classification the server sent (NetworkItem.flags). UT only ORs the flags onto the default
         classification of `create_item`, so items the generator demoted to filler (e.g. Celeste's
         excess Strawberries) would still count as progression and over-estimate the logic.
+        Items without a real location (start inventory, server cheats) carry no flags: for those the
+        world's default classification is kept.
         """
         from BaseClasses import CollectionState, ItemClassification
         core = self.core
@@ -151,8 +159,13 @@ class SlotLogic:
                 loc_name = world.location_id_to_name.get(loc_id)
                 if loc_name in own_locations:
                     item.location = mw.get_location(loc_name, pid)
-            item.classification = exact_classification(item.classification, int(net.get("flags", 0)),
-                                                       ItemClassification)
+            flags = int(net.get("flags", 0))
+            if loc_id < 0:
+                # Start inventory (-2) and server-given items (-1) are sent with flags 0 whatever the
+                # item is: keep the world's own classification for them (like UT does).
+                item.classification |= flags
+            else:
+                item.classification = exact_classification(item.classification, flags, ItemClassification)
             state.collect(item, True)
         if unknown:
             raise RuntimeError(f"datapackage incohérent avec l'apworld installé ({len(unknown)} items inconnus)")
@@ -212,9 +225,10 @@ class Worker:
         cached = self.slots.get(name)
         if cached is None or cached[0] != key:
             try:
-                logic: SlotLogic | Exception = SlotLogic(name, req["game"], req["team"], req["slot"],
-                                                         req.get("slot_data") or {},
-                                                         Path(req["yaml"]) if req.get("yaml") else None)
+                logic: SlotLogic | Exception = SlotLogic(
+                    name, req["game"], req["team"], req["slot"], req.get("slot_data") or {},
+                    Path(req["yaml"]) if req.get("yaml") else None,
+                    set(req.get("missing", [])) | set(req.get("checked", [])))
             except LogicUnavailable as exc:
                 logic = exc
             except Exception as exc:
