@@ -40,6 +40,7 @@ apworlds:
     repo: c-ostic/Archipelago
     tag: latest
     asset: "oribf.apworld"
+    logic: true
   ori_wotw:
     game: "Ori and the Will of the Wisps"
     source: github
@@ -58,18 +59,21 @@ apworlds:
     repo: cjmang/StS-AP-World
     tag: latest
     asset: "*.apworld"
+    logic: true
   khbbs:
     game: "Kingdom Hearts Birth by Sleep"
     source: github
     repo: gaithernOrg/ArchipelagoKHBBS
     tag: latest
     asset: "*.apworld"
+    logic: true
   jak3:
     game: "Jak 3"
     source: github
     repo: Blake645/Archipelago
     tag: latest
     asset: "jak3*.apworld"
+    logic: true
   tloz_ph:
     game: "The Legend of Zelda - Phantom Hourglass"
     source: github
@@ -82,12 +86,14 @@ apworlds:
     repo: ljtpetersen/platinum_archipelago
     tag: latest
     asset: "*.apworld"
+    logic: true
   pokemon_bw:
     game: "Pokemon Black and White"
     source: github
     repo: BlastSlimey/PokemonBWAP
     tag: latest
     asset: "*.apworld"
+    logic: true
   pokepark:
     game: "PokePark"
     source: github
@@ -100,24 +106,28 @@ apworlds:
     repo: evilwb/APRac2
     tag: latest
     asset: "*.apworld"
+    logic: true
   rac3:
     game: "Ratchet and Clank 3"
     source: github
     repo: Taoshix/Archipelago-RaC3
     tag: latest
     asset: "*.apworld"
+    logic: true
   aeminecraft:
     game: "AEMinecraft"
     source: github
     repo: KuroLynx/AEMinecraft
     tag: v0.6.2
     asset: "*.apworld"
+    logic: true
   tboir:
     game: "The Binding of Isaac Repentance"
     source: github
     repo: NaveTK/Archipelago
     tag: latest
     asset: "tboir*.apworld"
+    logic: true
   mkwii:
     game: "Mario Kart Wii"
     source: github

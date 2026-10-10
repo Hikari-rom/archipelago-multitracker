@@ -50,7 +50,7 @@ def reference_todo(multiworld, player: int, items: list[dict], missing: set[int]
                   if l.address is not None and l.address in missing)
 
 
-async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: int = 200) -> dict:
+async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: int = 300, spoiler: int = 3) -> dict:
     import logic_reference as lr
     from bot import GameBot
     from multitracker import config
@@ -59,7 +59,7 @@ async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: i
     from multitracker.service import Service
     from multitracker.store import Store
 
-    zip_path = generated_seed(fixture, seed)
+    zip_path = generated_seed(fixture, seed, spoiler=spoiler)
     multiworld = lr.regenerate(fixture, seed)
     lr.check_same_fill(multiworld, lr.load_multidata(zip_path))
     players = {}
@@ -145,4 +145,11 @@ async def test_bot_finishes_multi5_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("multi5", 42, tmp_path)
     out = ROOT / "test-output" / "e2e_multi5.json"
     out.write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m7_batch_using_only_in_logic_locations(tmp_path):
+    """Ori BF, KH BBS, Jak 3, Pokemon BW/Platinum, R&C 2/3, AEMinecraft, Isaac, Slay the Spire."""
+    result = await play_until_done("m7a", 11, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m7a.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
