@@ -96,6 +96,10 @@ describe('groupLocations', () => {
     const g = groupLocations(locs)
     expect(g.map((x) => x.title)).toEqual(['FJ', 'SV'])
   })
+  it('puts the Autres group last', () => {
+    const locs = Array.from({ length: 20 }, (_, i) => loc(i, i < 6 ? `Zzz ${i}` : `${i < 13 ? 'AA' : 'BB'}: x ${i}`, null))
+    expect(groupLocations(locs).map((x) => x.title)).toEqual(['AA', 'BB', 'Autres'])
+  })
   it('extracts name prefixes', () => {
     expect(namePrefix('Forsaken City - Strawberry 1')).toBe('Forsaken City')
     expect(namePrefix('FJ: Scout Fly')).toBe('FJ')

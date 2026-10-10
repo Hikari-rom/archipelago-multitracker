@@ -139,8 +139,8 @@ export function groupLocations(locs: LogicLocation[], threshold = 12): LocationG
     if (rest.length) groups.push({ title: hinted.length ? 'Autres' : null, locations: rest })
     return groups
   }
-  const order = (k: string) => (k === 'Autres' ? '\uffff' : k) // "Autres" last
-  for (const key of [...best.keys()].sort((a, b) => order(a).localeCompare(order(b)))) {
+  const byName = (a: string, b: string) => Number(a === 'Autres') - Number(b === 'Autres') || a.localeCompare(b)
+  for (const key of [...best.keys()].sort(byName)) {
     groups.push({ title: key, locations: best.get(key)! })
   }
   return groups
