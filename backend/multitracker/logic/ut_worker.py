@@ -119,18 +119,66 @@ class SlotLogic:
         self.init_seconds = round(time.perf_counter() - started, 2)
 
     def in_logic(self, items: list[dict[str, Any]], missing: set[int]) -> dict[str, Any]:
-        from NetUtils import NetworkItem
+        """Locations of `missing` reachable with `items`.
+
+        Same sweep as UT's `updateTracker`, with one difference: each received item gets the exact
+        classification the server sent (NetworkItem.flags). UT only ORs the flags onto the default
+        classification of `create_item`, so items the generator demoted to filler (e.g. Celeste's
+        excess Strawberries) would still count as progression and over-estimate the logic.
+        """
+        from BaseClasses import CollectionState, ItemClassification
         core = self.core
-        core.set_items_received([NetworkItem(int(i["item"]), int(i.get("location", -1)), int(i.get("player", 0)),
-                                             int(i.get("flags", 0))) for i in items])
-        core.set_missing_locations(set(missing))
-        core.set_hints({})
-        core.updateTracker()
-        errors = [line.location_label for group in core.log_lines.values() for line in group
-                  if getattr(line.group, "value", "") == "error"]
-        return {"in_logic": sorted(set(core.locations_available)),
-                "glitched": sorted(set(core.glitched_locations)),
-                "errors": errors[:5]}
+        mw, pid = core.multiworld, core.player_id
+        world = mw.worlds[pid]
+        state = CollectionState(mw, core.enforce_deferred_connections != _deferred_disabled())
+        unknown, errors = [], []
+        own_locations = mw.regions.location_cache[pid]
+        for net in items:
+            code = int(net["item"])
+            if code <= 0:
+                continue
+            name = world.item_id_to_name.get(code)
+            if name is None:
+                unknown.append(code)
+                continue
+            try:
+                item = mw.create_item(name, pid)
+            except Exception:
+                errors.append(f"item {name} ne peut pas être créé")
+                continue
+            loc_id, sender = int(net.get("location", -1)), int(net.get("player", 0))
+            if loc_id > 0 and sender == self.slot:
+                loc_name = world.location_id_to_name.get(loc_id)
+                if loc_name in own_locations:
+                    item.location = mw.get_location(loc_name, pid)
+            item.classification = exact_classification(item.classification, int(net.get("flags", 0)),
+                                                       ItemClassification)
+            state.collect(item, True)
+        if unknown:
+            raise RuntimeError(f"datapackage incohérent avec l'apworld installé ({len(unknown)} items inconnus)")
+        state.sweep_for_advancements(locations=[loc for loc in mw.get_locations(pid) if not loc.address])
+        reachable = sorted({loc.address for loc in mw.get_reachable_locations(state, pid)
+                            if isinstance(loc.address, int) and loc.address in missing})
+        return {"in_logic": reachable, "errors": errors[:5]}
+
+
+NETWORK_FLAGS = 0b111  # progression | useful | trap: what NetworkItem.flags carries
+
+
+def exact_classification(default, flags: int, cls):
+    """Classification of a received item from the server's flags.
+
+    The network bits (progression/useful/trap) come from the server; the extra bits of the
+    world's default classification (skip_balancing, deprioritized...) are kept only for items
+    that really are progression.
+    """
+    extra = int(default) & ~NETWORK_FLAGS if flags & cls.progression else 0
+    return cls(flags & NETWORK_FLAGS | extra)
+
+
+def _deferred_disabled():
+    from worlds.tracker import DeferredEntranceMode
+    return DeferredEntranceMode.disabled
 
 
 def request_key(req: dict[str, Any]) -> str:
