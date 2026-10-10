@@ -75,8 +75,8 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Relecture M7 + commit/push + notif
 
 ## M8 — Bonus
-- [ ] Découverte des slots d'une room depuis son URL archipelago.gg (backend fait, page front en cours)
-- [ ] Support de plusieurs joueurs
-- [ ] Finitions UX
+- [x] Découverte des slots d'une room depuis son URL archipelago.gg — page Configuration + port suivi automatiquement
+- [x] Support de plusieurs joueurs — champ `owner` par slot, filtre par joueur dans le tableau de bord
+- [x] Finitions UX — inventaire de départ, groupes de locations, ordre stable des cartes, reconnexion SSE, thème sans flash
 - [x] Robustesse (coupures réseau, room qui redémarre) — reconnexion, changement de port de room, mauvais mot de passe, crash du worker : tests dédiés
 - [x] Performance de la régénération sur le Pi — 22 slots : 13 s au démarrage, 0,5 s pour tout recalculer, worker ~400 Mo (scripts/testenv/perf_all22.py)
