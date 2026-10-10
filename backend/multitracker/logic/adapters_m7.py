@@ -52,43 +52,24 @@ def _balatro(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
 
 @contextlib.contextmanager
 def _tloz_ph(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
-    """Phantom Hourglass: when Universal Tracker regenerates the world (multiworld.generation_is_fake), the key
-    rules (Mountain Passage, Temple of Fire...) switch to a conservative "keys may have been wasted" variant
-    (events `_is_ut` / `_is_not_ut`, option ut_smart_keys), which hides locations the generator considers in
-    logic and, with ut_smart_keys, over-reports others. The app wants the generator's own logic, so make the key
-    rules see a normal (non-UT) generation: the `_is_not_ut` event is created instead of `_is_ut`, and the
-    ph_is_ut predicate answers False. Everything else (alias regions, deferred ER connections) is untouched."""
-    pkg = world_cls.__module__
-    preds = importlib.import_module(f"{pkg}.data.LogicPredicates")
-    original_create_events = world_cls.create_events
-    original_pred = preds.ph_is_ut
-    table_keys = [k for k, v in vars(preds).items() if isinstance(v, dict) and v.get("is_ut") is original_pred]
+    """Phantom Hourglass: by default Universal Tracker leaves every randomized entrance disconnected until the
+    player walks through it (deferred connections), so the shuffled areas look unreachable. The slot's full
+    entrance pairing is in slot_data["er_pairings"] (sent to the client, no spoiler): the world reconnects all
+    of them from slot_data when `multiworld.enforce_deferred_connections == "off"`, so set that for this slot."""
+    original = world_cls.generate_early
 
-    def create_events(self) -> None:
-        was = self.is_ut
-        self.is_ut = False  # only for the `_is_ut` / `_is_not_ut` event choice
-        try:
-            original_create_events(self)
-        finally:
-            self.is_ut = was
+    def generate_early(self) -> None:
+        self.multiworld.enforce_deferred_connections = "off"
+        original(self)
 
-    def not_ut(state, player) -> bool:
-        return False
-
-    world_cls.create_events = create_events
-    preds.ph_is_ut = not_ut
-    for k in table_keys:
-        getattr(preds, k)["is_ut"] = not_ut
+    world_cls.generate_early = generate_early
     try:
         yield
     finally:
-        world_cls.create_events = original_create_events
-        preds.ph_is_ut = original_pred
-        for k in table_keys:
-            getattr(preds, k)["is_ut"] = original_pred
+        world_cls.generate_early = original
 
 
 ADAPTERS_M7: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "Balatro": _balatro,
-    # "The Legend of Zelda - Phantom Hourglass": _tloz_ph,
+    "The Legend of Zelda - Phantom Hourglass": _tloz_ph,
 }

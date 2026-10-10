@@ -78,5 +78,5 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [ ] Découverte des slots d'une room depuis son URL archipelago.gg (backend fait, page front en cours)
 - [ ] Support de plusieurs joueurs
 - [ ] Finitions UX
-- [ ] Robustesse (coupures réseau, room qui redémarre)
-- [ ] Performance de la régénération sur le Pi
+- [x] Robustesse (coupures réseau, room qui redémarre) — reconnexion, changement de port de room, mauvais mot de passe, crash du worker : tests dédiés
+- [x] Performance de la régénération sur le Pi — 22 slots : 13 s au démarrage, 0,5 s pour tout recalculer, worker ~400 Mo (scripts/testenv/perf_all22.py)
