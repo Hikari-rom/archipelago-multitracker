@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
-import { markSeen, toggleOpen, tracker } from '../stores/tracker'
+import { loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
 import SlotDetailPanel from './SlotDetailPanel.vue'
 
 const props = defineProps<{ summary: SlotSummary }>()
@@ -17,7 +17,8 @@ const pct = computed(() => {
 })
 const busy = ref(false)
 const seenError = ref('')
-const panelId = computed(() => 'detail-' + props.summary.name.replace(/[^\w-]/g, '_'))
+const panelId = 'detail-' + useId()
+const detailError = computed(() => tracker.detailError[props.summary.name])
 const stateMsg = computed(() =>
   props.summary.status === 'connected' ? '' : props.summary.error || '',
 )
@@ -92,9 +93,15 @@ async function onSeen() {
       <span class="chev" :class="{ rot: open }" aria-hidden="true">▸</span>
       {{ open ? 'Masquer les détails' : 'Voir les détails' }}
     </button>
-    <div v-if="open" :id="panelId" class="panel">
-      <SlotDetailPanel v-if="detail" :detail="detail" />
-      <p v-else class="muted">Chargement…</p>
+    <div v-show="open" :id="panelId" class="panel">
+      <template v-if="open">
+        <SlotDetailPanel v-if="detail" :detail="detail" />
+        <div v-else-if="detailError" role="alert">
+          <p class="error-text">Impossible de charger les détails : {{ detailError }}</p>
+          <button type="button" class="btn" @click="loadDetail(summary.name)">Réessayer</button>
+        </div>
+        <p v-else class="muted">Chargement…</p>
+      </template>
     </div>
   </article>
 </template>

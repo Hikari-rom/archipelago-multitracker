@@ -95,29 +95,85 @@ def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
             if loc.address is not None and loc.address in snap.missing}
 
 
+class ToolProcess:
+    """The app's logic worker, in its own spawned process (exactly like the app runs it), so that the
+    tool and the reference can never share in-process state (class attributes, patched methods...)."""
+
+    def __init__(self) -> None:
+        import multiprocessing as mp
+        from multitracker.logic.ut_worker import worker_main
+        ctx = mp.get_context("spawn")
+        self.conn, child = ctx.Pipe()
+        self.proc = ctx.Process(target=worker_main, args=(child,), daemon=True)
+        self.proc.start()
+        child.close()
+
+    def request(self, req: dict[str, Any]) -> dict[str, Any]:
+        self.conn.send(req)
+        if not self.conn.poll(600):
+            raise TimeoutError("logic worker did not answer")
+        return self.conn.recv()
+
+    def close(self) -> None:
+        try:
+            self.conn.send(None)
+        except OSError:
+            pass
+        self.proc.join(10)
+        if self.proc.is_alive():
+            self.proc.kill()
+
+    def __enter__(self) -> "ToolProcess":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
+
+
+def as_sent_by_server(value: Any) -> Any:
+    """What a client receives: the server encodes with NetUtils.encode, then JSON travels the websocket."""
+    from NetUtils import encode
+    return json.loads(encode(value))
+
+
 def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: Path | None,
-                 max_snapshots: int | None = None) -> dict[str, Any]:
-    from multitracker.logic.ut_worker import SlotLogic
-    name = multiworld.player_name[player]
-    game = multiworld.game[player]
-    all_locations = {loc.address for loc in multiworld.get_locations(player) if loc.address is not None}
-    logic = SlotLogic(name, game, 0, player, multidata["slot_data"][player], yaml_path, all_locations)
-    snaps = snapshots(multiworld, player)
-    if max_snapshots and len(snaps) > max_snapshots:
-        step = (len(snaps) - 1) / (max_snapshots - 1)
-        snaps = [snaps[round(i * step)] for i in range(max_snapshots)]
-    loc_name = multiworld.worlds[player].location_id_to_name
-    report = {"slot": name, "game": game, "mode": logic.mode, "snapshots": []}
-    for snap in snaps:
-        ref = reference_in_logic(multiworld, player, snap)
-        got = set(logic.in_logic(snap.items, snap.missing)["in_logic"])
-        report["snapshots"].append({
-            "sphere": snap.sphere, "items": len(snap.items), "reference": len(ref), "tool": len(got),
-            "under": sorted(loc_name[a] for a in ref - got),  # in logic but the tool misses it
-            "over": sorted(loc_name[a] for a in got - ref),   # the tool says in logic but it is not
-        })
-    report["ok"] = all(not s["under"] and not s["over"] for s in report["snapshots"])
-    return report
+                 max_snapshots: int | None = None, tool: ToolProcess | None = None) -> dict[str, Any]:
+    own_tool = tool is None
+    tool = tool or ToolProcess()
+    try:
+        name = multiworld.player_name[player]
+        game = multiworld.game[player]
+        snaps = snapshots(multiworld, player)
+        if max_snapshots and len(snaps) > max_snapshots:
+            step = (len(snaps) - 1) / (max_snapshots - 1)
+            snaps = [snaps[round(i * step)] for i in range(max_snapshots)]
+        all_locations = {loc.address for loc in multiworld.get_locations(player) if loc.address is not None}
+        slot_data = as_sent_by_server(multidata["slot_data"][player])
+        loc_name = multiworld.worlds[player].location_id_to_name
+        report = {"slot": name, "game": game, "mode": None, "snapshots": []}
+        for snap in snaps:
+            ref = reference_in_logic(multiworld, player, snap)
+            res = tool.request(as_sent_by_server({
+                "op": "update", "slot_name": name, "game": game, "team": 0, "slot": player,
+                "slot_data": slot_data, "yaml": str(yaml_path) if yaml_path else None,
+                "seed_name": multiworld.seed_name, "items": snap.items, "missing": sorted(snap.missing),
+                "checked": sorted(all_locations - snap.missing)}))
+            if res.get("state") != "ok":
+                report["error"] = res.get("message")
+                report["ok"] = False
+                return report
+            report["mode"] = res.get("mode")
+            got = set(res["in_logic"])
+            report["snapshots"].append({
+                "sphere": snap.sphere, "items": len(snap.items), "reference": len(ref), "tool": len(got),
+                "under": sorted(loc_name[a] for a in ref - got),  # in logic but the tool misses it
+                "over": sorted(loc_name[a] for a in got - ref),   # the tool says in logic but it is not
+            })
+        report["ok"] = all(not s["under"] and not s["over"] for s in report["snapshots"])
+        return report
+    finally:
+        if own_tool:
+            tool.close()
 
 
 def write_report(fixture: str, reports: list[dict[str, Any]]) -> Path:

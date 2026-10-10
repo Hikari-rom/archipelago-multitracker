@@ -18,7 +18,14 @@ function kind(i: { progression: boolean; useful: boolean; trap: boolean }) {
   if (i.useful) return { sym: '◆', label: 'utile', cls: 'useful' }
   return null
 }
-const from = (i: ItemEntry) => (i.own ? 'trouvé par toi' : `de ${i.sender}`)
+const from = (i: ItemEntry) =>
+  i.origin === 'start'
+    ? 'inventaire de départ'
+    : i.origin === 'server'
+      ? 'donné par le serveur'
+      : i.own
+        ? 'trouvé par toi'
+        : `de ${i.sender}`
 </script>
 
 <template>

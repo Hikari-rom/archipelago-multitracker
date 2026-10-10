@@ -65,13 +65,17 @@ def run_once(game: str, companions: list[str], run: int, keep_default: bool) -> 
         fixture_link.unlink()
     lr.check_same_fill(multiworld, multidata)
     reports = []
-    for player in multiworld.player_ids:
-        if multiworld.game[player] != game:
-            continue
-        reports.append(lr.compare_slot(multiworld, multidata, player, players / f"{multiworld.player_name[player]}.yaml",
-                                       max_snapshots=30))
+    with lr.ToolProcess() as tool:  # the app's worker, in its own process
+        for player in multiworld.player_ids:
+            if multiworld.game[player] != game:
+                continue
+            reports.append(lr.compare_slot(multiworld, multidata, player,
+                                           players / f"{multiworld.player_name[player]}.yaml",
+                                           max_snapshots=30, tool=tool))
     bad = [s for r in reports for s in r["snapshots"] if s["under"] or s["over"]]
-    return {"run": run, "generated": True, "ok": not bad, "mode": reports[0]["mode"] if reports else None,
+    bad += [{"error": r["error"]} for r in reports if r.get("error")]
+    return {"run": run, "generated": True, "ok": not bad and bool(reports),
+            "mode": reports[0]["mode"] if reports else None,
             "snapshots": sum(len(r["snapshots"]) for r in reports), "bad": bad[:5],
             "options": (players / f"{next(iter(names))}.yaml").read_text()[:2000]}
 

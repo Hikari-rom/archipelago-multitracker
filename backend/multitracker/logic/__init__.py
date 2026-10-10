@@ -18,6 +18,7 @@ class LogicRequest:
     items: list[dict[str, Any]]  # NetworkItem dicts (item, location, player, flags)
     missing: set[int]
     checked: set[int]
+    seed_name: str | None = None
 
 
 @dataclass

@@ -27,6 +27,7 @@ export interface ItemEntry {
   name: string
   sender: string
   own: boolean
+  origin?: 'start' | 'server' | 'own' | 'other'
   location: string
   progression: boolean
   useful: boolean

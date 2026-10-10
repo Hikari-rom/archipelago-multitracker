@@ -41,10 +41,10 @@ def _twwhd_required_bosses(world_cls: type, location_ids: set[int]):
 
     def randomize_required_bosses(self) -> None:
         options = self.world.options
-        if required and len(required) == options.num_required_bosses.value:
-            options.included_dungeons.value = set(required)  # nothing left to sample at random
-        else:
-            log.warning("TWWHD: could not infer the required dungeons (%s)", sorted(required))
+        if not (required and len(required) == options.num_required_bosses.value):
+            from .ut_worker import LogicUnavailable
+            raise LogicUnavailable("TWWHD : impossible de déduire les donjons requis (options required bosses)")
+        options.included_dungeons.value = set(required)  # nothing left to sample at random
         original(self)
 
     randomizer.randomize_required_bosses = randomize_required_bosses
@@ -75,11 +75,10 @@ def _twwhd_entrances(world_cls: type, slot_data: dict[str, Any]):
         self.done_entrances_to_exits, self.done_exits_to_entrances = done, done_reverse
         try:
             self.finalize_all_randomized_sets_of_entrances()
-        except AssertionError:
-            # Debug-only consistency check against the required bosses, which this regeneration rolled
-            # differently (they are not in slot_data and do not change which locations are reachable).
-            # It runs after every connection has been made.
-            pass
+        except AssertionError as exc:
+            # Debug-only consistency check (banned vs required boss islands) at the very end, after every
+            # connection has been made; with the slot_data entrances it cannot fail for a real seed.
+            log.warning("TWWHD entrance consistency check failed during regeneration: %s", exc)
 
     randomizer.randomize_entrances = randomize_entrances
     try:

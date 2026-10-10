@@ -36,6 +36,7 @@ class Service:
         self.logic: dict[str, LogicResult] = {}
         self._logic_tasks: dict[str, asyncio.Task] = {}
         self._logic_dirty: set[str] = set()
+        self._session: dict[str, int] = {}  # bumped on every (re)connection: results of older sessions are dropped
         self._publish_pending: set[str] = set()
         self._publish_task: asyncio.Task | None = None
         self.subscribers: set[asyncio.Queue] = set()
@@ -63,6 +64,7 @@ class Service:
     def _on_change(self, tracker: SlotTracker, kinds: set[str]) -> None:
         name = tracker.state.name
         if "connected" in kinds:
+            self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
         if kinds & LOGIC_KINDS and tracker.state.status == "connected":
             self._schedule_logic(name)
@@ -80,11 +82,13 @@ class Service:
             await asyncio.sleep(self.logic_debounce)
             self._logic_dirty.discard(name)
             st = self.trackers[name].state
-            if st.status != "connected" or st.slot is None:
-                return
+            if st.status != "connected" or st.slot is None or not st.synced:
+                return  # "synced" schedules a new computation once the item list is complete
+            session = self._session.get(name, 0)
             request = LogicRequest(slot_name=name, game=st.game, team=st.team, slot=st.slot,
                                    slot_data=st.slot_data, yaml=self.slot_configs[name].yaml,
-                                   items=list(st.items), missing=set(st.missing), checked=set(st.checked))
+                                   items=list(st.items), missing=set(st.missing), checked=set(st.checked),
+                                   seed_name=st.seed_name)
             started = time.perf_counter()
             try:
                 result = await self.logic_engine.compute(request)
@@ -94,6 +98,8 @@ class Service:
                 log.exception("logic failed for %s", name)
                 result = LogicResult("error", message=f"{type(exc).__name__}: {exc}"[:300])
             result.seconds = round(time.perf_counter() - started, 3)
+            if self._session.get(name, 0) != session:
+                continue  # reconnected (maybe to another seed) meanwhile: this result is stale
             # Locations checked since the request was built are no longer "to do".
             result.in_logic = [loc for loc in result.in_logic if loc in self.trackers[name].state.missing]
             self.logic[name] = result

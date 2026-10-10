@@ -9,6 +9,7 @@ directly by the tests.
 """
 from __future__ import annotations
 
+import gc
 import hashlib
 import json
 import logging
@@ -233,7 +234,8 @@ def request_key(req: dict[str, Any]) -> str:
             yaml_digest = hashlib.sha256(Path(req["yaml"]).read_bytes()).hexdigest()
         except OSError:
             yaml_digest = "missing"
-    payload = json.dumps([req["game"], req["team"], req["slot"], req.get("slot_data"), yaml_digest],
+    payload = json.dumps([req.get("seed_name"), req["game"], req["team"], req["slot"], req.get("slot_data"),
+                          yaml_digest],
                          sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -261,16 +263,20 @@ class Worker:
                     Path(req["yaml"]) if req.get("yaml") else None,
                     set(req.get("missing", [])) | set(req.get("checked", [])))
             except LogicUnavailable as exc:
-                logic = exc
+                logic = LogicUnavailable(str(exc))  # no traceback: it would keep the half-built world alive
             except Exception as exc:
                 log.warning("logic init failed for %s: %s", name, traceback.format_exc())
-                logic = exc
+                logic = RuntimeError(f"{type(exc).__name__}: {exc}")
+            had_previous = cached is not None
             self.slots[name] = (key, logic)
+            if had_previous:
+                del cached
+                gc.collect()  # regenerated multiworlds are cyclic: free the replaced one now
         logic = self.slots[name][1]
         if isinstance(logic, LogicUnavailable):
             return {"state": "unavailable", "message": str(logic)}
         if isinstance(logic, Exception):
-            return {"state": "error", "message": f"{type(logic).__name__}: {logic}"[:400]}
+            return {"state": "error", "message": str(logic)[:400]}
         try:
             result = logic.in_logic(req.get("items", []), set(req.get("missing", [])))
         except Exception as exc:

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import SlotCard from './components/SlotCard.vue'
+import { stableOrder } from './lib/order'
 import { sortSlots, summaryText } from './lib/logic'
 import { applyTheme, loadTheme, nextTheme, saveTheme, themeLabel } from './lib/theme'
 import { tracker } from './stores/tracker'
@@ -14,7 +15,14 @@ watch(theme, (t) => {
 })
 
 const sorted = computed(() => sortSlots(tracker.slots))
-const visible = computed(() => (hideDone.value ? sorted.value.filter((s) => !s.goal) : sorted.value))
+let lastOrder: string[] = []
+const anyOpen = computed(() => Object.values(tracker.open).some(Boolean))
+const ordered = computed(() => {
+  const r = stableOrder(lastOrder, sorted.value, anyOpen.value || tracker.seenFreeze)
+  lastOrder = r.map((s) => s.name)
+  return r
+})
+const visible = computed(() => (hideDone.value ? ordered.value.filter((s) => !s.goal) : ordered.value))
 const summary = computed(() => summaryText(tracker.slots))
 const sseLabel = computed(
   () => ({ open: 'En direct', connecting: 'Connexion…', reconnecting: 'Reconnexion…' })[tracker.sse],
@@ -58,6 +66,7 @@ const sseLabel = computed(
       </p>
     </section>
     <p v-else-if="!tracker.loaded" class="muted">Chargement…</p>
+    <p v-else-if="!visible.length" class="muted">Tous les jeux sont terminés 🎉</p>
     <div v-else class="grid">
       <SlotCard v-for="s in visible" :key="s.name" :summary="s" />
     </div>

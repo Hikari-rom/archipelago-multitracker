@@ -1,8 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import './style.css'
+import { applyTheme, loadTheme } from './lib/theme'
 import { dispatch, start } from './stores/tracker'
 
+applyTheme(loadTheme())
 createApp(App).mount('#app')
 
 if (import.meta.env.VITE_MOCK === '1') {

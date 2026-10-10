@@ -17,13 +17,21 @@ def seed():
     return multiworld, multidata
 
 
+@pytest.fixture(scope="module")
+def tool():
+    import logic_reference as lr
+    with lr.ToolProcess() as proc:
+        yield proc
+
+
 @pytest.mark.parametrize("slot", ["Celeste", "KH2", "Jak", "TWWHD", "SM64"])
-def test_logic_matches_reference_at_every_sphere(seed, slot):
+def test_logic_matches_reference_at_every_sphere(seed, tool, slot):
     import logic_reference as lr
     multiworld, multidata = seed
     yamls = {yaml.safe_load(p.read_text())["name"]: p for p in (FIXTURES / "multi5").glob("*.yaml")}
     player = next(p for p in multiworld.player_ids if multiworld.player_name[p] == slot)
-    report = lr.compare_slot(multiworld, multidata, player, yamls[slot])
+    report = lr.compare_slot(multiworld, multidata, player, yamls[slot], tool=tool)
+    assert not report.get("error"), report.get("error")
     bad = [s for s in report["snapshots"] if s["under"] or s["over"]]
     assert not bad, bad[:3]
     assert len(report["snapshots"]) > 5

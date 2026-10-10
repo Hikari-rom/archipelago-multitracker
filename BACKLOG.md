@@ -32,25 +32,25 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Relecture M3 + commit/push + notif
 
 ## M4 — Front Vue
-- [ ] Projet Vue 3 + Vite + TS, client API + SSE
-- [ ] Carte par jeu (état, compteurs, badge logique, locations, nouveaux items, hints)
-- [ ] Tri du tableau de bord, thème clair/sombre, mobile
-- [ ] Servi par le backend en prod
-- [ ] Tests vitest + vérification rendu (Playwright) mobile + desktop
-- [ ] Relecture M4 + commit/push + notif
+- [x] Projet Vue 3 + Vite + TS, client API + SSE
+- [x] Carte par jeu (état, compteurs, badge logique, locations, nouveaux items, hints)
+- [x] Tri du tableau de bord, thème clair/sombre, mobile
+- [x] Servi par le backend en prod
+- [x] Tests vitest + vérification rendu (Playwright) mobile + desktop
+- [x] Relecture M4 + commit/push + notif
 
 ## M5 — Logique priorité 1
-- [ ] Moteur de logique (UT headless ou réimplémentation), cache + debounce
-- [ ] Celeste (Open World) : référence + bout en bout
-- [ ] Kingdom Hearts 2 : référence + bout en bout
-- [ ] Jak and Daxter : référence + bout en bout
-- [ ] The Wind Waker HD : référence + bout en bout
-- [ ] Relecture M5 + commit/push + notif
+- [x] Moteur de logique (UT headless ou réimplémentation), cache + debounce
+- [x] Celeste (Open World) : référence + bout en bout
+- [x] Kingdom Hearts 2 : référence + bout en bout
+- [x] Jak and Daxter : référence + bout en bout
+- [x] The Wind Waker HD : référence + bout en bout
+- [x] Relecture M5 + commit/push + notif
 
 ## M6 — Déploiement
-- [ ] Lancement prod sur 0.0.0.0:42753 (script start/stop, PID dans `.run/`)
-- [ ] Fichier service systemd --user préparé + commandes dans « À faire par Romain »
-- [ ] README.md en français (installation, config room, lancement, mise à jour d'un apworld)
+- [x] Lancement prod sur 0.0.0.0:42753 (script start/stop, PID dans `.run/`)
+- [x] Fichier service systemd --user préparé + commandes dans « À faire par Romain »
+- [x] README.md en français (installation, config room, lancement, mise à jour d'un apworld)
 - [ ] Relecture M6 + commit/push + notif
 
 ## M7 — Étendre la logique

@@ -10,12 +10,32 @@ export const tracker = reactive({
   loadError: '' as string,
   details: {} as Record<string, SlotDetail>,
   open: {} as Record<string, boolean>,
+  detailError: {} as Record<string, string>,
+  /** true during the short window after "Marquer comme vu" (dashboard order frozen) */
+  seenFreeze: false,
 })
 
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
+const detailSeq = new Map<string, number>()
+let freezeTimer: ReturnType<typeof setTimeout> | undefined
+export const SEEN_FREEZE_MS = 1500
+
+/** Drop cached details that belong to another seed (or whose card is closed on a snapshot). */
+function pruneDetails(snapshot: boolean): void {
+  for (const n of Object.keys(tracker.details)) {
+    const s = tracker.slots.find((x) => x.name === n)
+    const d = tracker.details[n]
+    const stale = !s || (s.seed_name != null && d.seed_name != null && s.seed_name !== d.seed_name)
+    if (stale || (snapshot && !tracker.open[n])) {
+      delete tracker.details[n]
+      detailSeq.set(n, (detailSeq.get(n) ?? 0) + 1) // invalidate in-flight requests
+    }
+  }
+}
 
 export function dispatch(ev: TrackerEvent): void {
   Object.assign(tracker, reduce(tracker, ev))
+  pruneDetails(ev.type === 'snapshot')
   if (ev.type === 'slot' && tracker.open[ev.slot.name]) scheduleDetail(ev.slot.name)
   if (ev.type === 'snapshot') {
     for (const n of Object.keys(tracker.open)) if (tracker.open[n]) scheduleDetail(n)
@@ -31,21 +51,40 @@ export function scheduleDetail(name: string, delay = 300): void {
 }
 
 export async function loadDetail(name: string): Promise<void> {
+  const seq = (detailSeq.get(name) ?? 0) + 1
+  detailSeq.set(name, seq)
   try {
-    tracker.details[name] = await api.getSlot(name)
-  } catch {
-    /* keep stale detail */
+    const d = await api.getSlot(name)
+    if (detailSeq.get(name) !== seq) return // a newer request superseded this one
+    tracker.details[name] = d
+    delete tracker.detailError[name]
+  } catch (e) {
+    if (detailSeq.get(name) !== seq) return
+    tracker.detailError[name] = e instanceof Error ? e.message : String(e)
   }
 }
 
 export function toggleOpen(name: string): void {
   const v = !tracker.open[name]
   tracker.open[name] = v
-  if (v) void loadDetail(name)
+  if (v) {
+    delete tracker.detailError[name]
+    const s = tracker.slots.find((x) => x.name === name)
+    const d = tracker.details[name]
+    if (d && s && s.seed_name != null && d.seed_name != null && s.seed_name !== d.seed_name) {
+      delete tracker.details[name]
+    }
+    void loadDetail(name)
+  }
 }
 
 export async function markSeen(name: string): Promise<void> {
+  tracker.seenFreeze = true
+  clearTimeout(freezeTimer)
+  freezeTimer = setTimeout(() => (tracker.seenFreeze = false), SEEN_FREEZE_MS)
   await api.markSeen(name)
+  // invalidate any detail request started before markSeen resolved
+  detailSeq.set(name, (detailSeq.get(name) ?? 0) + 1)
   const s = tracker.slots.find((x) => x.name === name)
   if (s) s.items.new = 0
   const d = tracker.details[name]
@@ -53,37 +92,73 @@ export async function markSeen(name: string): Promise<void> {
     d.items.new = 0
     d.items_list.forEach((i) => (i.new = false))
   }
+  clearTimeout(freezeTimer)
+  freezeTimer = setTimeout(() => (tracker.seenFreeze = false), SEEN_FREEZE_MS)
+  if (tracker.open[name]) void loadDetail(name)
 }
 
 let es: EventSource | null = null
+let retryTimer: ReturnType<typeof setTimeout> | undefined
+let backoff = 3000
+const BACKOFF_MAX = 30000
+
+function parse(e: Event): any | null {
+  try {
+    return JSON.parse((e as MessageEvent).data)
+  } catch (err) {
+    console.warn('Événement SSE malformé ignoré', err)
+    return null
+  }
+}
+
+export function connect(): void {
+  if (typeof EventSource === 'undefined') return
+  es?.close()
+  clearTimeout(retryTimer)
+  const cur = new EventSource('/api/events')
+  es = cur
+  cur.onopen = () => {
+    backoff = 3000
+    tracker.sse = 'open'
+    tracker.loadError = ''
+  }
+  cur.onerror = () => {
+    tracker.sse = 'reconnecting'
+    if (cur.readyState === EventSource.CLOSED) {
+      // HTTP error: the browser will not retry by itself
+      cur.close()
+      if (es === cur) es = null
+      const delay = backoff
+      backoff = Math.min(backoff * 2, BACKOFF_MAX)
+      retryTimer = setTimeout(connect, delay)
+    }
+  }
+  cur.addEventListener('snapshot', (e) => {
+    const d = parse(e)
+    if (d && Array.isArray(d.slots)) dispatch({ type: 'snapshot', slots: d.slots })
+  })
+  cur.addEventListener('slot', (e) => {
+    const d = parse(e)
+    if (d && d.slot) dispatch({ type: 'slot', slot: d.slot })
+  })
+}
 
 export async function start(): Promise<void> {
+  stop()
+  connect()
   try {
     const r = await api.getSlots()
     dispatch({ type: 'snapshot', slots: r.slots, server: r.server })
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)
   }
-  if (typeof EventSource === 'undefined') return
-  es = new EventSource('/api/events')
-  es.onopen = () => {
-    tracker.sse = 'open'
-    tracker.loadError = ''
-  }
-  es.onerror = () => {
-    tracker.sse = 'reconnecting'
-  }
-  es.addEventListener('snapshot', (e) => {
-    const d = JSON.parse((e as MessageEvent).data)
-    dispatch({ type: 'snapshot', slots: d.slots })
-  })
-  es.addEventListener('slot', (e) => {
-    const d = JSON.parse((e as MessageEvent).data)
-    dispatch({ type: 'slot', slot: d.slot })
-  })
 }
 
 export function stop(): void {
+  clearTimeout(retryTimer)
+  backoff = 3000
   es?.close()
   es = null
 }
+
+if (import.meta.hot) import.meta.hot.dispose(() => stop())

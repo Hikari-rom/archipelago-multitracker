@@ -44,6 +44,14 @@ class UTLogicEngine(LogicEngine):
     async def start(self) -> None:
         async with self._lock:
             await asyncio.to_thread(self._spawn)
+        self._prewarm = asyncio.create_task(self._ping())  # import AP's worlds before the first request
+
+    async def _ping(self) -> None:
+        async with self._lock:
+            try:
+                await asyncio.to_thread(self._roundtrip, {"op": "ping"})
+            except Exception as exc:
+                log.warning("logic worker prewarm failed: %s", exc)
 
     def _spawn(self) -> None:
         from .ut_worker import worker_main
@@ -61,6 +69,8 @@ class UTLogicEngine(LogicEngine):
         self._proc = self._conn = None
 
     async def stop(self) -> None:
+        if getattr(self, "_prewarm", None) is not None:
+            self._prewarm.cancel()
         async with self._lock:
             if self._conn is not None:
                 try:
@@ -84,7 +94,7 @@ class UTLogicEngine(LogicEngine):
                "slot": request.slot, "slot_data": request.slot_data,
                "yaml": str(request.yaml) if request.yaml else None,
                "items": request.items, "missing": sorted(request.missing),
-               "checked": sorted(request.checked)}
+               "checked": sorted(request.checked), "seed_name": request.seed_name}
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)
