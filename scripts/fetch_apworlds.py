@@ -76,12 +76,26 @@ class GitHub:
             return rel
         raise RuntimeError(f"no suitable release found for {repo}")
 
-    def download(self, url: str, dest: Path) -> None:
-        tmp = dest.with_suffix(dest.suffix + ".part")
-        with urllib.request.urlopen(self._request(url, "application/octet-stream"), timeout=120) as resp, \
-                open(tmp, "wb") as fh:
-            shutil.copyfileobj(resp, fh)
-        tmp.replace(dest)
+    def download(self, url: str, dest: Path, expected_size: int | None, max_size: int = 200 << 20) -> str:
+        """Download to dest atomically; returns the sha256. Checks the size reported by GitHub."""
+        tmp = dest.with_name(dest.name + ".part")
+        h = hashlib.sha256()
+        size = 0
+        try:
+            with urllib.request.urlopen(self._request(url, "application/octet-stream"), timeout=120) as resp, \
+                    open(tmp, "wb") as fh:
+                for chunk in iter(lambda: resp.read(1 << 20), b""):
+                    size += len(chunk)
+                    if size > max_size:
+                        raise RuntimeError(f"download larger than {max_size} bytes: {url}")
+                    h.update(chunk)
+                    fh.write(chunk)
+            if expected_size is not None and size != expected_size:
+                raise RuntimeError(f"truncated download ({size} of {expected_size} bytes): {url}")
+            tmp.replace(dest)
+        finally:
+            tmp.unlink(missing_ok=True)
+        return h.hexdigest()
 
 
 def sha256(path: Path) -> str:
@@ -99,6 +113,13 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(fh) or {}
 
 
+def safe_filename(name: str) -> str:
+    """Asset / lock file names are joined to DEST: refuse anything that is not a plain *.apworld name."""
+    if Path(name).name != name or name.startswith(".") or not name.endswith(".apworld"):
+        raise RuntimeError(f"refusing unsafe apworld file name {name!r}")
+    return name
+
+
 def resolve_entry(gh: GitHub, key: str, entry: dict, locked: dict | None, update: bool) -> dict:
     repo = entry["repo"]
     tag = str(entry.get("tag", "latest"))
@@ -113,7 +134,7 @@ def resolve_entry(gh: GitHub, key: str, entry: dict, locked: dict | None, update
         raise RuntimeError(f"{key}: expected exactly one asset matching {pattern!r} in {repo}@{rel['tag_name']}, "
                            f"found {[a['name'] for a in assets]} among {names}")
     asset = assets[0]
-    filename = entry.get("filename") or asset["name"]
+    filename = safe_filename(entry.get("filename") or asset["name"])
     return {
         "repo": repo,
         "tag": rel["tag_name"],
@@ -121,6 +142,7 @@ def resolve_entry(gh: GitHub, key: str, entry: dict, locked: dict | None, update
         "asset_pattern": pattern,
         "asset": asset["name"],
         "url": asset["browser_download_url"],
+        "size": asset.get("size"),
         "file": filename,
     }
 
@@ -152,28 +174,37 @@ def main() -> int:
         try:
             resolved = resolve_entry(gh, key, entry, locked, args.update)
             dest = DEST / resolved["file"]
-            if locked and locked.get("url") == resolved["url"] and dest.exists() \
-                    and sha256(dest) == locked.get("sha256"):
+            same_version = bool(locked) and locked.get("url") == resolved["url"] and bool(locked.get("sha256"))
+            if same_version and dest.exists() and sha256(dest) == locked["sha256"]:
                 resolved["sha256"] = locked["sha256"]
                 resolved["downloaded_at"] = locked.get("downloaded_at")
                 print(f"= {key}: {resolved['repo']}@{resolved['tag']} ({resolved['file']}) already present")
             else:
-                # remove a previously locked file with a different name
+                digest = gh.download(resolved["url"], dest, resolved.get("size"))
+                if same_version and digest != locked["sha256"] and not args.update:
+                    dest.unlink(missing_ok=True)
+                    raise RuntimeError(f"sha256 mismatch for {resolved['url']} (asset replaced upstream?); "
+                                       f"rerun with --update to accept the new file")
+                # remove a previously locked file with a different name, only once the new one is in place
                 if locked and locked.get("file") and locked["file"] != resolved["file"]:
-                    (DEST / locked["file"]).unlink(missing_ok=True)
-                gh.download(resolved["url"], dest)
-                resolved["sha256"] = sha256(dest)
+                    (DEST / safe_filename(locked["file"])).unlink(missing_ok=True)
+                resolved["sha256"] = digest
                 resolved["downloaded_at"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
                 print(f"+ {key}: {resolved['repo']}@{resolved['tag']} -> {resolved['file']}")
             resolved["source"] = "github"
             resolved["game"] = entry.get("game")
             new_lock[key] = resolved
-        except (urllib.error.URLError, RuntimeError, KeyError, OSError) as exc:
+        except (urllib.error.URLError, RuntimeError, KeyError, OSError, ValueError, TypeError) as exc:
             failures.append(key)
             print(f"! {key}: {exc}", file=sys.stderr)
             if locked:
                 new_lock[key] = locked
 
+    known = {v.get("file") for v in new_lock.values()}
+    for stray in sorted(DEST.glob("*.apworld")):
+        if stray.name not in known:
+            print(f"? {stray.name} is in custom_worlds/ but not in config/apworlds.yaml (still loaded by AP)",
+                  file=sys.stderr)
     with open(LOCK, "w", encoding="utf-8") as fh:
         fh.write("# Generated by scripts/fetch_apworlds.py — versions actually downloaded. Do not edit by hand.\n")
         yaml.safe_dump({"apworlds": new_lock}, fh, sort_keys=False, allow_unicode=True)

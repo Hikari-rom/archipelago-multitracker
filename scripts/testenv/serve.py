@@ -33,15 +33,23 @@ def pid_file(port: int) -> Path:
     return RUN / f"testserver-{port}.pid"
 
 
+def is_our_server(pid: int, port: int) -> bool:
+    """True only if pid is a MultiServer we started on this port (guards against recycled PIDs)."""
+    try:
+        cmdline = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
+        return (any(arg.endswith(b"MultiServer.py") for arg in cmdline) and str(port).encode() in cmdline
+                and os.getpgid(pid) == pid)
+    except (OSError, ProcessLookupError):
+        return False
+
+
 def read_pid(port: int) -> int | None:
     try:
         pid = int(pid_file(port).read_text().strip())
     except (OSError, ValueError):
         return None
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        pid_file(port).unlink(missing_ok=True)
+    if not is_our_server(pid, port):
+        pid_file(port).unlink(missing_ok=True)  # stale or recycled pid: never kill it
         return None
     return pid
 
@@ -85,15 +93,16 @@ def stop(port: int) -> bool:
     pid = read_pid(port)
     if not pid:
         return False
-    os.killpg(pid, signal.SIGTERM)
-    for _ in range(50):
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            break
-        time.sleep(0.1)
-    else:
-        os.killpg(pid, signal.SIGKILL)
+    try:
+        os.killpg(pid, signal.SIGTERM)
+        for _ in range(50):
+            if not is_our_server(pid, port):
+                break
+            time.sleep(0.1)
+        else:
+            os.killpg(pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        pass
     pid_file(port).unlink(missing_ok=True)
     return True
 

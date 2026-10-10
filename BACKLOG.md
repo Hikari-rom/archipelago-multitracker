@@ -13,7 +13,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] `config/apworlds.yaml` (22 jeux) + `scripts/fetch_apworlds.py` + `apworlds.lock.yaml`
 - [x] Étude de compatibilité : chaque apworld se charge sur 0.6.7 (script `scripts/check_apworlds.py`)
 - [x] Première version de `docs/COMPAT.md`
-- [ ] Relecture M1 + commit/push + notif
+- [x] Relecture M1 + commit/push + notif
 
 ## M2 — Environnement de test
 - [ ] Yamls de test pour Celeste, KH2, Jak and Daxter, TWW HD (depuis les templates)

@@ -22,6 +22,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: twwhd-apworld-main.apworld
     url: https://github.com/Teotia444/twwhd-apworld/releases/download/v1.0.2-beta/twwhd-apworld-main.apworld
+    size: 218701
     file: twwhd-apworld-main.apworld
     sha256: a4c68202ee5fbc51a42bbd91d981e3a6f30d7d3e0fc807782612676f18905a1c
     downloaded_at: '2026-10-10T00:21:18+00:00'
@@ -34,6 +35,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: meatballs.apworld
     url: https://github.com/mdietz94/smo_archipelago/releases/download/v1.5.3/meatballs.apworld
+    size: 4587811
     file: meatballs.apworld
     sha256: 01aa81a2d378d8f9eca7eb003fff10d42763487f784a8ef4b358f4539597158b
     downloaded_at: '2026-10-10T00:21:19+00:00'
@@ -46,6 +48,7 @@ apworlds:
     asset_pattern: oribf.apworld
     asset: oribf.apworld
     url: https://github.com/c-ostic/Archipelago/releases/download/v0.4.2/oribf.apworld
+    size: 29533
     file: oribf.apworld
     sha256: 87bee0a21dc89c1bc408c6bea29d2527e7914163657815e1e9682ee2c76231cb
     downloaded_at: '2026-10-10T00:21:20+00:00'
@@ -58,6 +61,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: ori_wotw.apworld
     url: https://github.com/Satisha10/APwotw_release/releases/download/v0.6.5/ori_wotw.apworld
+    size: 314496
     file: ori_wotw.apworld
     sha256: d16441ffdc5dd6644be27695de6b3179a6a552f2bdfc156e36aedc568c725c19
     downloaded_at: '2026-10-10T00:21:22+00:00'
@@ -70,6 +74,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: balatro.apworld
     url: https://github.com/BurndiL/BalatroAP/releases/download/v0.1.9f/balatro.apworld
+    size: 18251
     file: balatro.apworld
     sha256: 5a767baa3a5b592b76b242b94080561a9c0973c2fc2351d78ac7817794985ee0
     downloaded_at: '2026-10-10T00:21:23+00:00'
@@ -82,6 +87,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: spire.apworld
     url: https://github.com/cjmang/StS-AP-World/releases/download/2.3.5/spire.apworld
+    size: 25842
     file: spire.apworld
     sha256: c657bf4b947b7605caef0bc6bacb809a4210f662b4d7791f682cb8d6adde83f1
     downloaded_at: '2026-10-10T00:21:24+00:00'
@@ -94,6 +100,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: khbbs.apworld
     url: https://github.com/gaithernOrg/ArchipelagoKHBBS/releases/download/0.2.0/khbbs.apworld
+    size: 116965
     file: khbbs.apworld
     sha256: 86b4f870e02de064e5ca7eee49ee898efd929269b111e4350a061284c925217e
     downloaded_at: '2026-10-10T00:21:25+00:00'
@@ -106,6 +113,7 @@ apworlds:
     asset_pattern: jak3*.apworld
     asset: jak3.apworld
     url: https://github.com/Blake645/Archipelago/releases/download/2.1.0/jak3.apworld
+    size: 411269
     file: jak3.apworld
     sha256: 36ddcd48fcc4ce69409318ab38de8aee9c06114b6fa5baef493430b992a84f8d
     downloaded_at: '2026-10-10T00:21:26+00:00'
@@ -118,6 +126,7 @@ apworlds:
     asset_pattern: tloz_ph*.apworld
     asset: tloz_ph.apworld
     url: https://github.com/carrotinator/Archipelago/releases/download/ph-v0.10.1/tloz_ph.apworld
+    size: 2632160
     file: tloz_ph.apworld
     sha256: e78ed642438168cf088cb0415b02bbfe3df7dd6621c8e58b9090062850e23cef
     downloaded_at: '2026-10-10T00:21:27+00:00'
@@ -130,6 +139,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: pokemon_platinum.apworld
     url: https://github.com/ljtpetersen/platinum_archipelago/releases/download/v0.2.2/pokemon_platinum.apworld
+    size: 1330044
     file: pokemon_platinum.apworld
     sha256: 56c3e0b16c244642779475db25de9cd0b513b6a9a6eeef7532744c99c5a0e0cf
     downloaded_at: '2026-10-10T00:21:28+00:00'
@@ -142,6 +152,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: pokemon_bw.apworld
     url: https://github.com/BlastSlimey/PokemonBWAP/releases/download/0.3.37/pokemon_bw.apworld
+    size: 1122965
     file: pokemon_bw.apworld
     sha256: 150b63a8fe3d0953fea1f807dc49d9d870c5dd6e925ebb406437593e72df1327
     downloaded_at: '2026-10-10T00:21:29+00:00'
@@ -154,6 +165,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: pokepark.apworld
     url: https://github.com/Mekurushi/Archipelago_Pokepark/releases/download/1.2.8/pokepark.apworld
+    size: 83670
     file: pokepark.apworld
     sha256: 443a7921fe0bfd1c50e7ed91fd97226d40ed767b9db7fbc9dda611030a832d6e
     downloaded_at: '2026-10-10T00:21:30+00:00'
@@ -166,6 +178,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: rac2.apworld
     url: https://github.com/evilwb/APRac2/releases/download/v0.6.4/rac2.apworld
+    size: 83992
     file: rac2.apworld
     sha256: 1943f7c44e62ec53d13999f7194edbd2ad8299bf62d23aa0522227b0c38a24e9
     downloaded_at: '2026-10-10T00:21:31+00:00'
@@ -178,6 +191,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: rac3.apworld
     url: https://github.com/Taoshix/Archipelago-RaC3/releases/download/v0.6.0/rac3.apworld
+    size: 2900207
     file: rac3.apworld
     sha256: 77bfda1e7d275f263513359f580dcbffd9ae14a844c18a4abd0a0dde065de326
     downloaded_at: '2026-10-10T00:21:33+00:00'
@@ -190,6 +204,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: minecraft_aem.apworld
     url: https://github.com/KuroLynx/AEMinecraft/releases/download/v0.6.2/minecraft_aem.apworld
+    size: 485550
     file: minecraft_aem.apworld
     sha256: 86dbd6dac8aec9a709df7eee90bdc06b219473010e3c04d7b208aaa5bee9d092
     downloaded_at: '2026-10-10T00:21:34+00:00'
@@ -202,6 +217,7 @@ apworlds:
     asset_pattern: tboir*.apworld
     asset: tboir.apworld
     url: https://github.com/NaveTK/Archipelago/releases/download/v0.4.3/tboir.apworld
+    size: 429427
     file: tboir.apworld
     sha256: cc3a539ad57aaf3dc669135fd9cfbfa7aceac9f1635cfab48b0e8883f3057011
     downloaded_at: '2026-10-10T00:21:35+00:00'
@@ -214,6 +230,7 @@ apworlds:
     asset_pattern: '*.apworld'
     asset: mkwii.apworld
     url: https://github.com/toent/Archipelago-MKWii/releases/download/v0.3.1/mkwii.apworld
+    size: 14145
     file: mkwii.apworld
     sha256: 5e8800e5d5e12cb54ac9eb3f6d2cebadb5238ecb317fcccea8cc6b08e9fb5259
     downloaded_at: '2026-10-10T00:21:36+00:00'
@@ -226,6 +243,7 @@ apworlds:
     asset_pattern: tracker.apworld
     asset: tracker.apworld
     url: https://github.com/FarisTheAncient/Archipelago/releases/download/Tracker_v0.3.0/tracker.apworld
+    size: 167991
     file: tracker.apworld
     sha256: 73aec556d91166a0dd7c840a49cb4d24408e48be515b99a08431974bd00ef303
     downloaded_at: '2026-10-10T00:21:37+00:00'

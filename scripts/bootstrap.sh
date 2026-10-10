@@ -24,16 +24,18 @@ if [ ! -d "$AP_DIR/.git" ]; then
     https://github.com/ArchipelagoMW/Archipelago "$AP_DIR"
 else
   current="$(git -C "$AP_DIR" describe --tags --exact-match 2>/dev/null || echo '?')"
-  [ "$current" = "$AP_VERSION" ] || echo "⚠ $AP_DIR est sur '$current', attendu $AP_VERSION"
+  [ "$current" = "$AP_VERSION" ] || { echo "✗ $AP_DIR est sur '$current', attendu $AP_VERSION"; exit 1; }
 fi
 
 log "Environnement Python (.venv)"
-[ -x .venv/bin/python ] || "$PY" -m venv .venv
-.venv/bin/pip install --quiet --upgrade pip
+if [ ! -x .venv/bin/python ]; then
+  "$PY" -m venv .venv
+  .venv/bin/pip install --quiet --upgrade pip
+fi
 # AP requirements minus the GUI (kivy, kivymd) and Windows-only (Pymem) packages.
 grep -vE '^\s*(kivy|kivymd|Pymem)\b|^\s*#|^\s*$' "$AP_DIR/requirements.txt" > .venv/ap-requirements.txt
 .venv/bin/pip install --quiet -r .venv/ap-requirements.txt
-# Client-side deps imported at world-import time by some worlds (pure Python on Linux).
+# Client-side deps that some worlds (KH2, Jak) import at load time; unused by the tracker.
 .venv/bin/pip install --quiet "Pymem>=1.10.0" "PyMemoryEditor>=2.0.1"
 # dolphin-memory-engine does not build on aarch64: backend/ap_stubs/ provides a stub.
 .venv/bin/pip install --quiet -r backend/requirements.txt
