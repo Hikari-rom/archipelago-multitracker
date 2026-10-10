@@ -108,6 +108,7 @@ class UTLogicEngine(LogicEngine):
         if state != "ok":
             return LogicResult(state, message=res.get("message"))
         return LogicResult("ok", in_logic=list(res.get("in_logic", [])),
+                           regions={int(k): v for k, v in (res.get("regions") or {}).items()},
                            message=("; ".join(res["errors"]) if res.get("errors") else None))
 
 

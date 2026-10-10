@@ -73,6 +73,9 @@ N'utilise pas `scripts/app.sh` et le service en même temps (même port) : `scri
 
 Depuis le téléphone : `http://<ip-tailscale-du-pi>:42753` (l'app écoute sur toutes les interfaces).
 
+Derrière un reverse proxy (ex. `tailscale serve`) qui change l'en-tête `Host`, autorise son origine pour les
+actions d'écriture : `MT_ALLOWED_ORIGINS=https://pi.ton-tailnet.ts.net scripts/app.sh restart`.
+
 **Sécurité** : il n'y a pas d'authentification. Toute machine du réseau local (ou du tailnet) peut lire ta
 progression, tes items et tes hints (jamais le mot de passe de la room). Pour limiter l'accès à la machine
 elle-même : `MT_HOST=127.0.0.1 scripts/app.sh start`.

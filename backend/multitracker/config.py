@@ -109,9 +109,14 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
         data["slots"].append(entry)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text("# Écrit par l'app (page Configuration). Modifiable à la main.\n"
-                   + yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    os.chmod(tmp, 0o600)
+    content = ("# Écrit par l'app (page Configuration). Modifiable à la main.\n"
+               + yaml.safe_dump(data, allow_unicode=True, sort_keys=False)).encode("utf-8")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)  # never readable by others (password)
+    try:
+        os.write(fd, content)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
     tmp.replace(path)
     cfg.path = path
     return path

@@ -219,9 +219,12 @@ class SlotLogic:
         if unknown:
             raise RuntimeError(f"datapackage incohérent avec l'apworld installé ({len(unknown)} items inconnus)")
         state.sweep_for_advancements(locations=[loc for loc in mw.get_locations(pid) if not loc.address])
-        reachable = sorted({loc.address for loc in mw.get_reachable_locations(state, pid)
-                            if isinstance(loc.address, int) and loc.address in missing})
-        return {"in_logic": reachable, "errors": errors[:5]}
+        reachable_locations = [loc for loc in mw.get_reachable_locations(state, pid)
+                               if isinstance(loc.address, int) and loc.address in missing]
+        reachable = sorted({loc.address for loc in reachable_locations})
+        regions = {loc.address: loc.parent_region.name for loc in reachable_locations
+                   if loc.parent_region is not None}
+        return {"in_logic": reachable, "regions": regions, "errors": errors[:5]}
 
 
 NETWORK_FLAGS = 0b111  # progression | useful | trap: what NetworkItem.flags carries

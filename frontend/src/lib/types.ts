@@ -56,6 +56,7 @@ export interface Hint {
 export interface LogicLocation {
   id: number
   name: string
+  region?: string | null
   hint: { item: string; receiver: string; progression: boolean } | null
 }
 

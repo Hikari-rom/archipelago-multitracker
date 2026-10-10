@@ -1,4 +1,4 @@
-import type { Hint, SlotSummary } from './types'
+import type { Hint, LogicLocation, SlotSummary } from './types'
 
 export type BadgeVariant = 'good' | 'neutral' | 'muted' | 'pending'
 export interface Badge {
@@ -96,4 +96,31 @@ export function statusLabel(status: SlotSummary['status']): string {
 
 export function pluralize(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
+}
+
+export interface LocationGroup {
+  title: string | null
+  locations: LogicLocation[]
+}
+
+/** Hinted locations first, then grouped by region when the list is long and regions are known. */
+export function groupLocations(locs: LogicLocation[], threshold = 12): LocationGroup[] {
+  const hinted = locs.filter((l) => l.hint)
+  const rest = locs.filter((l) => !l.hint)
+  const groups: LocationGroup[] = []
+  if (hinted.length) groups.push({ title: 'Hintées', locations: hinted })
+  if (locs.length <= threshold || !rest.some((l) => l.region)) {
+    if (rest.length) groups.push({ title: hinted.length ? 'Autres' : null, locations: rest })
+    return groups
+  }
+  const byRegion = new Map<string, LogicLocation[]>()
+  for (const l of rest) {
+    const key = l.region || 'Autres'
+    if (!byRegion.has(key)) byRegion.set(key, [])
+    byRegion.get(key)!.push(l)
+  }
+  for (const key of [...byRegion.keys()].sort((a, b) => a.localeCompare(b))) {
+    groups.push({ title: key, locations: byRegion.get(key)! })
+  }
+  return groups
 }

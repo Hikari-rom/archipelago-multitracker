@@ -108,6 +108,8 @@ class SlotTracker:
                 self._set_status("connecting")
                 address = self.server() if callable(self.server) else self.server
                 if not address:
+                    if self.on_connect_error:
+                        self.on_connect_error(self)  # ask for the room's current port again
                     raise ConnectionError("adresse du serveur inconnue (room endormie ?)")
                 try:
                     self._sock, self.state.url = await net.open_socket(address)

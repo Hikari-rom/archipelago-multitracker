@@ -74,6 +74,6 @@ case "${1:-status}" in
   stop) stop ;;
   restart) stop; start ;;
   status) if pid="$(running_pid)"; then echo "lancé (pid $pid)"; else echo "pas lancé"; exit 3; fi ;;
-  logs) tail -n 100 -f "$LOG" ;;
+  logs) exec 9>&-; tail -n 100 -f "$LOG" ;;
   *) echo "usage: $0 start|stop|restart|status|logs"; exit 2 ;;
 esac

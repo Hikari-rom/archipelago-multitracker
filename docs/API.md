@@ -50,7 +50,7 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
   "hints_mine_elsewhere": [Hint, ...],
   "hints_in_my_world": [Hint, ...],
   "in_logic_locations": [
-    {"id": 211877922, "name": "Forsaken City - Strawberry 1",
+    {"id": 211877922, "name": "Forsaken City - Strawberry 1", "region": "Forsaken City A",  // région ou null
      "hint": {"item": "Hookshot", "receiver": "TWWHD", "progression": true}}   // ou null
   ],
   "players": {"1": {"name": "Celeste", "game": "Celeste (Open World)"}}

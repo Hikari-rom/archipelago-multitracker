@@ -20,6 +20,21 @@ log = logging.getLogger("multitracker.logic")
 
 
 @contextlib.contextmanager
+def patch_attr(owner: Any, name: str, value: Any):
+    """Temporarily replace owner.name; restores exactly (deletes it if it was only inherited)."""
+    own = name in vars(owner)
+    original = vars(owner).get(name)
+    setattr(owner, name, value)
+    try:
+        yield
+    finally:
+        if own:
+            setattr(owner, name, original)
+        else:
+            delattr(owner, name)
+
+
+@contextlib.contextmanager
 def _twwhd(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
     with _twwhd_entrances(world_cls, slot_data), _twwhd_required_bosses(world_cls, location_ids):
         yield
@@ -128,7 +143,10 @@ def _ori_wotw(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]
         return
 
     def _get(self):
-        return self.__dict__["spawn_region_name"]
+        try:
+            return self.__dict__["spawn_region_name"]
+        except KeyError:
+            raise AttributeError("spawn_region_name") from None
 
     def _set(self, value):
         self.__dict__["spawn_region_name"] = value
@@ -149,12 +167,11 @@ def _ori_wotw(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]
         finally:
             self.options.spawn.value = spawn
 
-    world_cls.create_regions = create_regions
     try:
-        yield
+        with patch_attr(world_cls, "create_regions", create_regions):
+            yield
     finally:
         del world_cls.spawn_region_name  # instances keep their values in __dict__
-        world_cls.create_regions = original_create_regions
 
 
 def apply_options(world, slot_data: dict[str, Any], names: list[str]) -> None:
@@ -189,11 +206,8 @@ def _mkwii(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         self.starting_kart = slot_data.get("starting_kart")
         self.starting_bike = slot_data.get("starting_bike")
 
-    world_cls.generate_early = generate_early
-    try:
+    with patch_attr(world_cls, "generate_early", generate_early):
         yield
-    finally:
-        world_cls.generate_early = original
 
 
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {

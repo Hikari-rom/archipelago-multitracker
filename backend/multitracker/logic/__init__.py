@@ -27,6 +27,7 @@ class LogicResult:
     state: str
     in_logic: list[int] = field(default_factory=list)
     message: str | None = None
+    regions: dict[int, str] = field(default_factory=dict)  # location id -> region name (when known)
     computed_at: float = field(default_factory=time.time)
     seconds: float | None = None
 

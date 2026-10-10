@@ -54,7 +54,8 @@ class FakeWebHost:
 
 
 @pytest.fixture
-def webhost():
+def webhost(monkeypatch):
+    monkeypatch.setenv("MT_ROOM_HOSTS", "127.0.0.1")  # the fake WebHost runs locally over http
     fake = FakeWebHost()
     yield fake
     fake.close()
@@ -148,3 +149,31 @@ async def _eventually(predicate, timeout: float = 15.0):
             return
         await asyncio.sleep(0.1)
     raise AssertionError("timed out")
+
+
+def test_room_targets_are_restricted(monkeypatch):
+    from multitracker.room import RoomError, fetch_room
+    monkeypatch.delenv("MT_ROOM_HOSTS", raising=False)
+    for url in ("http://archipelago.gg/room/AbCdEfGhIjKl",        # not https
+                "https://192.168.1.1/room/AbCdEfGhIjKl",          # not an allowed site
+                "https://evil.example/room/AbCdEfGhIjKl"):
+        with pytest.raises(RoomError):
+            fetch_room(url, 2.0)
+
+
+async def test_cross_site_writes_are_refused(tmp_path):
+    import httpx
+    from multitracker.api import create_app
+    from multitracker.config import RoomConfig
+    from multitracker.service import Service
+    from multitracker.store import Store
+    cfg = RoomConfig(server="127.0.0.1:1", slots=[], path=tmp_path / "room.yaml")
+    app = create_app(lambda: Service(cfg, Store(tmp_path / "db.sqlite3")), frontend_dist=None)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://pi:42753") as client:
+            r = await client.put("/api/config", json={"server": "x:1", "slots": []},
+                                 headers={"origin": "https://evil.example"})
+            assert r.status_code == 403
+            r = await client.put("/api/config", json={"server": "x:1", "slots": []},
+                                 headers={"origin": "http://pi:42753"})
+            assert r.status_code == 200

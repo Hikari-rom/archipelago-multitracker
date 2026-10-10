@@ -18,3 +18,4 @@ config/apworlds.cache/
 frontend/node_modules/
 config/players/*
 !config/players/.gitkeep
+config/*.tmp

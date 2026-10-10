@@ -52,21 +52,50 @@ def _balatro(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
 
 @contextlib.contextmanager
 def _tloz_ph(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
-    """Phantom Hourglass: by default Universal Tracker leaves every randomized entrance disconnected until the
-    player walks through it (deferred connections), so the shuffled areas look unreachable. The slot's full
-    entrance pairing is in slot_data["er_pairings"] (sent to the client, no spoiler): the world reconnects all
-    of them from slot_data when `multiworld.enforce_deferred_connections == "off"`, so set that for this slot."""
-    original = world_cls.generate_early
+    """Phantom Hourglass.
+    1. By default Universal Tracker leaves every randomized entrance disconnected until the player walks
+       through it (deferred connections), so the shuffled areas look unreachable. The slot's full entrance
+       pairing is in slot_data["er_pairings"] (sent to the client, no spoiler): the world reconnects all of
+       them from slot_data when `multiworld.enforce_deferred_connections == "off"`.
+    2. In a UT regeneration (`generation_is_fake`) the key rules (Mountain Passage, Temple of Fire...) switch
+       to a conservative "keys may have been wasted" variant (events `_is_ut` / `_is_not_ut`, option
+       ut_smart_keys) that disagrees with the generator's own logic, both ways. The app wants the generator's
+       logic: create `_is_not_ut` instead of `_is_ut` and make the ph_is_ut predicate answer False."""
+    pkg = world_cls.__module__
+    preds = importlib.import_module(f"{pkg}.data.LogicPredicates")
+    original_create_events = world_cls.create_events
+    original_generate_early = world_cls.generate_early
+    original_pred = preds.ph_is_ut
+    table_keys = [k for k, v in vars(preds).items() if isinstance(v, dict) and v.get("is_ut") is original_pred]
 
     def generate_early(self) -> None:
         self.multiworld.enforce_deferred_connections = "off"
-        original(self)
+        original_generate_early(self)
+
+    def create_events(self) -> None:
+        was = self.is_ut
+        self.is_ut = False  # only for the `_is_ut` / `_is_not_ut` event choice
+        try:
+            original_create_events(self)
+        finally:
+            self.is_ut = was
+
+    def not_ut(state, player) -> bool:
+        return False
 
     world_cls.generate_early = generate_early
+    world_cls.create_events = create_events
+    preds.ph_is_ut = not_ut
+    for k in table_keys:
+        getattr(preds, k)["is_ut"] = not_ut
     try:
         yield
     finally:
-        world_cls.generate_early = original
+        world_cls.generate_early = original_generate_early
+        world_cls.create_events = original_create_events
+        preds.ph_is_ut = original_pred
+        for k in table_keys:
+            getattr(preds, k)["is_ut"] = original_pred
 
 
 ADAPTERS_M7: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {

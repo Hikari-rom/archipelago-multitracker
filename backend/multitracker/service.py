@@ -45,6 +45,8 @@ class Service:
         self.room_error: str | None = None
         self._room_task: asyncio.Task | None = None
         self._room_checked_at = 0.0
+        self._room_woken_at = 0.0
+        self._reload_lock = asyncio.Lock()
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
@@ -65,25 +67,31 @@ class Service:
             tracker.start()
 
     async def _stop_trackers(self) -> None:
-        for task in [*self._logic_tasks.values(), self._publish_task, self._room_task]:
-            if task is not None:
-                task.cancel()
+        # Trackers first (stopping them may still schedule logic/publish tasks), then every task.
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
-        if self._publish_task is not None:  # stopping the trackers may have scheduled one last publish
-            self._publish_task.cancel()
+        tasks = [t for t in [*self._logic_tasks.values(), self._publish_task, self._room_task] if t is not None]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
         self.trackers, self.logic, self._logic_tasks = {}, {}, {}
         self._logic_dirty, self._publish_pending = set(), set()
+        self._publish_task = self._room_task = None
 
     async def stop(self) -> None:
         await self._stop_trackers()
         await self.logic_engine.stop()
 
-    async def reload(self, config: RoomConfig) -> None:
-        """Apply a new room configuration (from the web UI) without restarting the app."""
-        await self._stop_trackers()
-        self.config = config
-        self.slot_configs = {s.name: s for s in config.slots}
-        self._start_trackers()
+    async def reload(self, config: RoomConfig, before_start=None) -> None:
+        """Apply a new room configuration (from the web UI) without restarting the app.
+        `before_start` (e.g. saving the file) runs under the same lock, between stop and start."""
+        async with self._reload_lock:
+            await self._stop_trackers()
+            if before_start is not None:
+                before_start()
+            self.config = config
+            self.slot_configs = {s.name: s for s in config.slots}
+            self.room_error, self._room_checked_at, self._room_woken_at = None, 0.0, 0.0
+            self._start_trackers()
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
 
     # -- archipelago.gg room: the port changes when a sleeping room wakes up ------------------
@@ -95,12 +103,17 @@ class Service:
         if not force and time.monotonic() - self._room_checked_at < min_interval:
             return
         self._room_checked_at = time.monotonic()
-        self._room_task = asyncio.create_task(self._refresh_room())
+        # Loading the room page wakes a sleeping room up: do it at most every 10 minutes, so that a room
+        # stopped on purpose is not kept awake by the tracker alone.
+        wake = time.monotonic() - self._room_woken_at > 600
+        if wake:
+            self._room_woken_at = time.monotonic()
+        self._room_task = asyncio.create_task(self._refresh_room(wake))
 
-    async def _refresh_room(self) -> None:
+    async def _refresh_room(self, wake: bool = True) -> None:
         from .room import RoomError, fetch_room
         try:
-            info = await asyncio.to_thread(fetch_room, self.config.room_url, 15.0, True)
+            info = await asyncio.to_thread(fetch_room, self.config.room_url, 15.0, wake)
         except RoomError as exc:
             self.room_error = str(exc)
             log.warning("room refresh failed: %s", exc)
@@ -311,6 +324,7 @@ class Service:
         in_logic = [{
             "id": loc,
             "name": self.datapackage.location_name(st.game, loc),
+            "region": logic.regions.get(loc),
             "hint": ({"item": hinted[loc]["item"], "receiver": hinted[loc]["receiver"],
                       "progression": hinted[loc]["progression"]} if loc in hinted else None),
         } for loc in logic.in_logic]

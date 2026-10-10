@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+from urllib.parse import urlparse
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -51,7 +53,7 @@ def _rel(path: Path | None) -> str | None:
     try:
         return str(Path(path).resolve().relative_to(ROOT))
     except ValueError:
-        return str(path)
+        return Path(path).name  # never expose the filesystem layout
 
 
 def create_app(service_factory: Callable[[], Service], frontend_dist: Path | None = FRONTEND_DIST) -> FastAPI:
@@ -95,7 +97,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 "player_yamls": sorted(_rel(p) for p in PLAYERS_DIR.glob("*.y*ml"))}
 
     @app.post("/api/discover")
-    async def discover(body: DiscoverBody) -> dict[str, Any]:
+    async def discover(body: DiscoverBody, request: Request) -> dict[str, Any]:
+        same_origin(request)
         from .room import RoomError, fetch_room
         try:
             info = await asyncio.to_thread(fetch_room, body.url, 15.0, True)
@@ -104,8 +107,18 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         return {"room_url": info.url, "server": info.server,
                 "players": [{"name": n, "game": g} for n, g in info.players]}
 
+    def same_origin(request: Request) -> None:
+        """Refuse cross-site writes (a page on another site making the browser call this API)."""
+        origin = request.headers.get("origin")
+        if not origin or urlparse(origin).netloc == request.headers.get("host"):
+            return
+        extra = {o.strip().rstrip("/") for o in os.environ.get("MT_ALLOWED_ORIGINS", "").split(",") if o.strip()}
+        if origin.rstrip("/") not in extra:  # e.g. a reverse proxy / vite dev server: MT_ALLOWED_ORIGINS
+            raise HTTPException(403, "origine refusée (voir MT_ALLOWED_ORIGINS)")
+
     @app.put("/api/config")
     async def put_config(body: ConfigBody, request: Request) -> dict[str, Any]:
+        same_origin(request)
         service = get_service(request)
         current = service.config
         try:
@@ -127,8 +140,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         new = RoomConfig(server=(body.server or "").strip(), slots=slots, path=current.path,
                          password=current.password if body.password is None else body.password,
                          room_url=(body.room_url or "").strip() or None)
-        save_config(new)
-        await service.reload(new)
+        await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 
     @app.get("/api/slots/{name:path}")
@@ -139,6 +151,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
 
     @app.post("/api/slots/{name:path}/seen")
     async def mark_seen(name: str, request: Request, body: SeenBody | None = None) -> dict[str, Any]:
+        same_origin(request)
         service = get_service(request)
         require_slot(service, name)
         try:

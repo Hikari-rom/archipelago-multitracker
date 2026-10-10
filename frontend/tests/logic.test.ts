@@ -69,3 +69,26 @@ describe('summaryText', () => {
     expect(summaryText([])).toBe('Aucun jeu où avancer en logique')
   })
 })
+
+import { groupLocations } from '../src/lib/logic'
+
+describe('groupLocations', () => {
+  const loc = (id: number, name: string, region: string | null, hint = false) => ({
+    id, name, region, hint: hint ? { item: 'X', receiver: 'Y', progression: true } : null,
+  })
+  it('keeps short lists flat, hinted first', () => {
+    const g = groupLocations([loc(1, 'a', 'R1'), loc(2, 'b', 'R2', true)])
+    expect(g.map((x) => x.title)).toEqual(['Hintées', 'Autres'])
+  })
+  it('groups long lists by region', () => {
+    const locs = Array.from({ length: 14 }, (_, i) => loc(i, `l${i}`, i % 2 ? 'Zone B' : 'Zone A'))
+    const g = groupLocations(locs)
+    expect(g.map((x) => x.title)).toEqual(['Zone A', 'Zone B'])
+    expect(g[0].locations).toHaveLength(7)
+  })
+  it('does not group when regions are unknown', () => {
+    const g = groupLocations(Array.from({ length: 20 }, (_, i) => loc(i, `l${i}`, null)))
+    expect(g).toHaveLength(1)
+    expect(g[0].title).toBeNull()
+  })
+})

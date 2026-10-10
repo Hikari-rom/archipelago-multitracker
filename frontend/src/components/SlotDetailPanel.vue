@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { hintInMyWorld, hintMineElsewhere } from '../lib/logic'
+import { groupLocations, hintInMyWorld, hintMineElsewhere } from '../lib/logic'
 import type { Hint, ItemEntry, SlotDetail } from '../lib/types'
 import Section from './Section.vue'
 
@@ -11,6 +11,7 @@ const allItems = computed(() => [...props.detail.items_list].sort((a, b) => b.in
 const sortFound = (hs: Hint[]) => [...hs].sort((a, b) => Number(a.found) - Number(b.found))
 const mine = computed(() => sortFound(props.detail.hints_mine_elsewhere))
 const world = computed(() => sortFound(props.detail.hints_in_my_world))
+const groups = computed(() => groupLocations(props.detail.in_logic_locations))
 
 function kind(i: { progression: boolean; useful: boolean; trap: boolean }) {
   if (i.trap) return { sym: '⚠', label: 'piège', cls: 'trap' }
@@ -32,14 +33,19 @@ const from = (i: ItemEntry) =>
   <div class="detail">
     <Section :title="`Locations en logique (${detail.in_logic_locations.length})`">
       <p v-if="!detail.in_logic_locations.length" class="muted">Aucune location en logique.</p>
-      <ul v-else class="list">
-        <li v-for="l in detail.in_logic_locations" :key="l.id" :class="{ hl: !!l.hint }">
-          <span class="main">{{ l.name }}</span>
-          <span v-if="l.hint" class="hintline" :class="{ prog: l.hint.progression }">
-            → {{ l.hint.item }} pour {{ l.hint.receiver }}
-          </span>
-        </li>
-      </ul>
+      <template v-else>
+        <template v-for="g in groups" :key="g.title ?? '_'">
+          <h4 v-if="g.title" class="group">{{ g.title }} <span class="muted">({{ g.locations.length }})</span></h4>
+          <ul class="list">
+            <li v-for="l in g.locations" :key="l.id" :class="{ hl: !!l.hint }">
+              <span class="main">{{ l.name }}</span>
+              <span v-if="l.hint" class="hintline" :class="{ prog: l.hint.progression }">
+                → {{ l.hint.item }} pour {{ l.hint.receiver }}
+              </span>
+            </li>
+          </ul>
+        </template>
+      </template>
     </Section>
 
     <Section title="Nouveaux items">
