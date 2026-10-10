@@ -1,0 +1,133 @@
+# Source of each game's apworld. Editable by hand, then run:
+#   .venv/bin/python scripts/fetch_apworlds.py            (downloads what is missing)
+#   .venv/bin/python scripts/fetch_apworlds.py --update   (re-resolves "latest" tags)
+# Resolved versions are written to config/apworlds.lock.yaml.
+#
+# Keys:
+#   game              exact `game` name of the World (as seen in the datapackage)
+#   source            core (ships with Archipelago 0.6.7) | github
+#   repo              owner/name of the GitHub repository (source: github)
+#   tag               "latest" (newest non-draft release) or a pinned tag
+#   asset             glob matching the .apworld asset of the release
+#   allow_prerelease  accept prereleases when tag is "latest" (default false)
+#   filename          optional: name to save the asset as in custom_worlds/
+
+apworlds:
+  celeste_open_world: {game: "Celeste (Open World)", source: core}
+  kh2: {game: "Kingdom Hearts 2", source: core}
+  jakanddaxter: {game: "Jak and Daxter: The Precursor Legacy", source: core}
+  sm64ex: {game: "Super Mario 64", source: core}
+  oot: {game: "Ocarina of Time", source: core}
+
+  twwhd:
+    game: "The Wind Waker HD"
+    source: github
+    repo: Teotia444/twwhd-apworld
+    tag: latest
+    asset: "*.apworld"
+  smo:
+    game: "Spicy Meatball Overdrive"  # SMO apworld registers under this name
+    source: github
+    repo: mdietz94/smo_archipelago
+    tag: v1.5.3
+    asset: "*.apworld"
+  oribf:
+    game: "Ori and the Blind Forest"
+    source: github
+    repo: c-ostic/Archipelago
+    tag: latest
+    asset: "oribf.apworld"
+  ori_wotw:
+    game: "Ori and the Will of the Wisps"
+    source: github
+    repo: Satisha10/APwotw_release
+    tag: latest
+    asset: "*.apworld"
+  balatro:
+    game: "Balatro"
+    source: github
+    repo: BurndiL/BalatroAP
+    tag: latest
+    asset: "*.apworld"
+  slay_the_spire:
+    game: "Slay the Spire"
+    source: github
+    repo: cjmang/StS-AP-World
+    tag: latest
+    asset: "*.apworld"
+  khbbs:
+    game: "Kingdom Hearts Birth by Sleep"
+    source: github
+    repo: gaithernOrg/ArchipelagoKHBBS
+    tag: latest
+    asset: "*.apworld"
+  jak3:
+    game: "Jak 3"
+    source: github
+    repo: Blake645/Archipelago
+    tag: latest
+    asset: "jak3*.apworld"
+  tloz_ph:
+    game: "The Legend of Zelda - Phantom Hourglass"
+    source: github
+    repo: carrotinator/Archipelago
+    tag: ph-v0.10.1
+    asset: "tloz_ph*.apworld"
+  pokemon_platinum:
+    game: "Pokemon Platinum"
+    source: github
+    repo: ljtpetersen/platinum_archipelago
+    tag: latest
+    asset: "*.apworld"
+  pokemon_bw:
+    game: "Pokemon Black and White"
+    source: github
+    repo: BlastSlimey/PokemonBWAP
+    tag: latest
+    asset: "*.apworld"
+  pokepark:
+    game: "PokePark"
+    source: github
+    repo: Mekurushi/Archipelago_Pokepark
+    tag: latest
+    asset: "*.apworld"
+  rac2:
+    game: "Ratchet & Clank 2"
+    source: github
+    repo: evilwb/APRac2
+    tag: latest
+    asset: "*.apworld"
+  rac3:
+    game: "Ratchet and Clank 3"
+    source: github
+    repo: Taoshix/Archipelago-RaC3
+    tag: latest
+    asset: "*.apworld"
+  aeminecraft:
+    game: "AEMinecraft"
+    source: github
+    repo: KuroLynx/AEMinecraft
+    tag: v0.6.2
+    asset: "*.apworld"
+  tboir:
+    game: "The Binding of Isaac Repentance"
+    source: github
+    repo: NaveTK/Archipelago
+    tag: latest
+    asset: "tboir*.apworld"
+  mkwii:
+    game: "Mario Kart Wii"
+    source: github
+    repo: toent/Archipelago-MKWii
+    tag: latest
+    asset: "*.apworld"
+
+# Not a game: Universal Tracker, used headless as the logic engine.
+# Tracker_v0.3.0 is the newest release whose core is Archipelago 0.6.7 (v0.3.1+ target 0.6.8).
+tools:
+  universal_tracker:
+    game: "Universal Tracker"
+    source: github
+    repo: FarisTheAncient/Archipelago
+    tag: Tracker_v0.3.0
+    asset: "tracker.apworld"

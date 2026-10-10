@@ -8,11 +8,11 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Commit + push M0
 
 ## M1 — Archipelago headless sur le Pi
-- [ ] `scripts/bootstrap.sh` idempotent : clone AP 0.6.7, venv, deps sans GUI
-- [ ] Choisir la release Universal Tracker compatible 0.6.7, vérifier sa licence
-- [ ] `config/apworlds.yaml` (22 jeux) + `scripts/fetch_apworlds.py` + `apworlds.lock.yaml`
-- [ ] Étude de compatibilité : chaque apworld se charge sur 0.6.7 (script `scripts/check_apworlds.py`)
-- [ ] Première version de `docs/COMPAT.md`
+- [x] `scripts/bootstrap.sh` idempotent : clone AP 0.6.7, venv, deps sans GUI
+- [x] Choisir la release Universal Tracker compatible 0.6.7, vérifier sa licence
+- [x] `config/apworlds.yaml` (22 jeux) + `scripts/fetch_apworlds.py` + `apworlds.lock.yaml`
+- [x] Étude de compatibilité : chaque apworld se charge sur 0.6.7 (script `scripts/check_apworlds.py`)
+- [x] Première version de `docs/COMPAT.md`
 - [ ] Relecture M1 + commit/push + notif
 
 ## M2 — Environnement de test
