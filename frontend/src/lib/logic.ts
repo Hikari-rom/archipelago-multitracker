@@ -103,24 +103,44 @@ export interface LocationGroup {
   locations: LogicLocation[]
 }
 
-/** Hinted locations first, then grouped by region when the list is long and regions are known. */
+/** Prefix of a location name used as an area: "FJ: Foo" -> "FJ", "Forsaken City - Foo" -> "Forsaken City". */
+export function namePrefix(name: string): string | null {
+  const m = /^(.{2,40}?)(?::\s| - )/.exec(name)
+  return m ? m[1].trim() : null
+}
+
+function groupBy(locs: LogicLocation[], key: (l: LogicLocation) => string | null): Map<string, LogicLocation[]> {
+  const out = new Map<string, LogicLocation[]>()
+  for (const l of locs) {
+    const k = key(l) || 'Autres'
+    if (!out.has(k)) out.set(k, [])
+    out.get(k)!.push(l)
+  }
+  return out
+}
+
+/** Hinted locations first; long lists are grouped by region or by name prefix, whichever gives
+ * readable groups (several groups, about 3+ locations each on average); otherwise a flat list. */
 export function groupLocations(locs: LogicLocation[], threshold = 12): LocationGroup[] {
   const hinted = locs.filter((l) => l.hint)
   const rest = locs.filter((l) => !l.hint)
   const groups: LocationGroup[] = []
   if (hinted.length) groups.push({ title: 'Hintées', locations: hinted })
-  if (locs.length <= threshold || !rest.some((l) => l.region)) {
+  let best: Map<string, LogicLocation[]> | null = null
+  if (locs.length > threshold) {
+    for (const key of [(l: LogicLocation) => l.region ?? null, (l: LogicLocation) => namePrefix(l.name)]) {
+      if (!rest.some((l) => key(l))) continue
+      const g = groupBy(rest, key)
+      const readable = g.size > 1 && rest.length / g.size >= 3
+      if (readable && (!best || g.size < best.size)) best = g
+    }
+  }
+  if (!best) {
     if (rest.length) groups.push({ title: hinted.length ? 'Autres' : null, locations: rest })
     return groups
   }
-  const byRegion = new Map<string, LogicLocation[]>()
-  for (const l of rest) {
-    const key = l.region || 'Autres'
-    if (!byRegion.has(key)) byRegion.set(key, [])
-    byRegion.get(key)!.push(l)
-  }
-  for (const key of [...byRegion.keys()].sort((a, b) => a.localeCompare(b))) {
-    groups.push({ title: key, locations: byRegion.get(key)! })
+  for (const key of [...best.keys()].sort((a, b) => a.localeCompare(b))) {
+    groups.push({ title: key, locations: best.get(key)! })
   }
   return groups
 }

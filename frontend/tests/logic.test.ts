@@ -70,7 +70,7 @@ describe('summaryText', () => {
   })
 })
 
-import { groupLocations } from '../src/lib/logic'
+import { groupLocations, namePrefix } from '../src/lib/logic'
 
 describe('groupLocations', () => {
   const loc = (id: number, name: string, region: string | null, hint = false) => ({
@@ -86,9 +86,19 @@ describe('groupLocations', () => {
     expect(g.map((x) => x.title)).toEqual(['Zone A', 'Zone B'])
     expect(g[0].locations).toHaveLength(7)
   })
-  it('does not group when regions are unknown', () => {
+  it('does not group when regions and prefixes are unknown', () => {
     const g = groupLocations(Array.from({ length: 20 }, (_, i) => loc(i, `l${i}`, null)))
     expect(g).toHaveLength(1)
     expect(g[0].title).toBeNull()
+  })
+  it('prefers name prefixes when regions are too fine', () => {
+    const locs = Array.from({ length: 20 }, (_, i) => loc(i, `${i < 10 ? 'FJ' : 'SV'}: thing ${i}`, `micro region ${i}`))
+    const g = groupLocations(locs)
+    expect(g.map((x) => x.title)).toEqual(['FJ', 'SV'])
+  })
+  it('extracts name prefixes', () => {
+    expect(namePrefix('Forsaken City - Strawberry 1')).toBe('Forsaken City')
+    expect(namePrefix('FJ: Scout Fly')).toBe('FJ')
+    expect(namePrefix('Fisherman\'s Boat')).toBeNull()
   })
 })
