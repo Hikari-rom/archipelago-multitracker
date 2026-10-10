@@ -108,7 +108,7 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 - [x] Diagnostic par slot : jeu sans apworld (niveau 1 seulement), logique pas encore validée, yaml nécessaire mais absent, yaml d'un autre jeu ou d'un autre nom, yaml illisible ; résumé avant d'enregistrer ; case « Réveiller automatiquement la room » ; bouton « Restaurer la configuration précédente » ; bandeau « Room endormie » + « Réveiller maintenant » sur le tableau de bord
 - [x] Options `random` non résolues par le `slot_data` — déjà remontées dans le message de logique du slot ; la carte les affiche maintenant en avertissement visible : les remonter dans l'état de la logique du slot (API + carte) au lieu de les ignorer en silence
 - [ ] Brancher la vraie room de Romain via la page Configuration (Playwright) — **fait le 2026-10-11 vers 02 h** (22 slots, 19 avec logique, ancienne config de test en `.bak`, serveur de test local arrêté) ; la room dort (11 h sans activité) : reste à vérifier connexion, logique, RAM et temps quand quelqu'un l'aura ouverte : tous ses slots connectés, logique calculée pour les jeux activés, aucune erreur dans `data/logs/app.log`, RAM et temps de calcul relevés, captures, écarts avec la room de test notés ; arrêter ensuite le serveur de test local. La room dort : ne pas la réveiller juste pour ce test, attendre qu'elle soit éveillée ou marquer « à vérifier par Romain »
-- [ ] README, `docs/API.md` et « À faire par Romain » mis à jour (procédure réelle, nouvelles routes)
+- [x] README, `docs/API.md` et « À faire par Romain » mis à jour (procédure réelle, nouvelles routes)
 - [ ] Relecture M11 + commit/push + notif
 
 ## M12 — Historique et tri (demandé par Romain le 2026-10-11)

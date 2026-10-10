@@ -71,11 +71,11 @@
   7. pas de test du mot de passe avant d'enregistrer, pas de retour en arrière.
 
 ## À faire par Romain
-- **Brancher la vraie room** : ouvrir l'app → Configuration → coller le lien de la room archipelago.gg,
-  le mot de passe, cocher tes slots, choisir les yamls. Les yamls doivent être copiés avant dans
-  `config/players/` sur le Pi. (`config/room.yaml` pointe actuellement vers le multiworld de test local.)
-- Pour les jeux sans logique « sans yaml » (Celeste, KH2, Jak, TWW HD, SM64, SMO, Ori BF, KH BBS, Jak 3, R&C 2,
-  AEMinecraft), le yaml est **nécessaire** à la logique.
+- **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
+  se connecte dès que quelqu'un l'ouvre (ou bouton « Réveiller maintenant »). Pour revenir au multiworld de test :
+  Configuration → « Restaurer la configuration précédente » (et relancer le serveur de test,
+  `.venv/bin/python scripts/testenv/serve.py start`).
+- `config/room.real.yaml` a servi à la mise en place ; tu peux le supprimer (le mot de passe est dans `config/room.yaml`).
 - **Démarrage automatique** (optionnel) : `scripts/app.sh stop`, puis
   `mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/ && systemctl --user daemon-reload && systemctl --user enable --now multitracker`
   et `sudo loginctl enable-linger romain`.
@@ -84,7 +84,6 @@
 - **Avant la nuit** : remplir `room_url` et `password` dans `config/room.real.yaml` (gitignoré, déjà créé avec
   tes 22 slots ; les yamls sont copiés de `~/romaing` et `~/romaing/Validés` dans `config/players/romain/`). Puis, juste avant de lancer
   la session : `rm -f .overnight/STOP .overnight/continues`.
-- Serveur de test local (port 38281) lancé pour la démo : `.venv/bin/python scripts/testenv/serve.py stop` pour l'arrêter.
 
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration

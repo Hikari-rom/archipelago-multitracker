@@ -30,26 +30,42 @@ Rien n'est installé hors du dossier du projet.
 
 ## Configurer la room
 
-```bash
-cp config/room.example.yaml config/room.yaml   # room.yaml n'est jamais commité (mot de passe)
-```
+Le plus simple : ouvre l'app, bouton **Configuration**.
+1. **Room** : colle le lien `https://archipelago.gg/room/…` puis « Découvrir les slots ». L'app affiche le nombre de
+   slots et de jeux, le port, et si la room dort (bouton « Réveiller la room »). Mets le mot de passe et
+   « Tester la connexion » (une connexion d'essai en lecture seule).
+2. **Yamls** : « Importer des yamls » (un ou plusieurs fichiers, multi-documents acceptés) les range dans
+   `config/players/` (jamais commité). « Associer automatiquement » donne à chaque slot le yaml qui a le même `name`
+   (avec `{player}`/`{number}` gérés) et le même jeu.
+3. **Slots** : recherche, filtre par jeu, « Cocher les affichés », « Cocher ceux qui ont un yaml ». Sous chaque slot
+   coché, un diagnostic : pas d'apworld (suivi des checks seulement), logique pas encore validée, yaml nécessaire mais
+   absent, yaml d'un autre jeu ou d'un autre nom.
+4. **Enregistrer** : l'ancienne configuration est gardée (`config/room.yaml.bak`) et « Restaurer la configuration
+   précédente » la remet.
+
+Lien direct pour partager la page pré-remplie : `http://<ip-du-pi>:42753/#config?room=<lien de la room>`.
+
+**Room endormie** : une room archipelago.gg s'arrête après 2 h sans activité et change souvent de port au réveil.
+L'app suit le port tout seul. Par défaut elle ne réveille **pas** la room (elle ne la garde donc pas allumée) : le
+tableau de bord affiche « Room endormie » avec un bouton « Réveiller maintenant », et l'app se reconnecte dès que
+quelqu'un a ouvert la room. La case « Réveiller automatiquement la room » change ce comportement.
+
+À la main, `config/room.yaml` (copie de `config/room.example.yaml`, jamais commité) :
 
 ```yaml
-server: "archipelago.gg:38281"   # adresse de la room (wss:// puis ws:// sont essayés automatiquement)
+room_url: "https://archipelago.gg/room/AbC…"   # ou server: "host:port" pour un serveur hors archipelago.gg
 password: "le mot de passe"
+wake_room: false
 slots:
   - name: "Romain_Celeste"                # nom exact du slot
     game: "Celeste (Open World)"          # optionnel (le serveur le donne)
     yaml: "config/players/celeste.yaml"   # ton yaml pour ce jeu : nécessaire à la logique de certains jeux
 ```
 
-- Mets tes yamls dans `config/players/` (un fichier par jeu, ou un fichier multi-documents ; ce dossier
-  n'est pas commité).
 - Les jeux qui savent se régénérer depuis le `slot_data` (colonne « UT sans yaml » de `COMPAT.md`) n'ont pas besoin
-  du yaml. Pour les autres, sans yaml le badge affiche « Logique indisponible ».
+  du yaml ; les autres sont marqués `needs_yaml: true` dans `config/apworlds.yaml`.
 - Si ton yaml contient des options aléatoires (`random`, poids), l'app reprend la valeur réellement tirée quand
-  le jeu la met dans son `slot_data`, sinon elle prévient que la logique peut être approximative.
-- Sur archipelago.gg, une room endormie peut **changer de port** au réveil : mets à jour `server` puis relance l'app.
+  le jeu la met dans son `slot_data`, sinon la carte prévient que la logique peut être approximative.
 
 ## Lancer
 
