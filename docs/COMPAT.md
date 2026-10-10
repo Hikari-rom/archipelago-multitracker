@@ -39,7 +39,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | AEMinecraft | KuroLynx/AEMinecraft v0.6.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | v0.7.0-rc.1 (prerelease) ignorée. Logique activée |
 | The Binding of Isaac: Repentance | NaveTK/Archipelago v0.4.3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « The Binding of Isaac Repentance ». Logique activée |
 | Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 5/5 + e2e | Adaptateur : coupes/persos/véhicules de départ et options depuis `slot_data`. Logique activée |
-| The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ⏳ | ⏳ | En dernier. Génération de test sans ROM : `fill_slot_data` débloqué (champs client seulement) |
+| The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ 0/5 | **Logique impossible sans spoiler** : les récompenses de donjon (pierres/médaillons, y compris celle de la Poche de Link) sont des événements sans adresse placés au hasard ; ni le `slot_data` ni le serveur ne les transmettent. La régénération les place autrement → écarts dès la sphère 0, même avec les options par défaut. Niveau 1 seulement |
 
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
 Résultats bruts des campagnes : `test-output/logs/campaign.summary` et `test-output/logic_validation/` (non commités).

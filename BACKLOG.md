@@ -71,7 +71,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] AEMinecraft
 - [x] The Binding of Isaac: Repentance
 - [x] Mario Kart Wii — adaptateur
-- [ ] The Legend of Zelda: Ocarina of Time (en dernier)
+- [!] The Legend of Zelda: Ocarina of Time (en dernier) — bloqué : les récompenses de donjon (y compris la Poche de Link) sont des événements sans adresse placés au hasard ; ni le slot_data ni le serveur ne les donnent, donc la logique régénérée diverge dès la sphère 0 (2/2 seeds aux options par défaut, 3/3 aléatoires). Niveau 1 OK, logique désactivée. Voir COMPAT.md
 - [ ] Relecture M7 + commit/push + notif
 
 ## M8 — Bonus
