@@ -7,7 +7,8 @@ Usage:
 PLAYERS_DIR holds one yaml per slot. OUT_DIR receives AP_<seed>.zip (multidata + spoiler).
 
 By default the generation is *hostable*: every world's `generate_output` (the step that
-patches ROMs / writes game files) is replaced by a no-op, so no ROM is needed, but the
+patches ROMs / writes game files) and ROM presence checks (`assert_generate`) are replaced by
+no-ops, so no ROM is needed, but the
 multidata (`.archipelago`) and the spoiler are still written, which `--skip_output` would skip.
 `--skip-output` runs Archipelago's own `--skip_output` instead (fill only, nothing written).
 """
@@ -50,8 +51,15 @@ def main() -> int:
         def _no_output(self, output_directory: str) -> None:  # no ROM, no game files
             return None
 
+        def _no_rom_check(cls, multiworld) -> None:  # worlds like OoT check for their ROM before generating
+            return None
+
         for world_type in AutoWorldRegister.world_types.values():
             world_type.generate_output = _no_output
+            if "stage_assert_generate" in vars(world_type):
+                world_type.stage_assert_generate = classmethod(_no_rom_check)
+            if "assert_generate" in vars(world_type):
+                world_type.assert_generate = _no_output
         World.generate_output = _no_output
 
     argv = ["--player_files_path", str(players_dir), "--outputpath", str(out_dir),

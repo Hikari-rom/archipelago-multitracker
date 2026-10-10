@@ -118,9 +118,33 @@ def _sm64ex(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         module.shuffle_dict_keys, module.fix_reg = original_shuffle, original_fix
 
 
+@contextlib.contextmanager
+def _ori_wotw(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Ori and the Will of the Wisps (apworld bug, also affects Universal Tracker): its UT path sets
+    `spawn_region_name` from slot_data["spawn_anchor"] but leaves `spawn_area` at the randomly rolled
+    spawn, and keystone door costs depend on `spawn_area`. Keep both consistent while regenerating."""
+    if "spawn_region_name" in vars(world_cls):
+        yield  # the world changed its implementation: do nothing
+        return
+
+    def _get(self):
+        return self.__dict__["spawn_region_name"]
+
+    def _set(self, value):
+        self.__dict__["spawn_region_name"] = value
+        self.__dict__["spawn_area"] = str(value).split(".")[0]
+
+    world_cls.spawn_region_name = property(_get, _set)
+    try:
+        yield
+    finally:
+        del world_cls.spawn_region_name  # instances keep their values in __dict__
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "The Wind Waker HD": _twwhd,
     "Super Mario 64": _sm64ex,
+    "Ori and the Will of the Wisps": _ori_wotw,
 }
 
 

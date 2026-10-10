@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -30,7 +31,18 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:40]
 
 
-def run_once(game: str, companions: list[str], run: int, keep_default: bool) -> dict:
+def run_once(game: str, companions: list[str], run: int, keep_default: bool, retries: int = 3) -> dict:
+    """One validation run; random options that make the generation itself fail are re-rolled."""
+    res: dict = {}
+    for attempt in range(retries + 1):
+        res = _run_once(game, companions, run, keep_default, attempt)
+        if res.get("generated") is not False:
+            break
+    res["attempts"] = attempt + 1
+    return res
+
+
+def _run_once(game: str, companions: list[str], run: int, keep_default: bool, attempt: int) -> dict:
     import logic_reference as lr
     base = WORK / slug(game) / f"run{run}"
     players = base / "players"
@@ -46,7 +58,8 @@ def run_once(game: str, companions: list[str], run: int, keep_default: bool) -> 
             out.write_text(f'name: {name}\ngame: "{g}"\n"{g}": {{}}\n', encoding="utf-8")
         else:
             subprocess.run([sys.executable, str(ROOT / "scripts/testenv/random_yaml.py"), g, name, str(out),
-                            "--seed", str(run * 100 + i)], check=True, capture_output=True, timeout=300)
+                            "--seed", str(run * 100 + i + 10007 * attempt)], check=True, capture_output=True,
+                           timeout=300)
     gen = subprocess.run([sys.executable, str(ROOT / "scripts/testenv/generate.py"), str(players), str(base / "out"),
                           "--seed", str(run)], capture_output=True, text=True, timeout=1800)
     if gen.returncode != 0:
@@ -81,6 +94,11 @@ def run_once(game: str, companions: list[str], run: int, keep_default: bool) -> 
 
 
 def main() -> int:
+    # Some worlds iterate over sets while generating: the in-process regeneration only reproduces the
+    # hosted seed if string hashing is identical in every process involved.
+    if os.environ.get("PYTHONHASHSEED") != "0":
+        os.environ["PYTHONHASHSEED"] = "0"
+        os.execv(sys.executable, [sys.executable, *sys.argv])
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("game")
     parser.add_argument("--runs", type=int, default=5)

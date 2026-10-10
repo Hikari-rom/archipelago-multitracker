@@ -96,7 +96,7 @@ La logique d'un jeu ne s'affiche que s'il a `logic: true` dans `apworlds.yaml` (
 ## Développement et tests
 
 ```bash
-.venv/bin/python -m pytest -q          # backend : niveau 1, logique (référence + bout en bout), env de test
+scripts/test.sh -q                      # backend (PYTHONHASHSEED=0) : niveau 1, logique, env de test
 cd frontend && npm test && npm run build
 ```
 
