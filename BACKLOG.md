@@ -23,12 +23,12 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Relecture M2 + commit/push + notif
 
 ## M3 — Backend niveau 1
-- [ ] Squelette FastAPI + config (room.yaml) + SQLite
-- [ ] Client AP tracker (wss puis ws, tag Tracker, reconnexion auto, lecture seule)
-- [ ] Datapackage (cache), items reçus, checks, hints (data storage + SetNotify), but atteint
-- [ ] « Dernière visite » / nouveaux items + « Marquer comme vu »
-- [ ] API REST + SSE
-- [ ] Tests d'intégration contre le serveur local (bot → API)
+- [x] Squelette FastAPI + config (room.yaml) + SQLite
+- [x] Client AP tracker (wss puis ws, tag Tracker, reconnexion auto, lecture seule)
+- [x] Datapackage (cache), items reçus, checks, hints (data storage + SetNotify), but atteint
+- [x] « Dernière visite » / nouveaux items + « Marquer comme vu »
+- [x] API REST + SSE
+- [x] Tests d'intégration contre le serveur local (bot → API)
 - [ ] Relecture M3 + commit/push + notif
 
 ## M4 — Front Vue
