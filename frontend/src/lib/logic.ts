@@ -19,12 +19,27 @@ export function logicBadge(s: SlotSummary): Badge {
     }
     return { text: "Rien en logique pour l'instant", variant: 'neutral', secondary: l.message ?? undefined }
   }
-  if (l.state === 'pending') return { text: 'Calcul de la logique…', variant: 'pending' }
+  if (l.state === 'pending') {
+    if (s.status !== 'connected') return { text: 'En attente de connexion', variant: 'pending' }
+    return { text: 'Calcul de la logique…', variant: 'pending' }
+  }
   return {
     text: 'Logique indisponible pour ce jeu',
     variant: 'muted',
     secondary: l.message ?? undefined,
   }
+}
+
+/** Short, readable connection problem for a card (the raw error stays available as a tooltip). */
+export function connectionMessage(s: Pick<SlotSummary, 'status' | 'error'>, roomSleeping: boolean): string {
+  if (s.status === 'connected') return ''
+  if (roomSleeping) return 'Room endormie : connexion automatique dès qu\'elle se réveille.'
+  const e = s.error || ''
+  if (!e) return ''
+  if (e.startsWith('connexion refusée')) return e
+  if (/ConnectionError|ConnectionRefused|TimeoutError|OSError|adresse du serveur inconnue/.test(e))
+    return 'Serveur injoignable, nouvel essai automatique.'
+  return e.length > 160 ? e.slice(0, 157) + '…' : e
 }
 
 export function logicUnavailable(s: SlotSummary): boolean {

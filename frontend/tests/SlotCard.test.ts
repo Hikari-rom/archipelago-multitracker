@@ -22,6 +22,13 @@ describe('SlotCard', () => {
     expect(w.text()).toContain('2 nouveaux items')
   })
 
+  it('a warning on a computed logic (e.g. random yaml options) stands out', () => {
+    const w = mount(SlotCard, {
+      props: { summary: mk({ name: 'r', logic: { state: 'ok', count: 3, message: 'options aléatoires dans le yaml : goal' } }) },
+    })
+    expect(w.find('.logic-warning').text()).toContain('options aléatoires dans le yaml')
+  })
+
   it('shows unavailable message', () => {
     const w = mount(SlotCard, { props: { summary: mk({ name: 'k', logic: { state: 'unavailable', count: 0, message: 'pas dispo' } }) } })
     expect(w.text()).toContain('Logique indisponible pour ce jeu')

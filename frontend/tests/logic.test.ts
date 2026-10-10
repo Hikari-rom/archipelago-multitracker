@@ -106,3 +106,15 @@ describe('groupLocations', () => {
     expect(namePrefix('Fisherman\'s Boat')).toBeNull()
   })
 })
+
+describe('connection messages', () => {
+  it('shortens raw network errors and explains a sleeping room', async () => {
+    const { connectionMessage } = await import('../src/lib/logic')
+    const err = { status: 'disconnected' as const, error: "ConnectionError: wss://archipelago.gg:1: ConnectionRefusedError: [Errno 111]" }
+    expect(connectionMessage(err, false)).toBe('Serveur injoignable, nouvel essai automatique.')
+    expect(connectionMessage(err, true)).toMatch(/^Room endormie/)
+    expect(connectionMessage({ status: 'error', error: 'connexion refusée : InvalidPassword' }, false)).toBe('connexion refusée : InvalidPassword')
+    expect(connectionMessage({ status: 'connected', error: 'x' }, true)).toBe('')
+  })
+})
+

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import { ChevronRight, Star, Trophy } from '@lucide/vue'
+import { ChevronRight, Star, TriangleAlert, Trophy } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
+import { connectionMessage, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
 import SlotDetailPanel from './SlotDetailPanel.vue'
@@ -29,7 +29,8 @@ const busy = ref(false)
 const seenError = ref('')
 const panelId = 'detail-' + useId()
 const detailError = computed(() => tracker.detailError[props.summary.name])
-const stateMsg = computed(() => (props.summary.status === 'connected' ? '' : props.summary.error || ''))
+const stateMsg = computed(() => connectionMessage(props.summary, tracker.roomSleeping))
+const rawError = computed(() => (props.summary.status === 'connected' ? '' : props.summary.error || ''))
 
 async function onSeen() {
   busy.value = true
@@ -57,9 +58,9 @@ async function onSeen() {
           {{ summary.name }}<span v-if="summary.owner" class="italic"> · {{ summary.owner }}</span>
         </p>
       </div>
-      <StatusDot :status="summary.status" :label="statusLabel(summary.status)" :title="stateMsg || statusLabel(summary.status)" />
+      <StatusDot :status="summary.status" :label="statusLabel(summary.status)" :title="rawError || statusLabel(summary.status)" />
     </header>
-    <p v-if="stateMsg" class="text-destructive text-sm">{{ stateMsg }}</p>
+    <p v-if="stateMsg" :class="cn('text-sm', tracker.roomSleeping ? 'text-muted-foreground' : 'text-destructive')" :title="rawError">{{ stateMsg }}</p>
 
     <p v-if="summary.goal" class="text-good-foreground flex items-center gap-1.5 font-semibold">
       <Trophy class="size-4" aria-hidden="true" /> But atteint
@@ -77,7 +78,12 @@ async function onSeen() {
       <Badge :variant="badgeVariant" :class="cn('rounded-lg px-3 py-1.5 text-sm whitespace-normal', badge.variant === 'good' && 'font-semibold')" :title="badge.secondary">
         {{ badge.text }}
       </Badge>
-      <p v-if="badge.secondary" class="text-muted-foreground text-xs">{{ badge.secondary }}</p>
+      <p
+        v-if="badge.secondary"
+        :class="cn('text-xs', summary.logic.state === 'ok' ? 'logic-warning bg-warn text-warn-foreground flex items-start gap-1 rounded px-1.5 py-0.5' : 'text-muted-foreground')"
+      >
+        <TriangleAlert v-if="summary.logic.state === 'ok'" class="mt-px size-3.5 shrink-0" aria-hidden="true" />{{ badge.secondary }}
+      </p>
 
       <Badge v-if="summary.hints.in_my_world_in_logic > 0" variant="warn" class="hinted px-3 py-1 text-sm font-semibold">
         <Star aria-hidden="true" />
