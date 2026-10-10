@@ -51,10 +51,10 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Lancement prod sur 0.0.0.0:42753 (script start/stop, PID dans `.run/`)
 - [x] Fichier service systemd --user préparé + commandes dans « À faire par Romain »
 - [x] README.md en français (installation, config room, lancement, mise à jour d'un apworld)
-- [ ] Relecture M6 + commit/push + notif
+- [x] Relecture M6 + commit/push + notif
 
 ## M7 — Étendre la logique
-- [ ] Super Mario 64 (sm64ex)
+- [x] Super Mario 64 (sm64ex) — adaptateur area rando, 6/6 seeds
 - [ ] Super Mario Odyssey
 - [ ] Ori and the Blind Forest
 - [ ] Ori and the Will of the Wisps

@@ -18,7 +18,7 @@ apworlds:
   celeste_open_world: {game: "Celeste (Open World)", source: core, logic: true}
   kh2: {game: "Kingdom Hearts 2", source: core, logic: true}
   jakanddaxter: {game: "Jak and Daxter: The Precursor Legacy", source: core, logic: true}
-  sm64ex: {game: "Super Mario 64", source: core}
+  sm64ex: {game: "Super Mario 64", source: core, logic: true}
   oot: {game: "Ocarina of Time", source: core}
 
   twwhd:

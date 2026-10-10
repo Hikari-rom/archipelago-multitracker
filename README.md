@@ -19,7 +19,7 @@ de message ni de demande de hint.
 Prérequis : Python 3.11 à 3.13 avec `venv`, Node 20+, git.
 
 ```bash
-git clone git@github.com:Hikari-rom/archipelago-multitracker.git
+git clone https://github.com/Hikari-rom/archipelago-multitracker.git
 cd archipelago-multitracker
 bash scripts/bootstrap.sh
 ```
@@ -43,7 +43,8 @@ slots:
     yaml: "config/players/celeste.yaml"   # ton yaml pour ce jeu : nécessaire à la logique de certains jeux
 ```
 
-- Mets tes yamls dans `config/players/` (un fichier par jeu, ou un fichier multi-documents).
+- Mets tes yamls dans `config/players/` (un fichier par jeu, ou un fichier multi-documents ; ce dossier
+  n'est pas commité).
 - Les jeux qui savent se régénérer depuis le `slot_data` (colonne « UT sans yaml » de `COMPAT.md`) n'ont pas besoin
   du yaml. Pour les autres, sans yaml le badge affiche « Logique indisponible ».
 - Si ton yaml contient des options aléatoires (`random`, poids), l'app reprend la valeur réellement tirée quand
@@ -65,9 +66,16 @@ Démarrage automatique (service utilisateur systemd, voir `deploy/multitracker.s
 mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/
 systemctl --user daemon-reload && systemctl --user enable --now multitracker
 sudo loginctl enable-linger romain   # une fois : garder le service actif sans session ouverte
+journalctl --user -u multitracker -f # logs du service
 ```
 
+N'utilise pas `scripts/app.sh` et le service en même temps (même port) : `scripts/app.sh stop` avant d'activer le service.
+
 Depuis le téléphone : `http://<ip-tailscale-du-pi>:42753` (l'app écoute sur toutes les interfaces).
+
+**Sécurité** : il n'y a pas d'authentification. Toute machine du réseau local (ou du tailnet) peut lire ta
+progression, tes items et tes hints (jamais le mot de passe de la room). Pour limiter l'accès à la machine
+elle-même : `MT_HOST=127.0.0.1 scripts/app.sh start`.
 
 ## Mettre à jour un apworld
 

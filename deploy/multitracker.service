@@ -4,19 +4,26 @@
 #   systemctl --user daemon-reload && systemctl --user enable --now multitracker
 # To keep it running after logout and start it at boot (needs root once):
 #   sudo loginctl enable-linger romain
+# Do not run it together with scripts/app.sh (same port): `scripts/app.sh stop` first.
+# Logs: journalctl --user -u multitracker -f
 [Unit]
 Description=Archipelago Multitracker (port 42753)
-After=network-online.target
-Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
 WorkingDirectory=/home/romain/archipelago-multitracker
 Environment=PYTHONPATH=/home/romain/archipelago-multitracker/backend
+Environment=PYTHONUNBUFFERED=1
+# Fail clearly (instead of crash-looping) when scripts/app.sh already holds the port.
+ExecStartPre=/bin/sh -c '! ss -ltnH "sport = :42753" | grep -q .'
 ExecStart=/home/romain/archipelago-multitracker/.venv/bin/python -m multitracker --host 0.0.0.0 --port 42753
 Restart=on-failure
 RestartSec=5
 # The logic engine regenerates worlds in a child process: keep memory in check on the 8 GB Pi.
+# Best effort: only enforced if the memory controller is delegated to the user manager
+# (check with `systemctl --user show multitracker -p MemoryMax`).
 MemoryMax=3G
 Nice=5
 

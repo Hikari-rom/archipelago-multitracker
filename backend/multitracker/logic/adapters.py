@@ -87,8 +87,40 @@ def _twwhd_entrances(world_cls: type, slot_data: dict[str, Any]):
         randomizer.randomize_entrances = original
 
 
+@contextlib.contextmanager
+def _sm64ex(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Super Mario 64: replay slot_data["AreaRando"] ({entrance level: destination level}) instead of the
+    painting / secret shuffle. The shuffles are replaced by a lookup of the final mapping and the
+    "fix" swaps become no-ops (the final mapping already satisfies them)."""
+    area = slot_data.get("AreaRando") or {}
+    module = importlib.import_module(f"{world_cls.__module__}.Rules")
+    regions = importlib.import_module(f"{world_cls.__module__}.Regions")
+    level_to_name = {int(v): k for k, v in regions.sm64_entrances_to_level.items()}
+    target = {int(k): level_to_name[int(v)] for k, v in area.items() if int(v) in level_to_name}
+    if not target:
+        yield
+        return
+    original_shuffle, original_fix = module.shuffle_dict_keys, module.fix_reg
+
+    def shuffle_dict_keys(world, dictionary: dict) -> dict:
+        if all(int(k) in target for k in dictionary) and \
+                sorted(target[int(k)] for k in dictionary) == sorted(dictionary.values()):
+            return {k: target[int(k)] for k in dictionary}
+        return original_shuffle(world, dictionary)
+
+    def fix_reg(entrance_map, entrance, invalid_regions, swapdict, world):
+        swapdict.pop(entrance)
+
+    module.shuffle_dict_keys, module.fix_reg = shuffle_dict_keys, fix_reg
+    try:
+        yield
+    finally:
+        module.shuffle_dict_keys, module.fix_reg = original_shuffle, original_fix
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "The Wind Waker HD": _twwhd,
+    "Super Mario 64": _sm64ex,
 }
 
 
