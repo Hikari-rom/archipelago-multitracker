@@ -5,36 +5,41 @@ Archipelago **0.6.7** (sources), Universal Tracker **Tracker_v0.3.0**, sur Raspb
 Colonnes :
 - **se charge** : le monde s'enregistre sous son nom de jeu (`scripts/check_apworlds.py`).
 - **génère** : génération solo headless depuis le template d'options par défaut (`scripts/testenv/solo_check.py`).
-- **niveau 1** : suivi générique (items, checks, hints, but) validé contre le serveur local.
-- **UT sans yaml** : le monde déclare `ut_can_gen_without_yaml` (régénération à partir de `slot_data` seul).
-- **UT avec yaml** : la logique fonctionne en régénérant le monde depuis le yaml du joueur.
-- **validé** : comparaison de référence + bout en bout (voir M5/M7).
+- **niveau 1** : suivi générique validé contre un serveur local (`tests/test_level1_all22.py` : seed à 22 slots,
+  noms résolus via le datapackage, compteurs identiques à ceux d'un vrai client).
+- **UT sans yaml** : le monde déclare `ut_can_gen_without_yaml` (régénération à partir du `slot_data` seul).
+- **UT avec yaml** : la logique est juste en régénérant le monde depuis le yaml du joueur (+ `slot_data`).
+- **validé** : (1) comparaison de référence à chaque sphère avec le multiworld complet de génération, sur N seeds
+  aux options tirées au hasard (`scripts/testenv/validate_logic.py`, outil dans un process séparé, `slot_data`
+  passé comme par le réseau) ; (2) bout en bout : le bot ne coche que ce que l'API annonce en logique jusqu'au but
+  de tous les slots (`tests/test_logic_e2e.py`). « logique » = `logic: true` dans `config/apworlds.yaml`.
 
-Légende : ✅ oui · ❌ non · ⏳ pas encore testé · — sans objet
+Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — sans objet
 
 | Jeu | Version apworld | Se charge sur 0.6.7 | Génère en headless | Niveau 1 OK | UT sans yaml | UT avec yaml | Validé par test | Notes |
 |---|---|---|---|---|---|---|---|---|
-| Celeste (Open World) | core 0.6.7 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Pas d'`interpret_slot_data` : yaml nécessaire |
-| Kingdom Hearts 2 | core 0.6.7 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Pas d'`interpret_slot_data` : yaml nécessaire |
-| Jak and Daxter: The Precursor Legacy | core 0.6.7 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Pas d'`interpret_slot_data` : yaml nécessaire |
-| The Wind Waker HD | Teotia444/twwhd-apworld v1.0.2-beta | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Que des releases « beta ». Pas de manifeste `archipelago.json` (avertissement AP). Le core a aussi « The Wind Waker » (GameCube), jeu distinct |
-| Super Mario 64 (sm64ex) | core 0.6.7 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | |
-| Super Mario Odyssey | mdietz94/smo_archipelago v1.5.3 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | S'enregistre sous le nom **« Spicy Meatball Overdrive »** (fichier `meatballs.apworld`). A un `interpret_slot_data` |
-| Ori and the Blind Forest | c-ostic/Archipelago v0.4.2 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | |
-| Ori and the Will of the Wisps | Satisha10/APwotw_release v0.6.5 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | |
-| Balatro | BurndiL/BalatroAP v0.1.9f | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | |
-| Slay the Spire | cjmang/StS-AP-World 2.3.5 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | |
-| Kingdom Hearts: Birth by Sleep Final Mix | gaithernOrg/ArchipelagoKHBBS 0.2.0 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | S'enregistre sous « Kingdom Hearts Birth by Sleep » |
-| Jak 3 | Blake645/Archipelago 2.1.0 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | |
-| The Legend of Zelda: Phantom Hourglass | carrotinator/Archipelago ph-v0.10.1 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « The Legend of Zelda - Phantom Hourglass » |
-| Pokémon Platinum | ljtpetersen/platinum_archipelago v0.2.2 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « Pokemon Platinum » |
-| Pokémon Black and White | BlastSlimey/PokemonBWAP 0.3.37 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « Pokemon Black and White » |
-| PokéPark Wii: Pikachu's Adventure | Mekurushi/Archipelago_Pokepark 1.2.8 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « PokePark ». Importe `dolphin_memory_engine` au chargement : stub dans `backend/ap_stubs/` |
-| Ratchet & Clank 2 | evilwb/APRac2 v0.6.4 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Pas de manifeste `archipelago.json` |
-| Ratchet & Clank 3 | Taoshix/Archipelago-RaC3 v0.6.0 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « Ratchet and Clank 3 » |
-| AEMinecraft | KuroLynx/AEMinecraft v0.6.2 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | Dernière release = v0.7.0-rc.1 (prerelease), on reste sur v0.6.2 comme demandé |
-| The Binding of Isaac: Repentance | NaveTK/Archipelago v0.4.3 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | S'enregistre sous « The Binding of Isaac Repentance » |
-| Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ⏳ | ✅ | ⏳ | ⏳ | |
-| The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ⏳ | ❌ | ⏳ | ⏳ | En dernier |
+| Celeste (Open World) | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 10/10 seeds + e2e | Yaml nécessaire. Logique activée |
+| Kingdom Hearts 2 | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 + e2e | Yaml nécessaire. Logique activée |
+| Jak and Daxter: The Precursor Legacy | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 + e2e | Yaml nécessaire. Logique activée |
+| The Wind Waker HD | Teotia444/twwhd-apworld v1.0.2-beta | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 7/7 + e2e | Adaptateur : entrées depuis `slot_data`, donjons requis déduits des locations. Releases « beta » uniquement, pas de manifeste. Distinct de « The Wind Waker » (core) |
+| Super Mario 64 (sm64ex) | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 6/6 + e2e | Adaptateur : `AreaRando` du `slot_data`. Logique activée |
+| Super Mario Odyssey | mdietz94/smo_archipelago v1.5.3 | ✅ | ✅ | ✅ | ❌ | ✅ | ⚠️ 5/5 comparables, e2e ⏳ | Nom de jeu **« Spicy Meatball Overdrive »**. Génération non reproductible d'un process à l'autre (runs « NC ») |
+| Ori and the Blind Forest | c-ostic/Archipelago v0.4.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Logique activée |
+| Ori and the Will of the Wisps | Satisha10/APwotw_release v0.6.5 | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | Bug apworld corrigé par adaptateur (spawn), reste des écarts (ressources/combat) : logique désactivée |
+| Balatro | BurndiL/BalatroAP v0.1.9f | ✅ | ✅ | ✅ | ❌ | ⏳ | ⏳ | En cours d'analyse |
+| Slay the Spire | cjmang/StS-AP-World 2.3.5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Logique activée |
+| Kingdom Hearts: Birth by Sleep Final Mix | gaithernOrg/ArchipelagoKHBBS 0.2.0 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Nom « Kingdom Hearts Birth by Sleep ». Logique activée |
+| Jak 3 | Blake645/Archipelago 2.1.0 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Logique activée |
+| The Legend of Zelda: Phantom Hourglass | carrotinator/Archipelago ph-v0.10.1 | ✅ | ✅ | ✅ | ✅ | ⏳ | ⏳ | Nom « The Legend of Zelda - Phantom Hourglass ». En cours d'analyse |
+| Pokémon Platinum | ljtpetersen/platinum_archipelago v0.2.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Platinum ». Beaucoup d'options aléatoires ne génèrent pas. Logique activée |
+| Pokémon Black and White | BlastSlimey/PokemonBWAP 0.3.37 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Black and White ». Logique activée |
+| PokéPark Wii: Pikachu's Adventure | Mekurushi/Archipelago_Pokepark 1.2.8 | ✅ | ✅ | ✅ | ✅ | ⏳ | ⏳ | Nom « PokePark ». Stub `dolphin_memory_engine`. En cours d'analyse |
+| Ratchet & Clank 2 | evilwb/APRac2 v0.6.4 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | Pas de manifeste. Logique activée |
+| Ratchet & Clank 3 | Taoshix/Archipelago-RaC3 v0.6.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Ratchet and Clank 3 ». Logique activée |
+| AEMinecraft | KuroLynx/AEMinecraft v0.6.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | v0.7.0-rc.1 (prerelease) ignorée. Logique activée |
+| The Binding of Isaac: Repentance | NaveTK/Archipelago v0.4.3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « The Binding of Isaac Repentance ». Logique activée |
+| Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 5/5, e2e ⏳ | Adaptateur : coupes/persos/véhicules de départ et options depuis `slot_data` |
+| The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ⏳ | ⏳ | En dernier. Génération de test sans ROM : `fill_slot_data` débloqué (champs client seulement) |
 
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
+Résultats bruts des campagnes : `test-output/logs/campaign.summary` et `test-output/logic_validation/` (non commités).

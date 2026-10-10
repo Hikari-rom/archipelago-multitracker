@@ -8,6 +8,9 @@ export const tracker = reactive({
   ...initialState(),
   sse: 'connecting' as SseState,
   loadError: '' as string,
+  roomUrl: '' as string,
+  roomError: '' as string,
+  view: (typeof location !== 'undefined' && location.hash === '#config' ? 'config' : 'dashboard') as 'dashboard' | 'config',
   details: {} as Record<string, SlotDetail>,
   open: {} as Record<string, boolean>,
   detailError: {} as Record<string, string>,
@@ -30,6 +33,28 @@ function pruneDetails(snapshot: boolean): void {
       delete tracker.details[n]
       detailSeq.set(n, (detailSeq.get(n) ?? 0) + 1) // invalidate in-flight requests
     }
+  }
+}
+
+export function setView(v: 'dashboard' | 'config'): void {
+  tracker.view = v
+  try {
+    if (v === 'config') location.hash = 'config'
+    else if (location.hash) history.replaceState(null, '', location.pathname + location.search)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Reload /api/slots (server, room link, room error) e.g. after saving the config. */
+export async function refreshMeta(): Promise<void> {
+  try {
+    const r = await api.getSlots()
+    tracker.server = r.server
+    tracker.roomUrl = r.room_url ?? ''
+    tracker.roomError = r.room_error ?? ''
+  } catch {
+    /* ignore */
   }
 }
 
@@ -149,6 +174,8 @@ export async function start(): Promise<void> {
   try {
     const r = await api.getSlots()
     dispatch({ type: 'snapshot', slots: r.slots, server: r.server })
+    tracker.roomUrl = r.room_url ?? ''
+    tracker.roomError = r.room_error ?? ''
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)
   }

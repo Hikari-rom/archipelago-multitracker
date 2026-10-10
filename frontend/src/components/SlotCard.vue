@@ -41,7 +41,7 @@ async function onSeen() {
     <header class="card-head">
       <div class="titles">
         <h2 class="game">{{ summary.game }}</h2>
-        <p class="slotname">{{ summary.name }}</p>
+        <p class="slotname">{{ summary.name }}<span v-if="summary.owner" class="owner"> · {{ summary.owner }}</span></p>
       </div>
       <span class="status" :class="'st-' + summary.status" :title="stateMsg || statusLabel(summary.status)">
         <span class="dot" aria-hidden="true"></span>{{ statusLabel(summary.status) }}

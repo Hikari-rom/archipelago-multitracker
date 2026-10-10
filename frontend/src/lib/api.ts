@@ -1,8 +1,11 @@
+import type { ConfigResponse, DiscoverResponse, PutConfigBody } from './config'
 import type { SlotDetail, SlotSummary } from './types'
 
 export interface SlotsResponse {
   server: string
   slots: SlotSummary[]
+  room_url?: string | null
+  room_error?: string | null
 }
 
 async function json<T>(r: Response): Promise<T> {
@@ -22,6 +25,9 @@ async function json<T>(r: Response): Promise<T> {
 export interface MockApi {
   getSlot(name: string): Promise<SlotDetail>
   markSeen(name: string): Promise<{ seen: number }>
+  getConfig?(): Promise<ConfigResponse>
+  discover?(url: string): Promise<DiscoverResponse>
+  putConfig?(b: PutConfigBody): Promise<unknown>
 }
 let mock: MockApi | null = null
 export function installMock(m: MockApi): void {
@@ -39,3 +45,18 @@ export const markSeen = (name: string) =>
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
   }).then((r) => json<{ seen: number }>(r))
+
+const jsonInit = (method: string, body: unknown): RequestInit => ({
+  method,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+})
+
+export const getConfig = () =>
+  mock?.getConfig ? mock.getConfig() : fetch('/api/config').then((r) => json<ConfigResponse>(r))
+
+export const discover = (url: string) =>
+  mock?.discover ? mock.discover(url) : fetch('/api/discover', jsonInit('POST', { url })).then((r) => json<DiscoverResponse>(r))
+
+export const putConfig = (b: PutConfigBody) =>
+  mock?.putConfig ? mock.putConfig(b) : fetch('/api/config', jsonInit('PUT', b)).then((r) => json<unknown>(r))

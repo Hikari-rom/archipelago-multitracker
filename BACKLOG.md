@@ -56,26 +56,26 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 ## M7 — Étendre la logique
 - [x] Super Mario 64 (sm64ex) — adaptateur area rando, 6/6 seeds
 - [ ] Super Mario Odyssey
-- [ ] Ori and the Blind Forest
+- [x] Ori and the Blind Forest
 - [ ] Ori and the Will of the Wisps
 - [ ] Balatro
-- [ ] Slay the Spire
-- [ ] Kingdom Hearts: Birth by Sleep Final Mix
-- [ ] Jak 3
+- [x] Slay the Spire
+- [x] Kingdom Hearts: Birth by Sleep Final Mix
+- [x] Jak 3
 - [ ] The Legend of Zelda: Phantom Hourglass
-- [ ] Pokémon Platinum
-- [ ] Pokémon Black and White
+- [x] Pokémon Platinum
+- [x] Pokémon Black and White
 - [ ] PokéPark Wii: Pikachu's Adventure
-- [ ] Ratchet & Clank 2
-- [ ] Ratchet & Clank 3
-- [ ] AEMinecraft
-- [ ] The Binding of Isaac: Repentance
+- [x] Ratchet & Clank 2
+- [x] Ratchet & Clank 3
+- [x] AEMinecraft
+- [x] The Binding of Isaac: Repentance
 - [ ] Mario Kart Wii
 - [ ] The Legend of Zelda: Ocarina of Time (en dernier)
 - [ ] Relecture M7 + commit/push + notif
 
 ## M8 — Bonus
-- [ ] Découverte des slots d'une room depuis son URL archipelago.gg
+- [ ] Découverte des slots d'une room depuis son URL archipelago.gg (backend fait, page front en cours)
 - [ ] Support de plusieurs joueurs
 - [ ] Finitions UX
 - [ ] Robustesse (coupures réseau, room qui redémarre)
