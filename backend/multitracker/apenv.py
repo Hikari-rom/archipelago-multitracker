@@ -25,6 +25,9 @@ def setup() -> Path:
     if not AP_DIR.is_dir():
         raise RuntimeError(f"Archipelago not found in {AP_DIR}: run scripts/bootstrap.sh")
     os.environ.setdefault("SKIP_REQUIREMENTS_UPDATE", "1")
+    # Universal Tracker's settings point at <AP>/Players; if it is missing, AP's settings code
+    # opens a (tkinter) folder picker. Never needed headless: make sure the folder exists.
+    (AP_DIR / "Players").mkdir(exist_ok=True)
     if _needs_stubs():
         sys.path.append(str(STUBS_DIR))  # after site-packages: never shadows a real install
     if str(AP_DIR) not in sys.path:

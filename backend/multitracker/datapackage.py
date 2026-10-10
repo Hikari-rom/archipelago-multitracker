@@ -1,6 +1,7 @@
 """Shared datapackage cache (id <-> name per game), persisted in SQLite and keyed by checksum."""
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from .ap.tracker import DataPackageProvider
@@ -19,20 +20,27 @@ class DataPackageCache(DataPackageProvider):
         self._raw = store.load_datapackages()  # (game, checksum) -> data
         self._names: dict[str, GameNames] = {}  # game -> names of the checksum the server announced
         self._current: dict[str, str] = {}  # game -> checksum announced by the server
+        self._inflight: dict[tuple[str, str], float] = {}  # requested by one tracker, not received yet
 
     def missing(self, checksums: dict[str, str]) -> list[str]:
         missing = []
+        now = time.monotonic()
         for game, checksum in checksums.items():
             if self._current.get(game) != checksum:
                 self._current[game] = checksum
                 self._names.pop(game, None)
-            if (game, checksum) not in self._raw:
+            key = (game, checksum)
+            if key not in self._raw and now - self._inflight.get(key, -1e9) > 60:
+                self._inflight[key] = now  # another tracker will not ask again for a minute
                 missing.append(game)
         return missing
 
     def add(self, games: dict[str, dict[str, Any]]) -> None:
         for game, data in games.items():
             checksum = data.get("checksum") or self._current.get(game) or ""
+            self._inflight.pop((game, checksum), None)
+            if (game, checksum) in self._raw:
+                continue
             self._raw[(game, checksum)] = data
             self.store.save_datapackage(game, checksum, data)
             if self._current.get(game) in (None, checksum):

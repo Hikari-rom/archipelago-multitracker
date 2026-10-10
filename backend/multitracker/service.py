@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 ITEM_FLAG_PROGRESSION, ITEM_FLAG_USEFUL, ITEM_FLAG_TRAP = 1, 2, 4
 HINT_STATUS = {0: "unspecified", 10: "no_priority", 20: "avoid", 30: "priority", 40: "found"}
 # Changes that can modify which locations are in logic.
-LOGIC_KINDS = {"items", "checks", "status"}
+LOGIC_KINDS = {"items", "checks", "status", "synced"}
 
 
 class Service:
@@ -62,6 +62,8 @@ class Service:
     # -- change handling -----------------------------------------------------------------
     def _on_change(self, tracker: SlotTracker, kinds: set[str]) -> None:
         name = tracker.state.name
+        if "connected" in kinds:
+            self.logic[name] = LogicResult("pending")  # never show the previous session's results
         if kinds & LOGIC_KINDS and tracker.state.status == "connected":
             self._schedule_logic(name)
         self.publish(name)
@@ -107,14 +109,19 @@ class Service:
         names, self._publish_pending = self._publish_pending, set()
         for name in names:
             if name in self.trackers:
-                self._broadcast({"type": "slot", "slot": self.summary(name)})
+                try:
+                    self._broadcast({"type": "slot", "slot": self.summary(name)})
+                except Exception:
+                    log.exception("could not publish %s", name)
 
     def _broadcast(self, event: dict[str, Any]) -> None:
         for queue in list(self.subscribers):
             try:
                 queue.put_nowait(event)
-            except asyncio.QueueFull:  # slow client: drop it, it will reconnect and refetch
+            except asyncio.QueueFull:  # slow client: end its stream, EventSource reconnects with a snapshot
                 self.subscribers.discard(queue)
+                queue.get_nowait()
+                queue.put_nowait({"type": "_close"})
 
     def subscribe(self) -> asyncio.Queue:
         queue: asyncio.Queue = asyncio.Queue(maxsize=1000)
@@ -134,8 +141,8 @@ class Service:
 
     def mark_seen(self, name: str, count: int | None = None) -> int:
         st = self.trackers[name].state
-        if not st.seed_name:
-            raise ValueError("slot not connected yet")
+        if not st.seed_name or not st.synced:
+            raise ValueError("slot pas encore synchronisé avec le serveur")
         count = len(st.items) if count is None else max(0, min(int(count), len(st.items)))
         self.store.set_seen_count(st.seed_name, name, count)
         self.publish(name)
@@ -226,7 +233,7 @@ class Service:
                 "sender": self.player_name(st, sender),
                 "own": sender == st.slot,
                 "location": self.datapackage.location_name(self.player_game(st, sender), item.get("location"))
-                if item.get("location", -1) >= 0 else None,
+                if (item.get("location") or -1) >= 0 else None,
                 "progression": bool(flags & ITEM_FLAG_PROGRESSION),
                 "useful": bool(flags & ITEM_FLAG_USEFUL),
                 "trap": bool(flags & ITEM_FLAG_TRAP),

@@ -29,7 +29,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] « Dernière visite » / nouveaux items + « Marquer comme vu »
 - [x] API REST + SSE
 - [x] Tests d'intégration contre le serveur local (bot → API)
-- [ ] Relecture M3 + commit/push + notif
+- [x] Relecture M3 + commit/push + notif
 
 ## M4 — Front Vue
 - [ ] Projet Vue 3 + Vite + TS, client API + SSE

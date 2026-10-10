@@ -53,6 +53,7 @@ class SlotState:
     games: list[str] = field(default_factory=list)
     datapackage_checksums: dict[str, str] = field(default_factory=dict)
     connected_at: float | None = None
+    synced: bool = False  # item list complete for this session
     updated_at: float = field(default_factory=time.time)
 
     @property
@@ -79,6 +80,7 @@ class SlotTracker:
         self._sock = None
         self._task: asyncio.Task | None = None
         self._stopping = False
+        self._had_session = False
 
     # -- lifecycle -------------------------------------------------------------------------
     def start(self) -> None:
@@ -103,13 +105,19 @@ class SlotTracker:
             try:
                 self._set_status("connecting")
                 self._sock, self.state.url = await net.open_socket(self.server)
-                await self._session()
+                self._had_session = False
+                try:
+                    await self._session()
+                finally:
+                    if self._had_session:
+                        delay = self.min_delay
                 if self._stopping:
                     break
                 self._set_status("disconnected", "connexion fermée par le serveur")
                 delay = self.min_delay  # a session happened: retry quickly
             except _Refused as exc:
                 fatal = bool(set(exc.errors) & FATAL_REFUSALS)
+                self._reset_slot_data()
                 self._set_status("error", "connexion refusée : " + ", ".join(exc.errors))
                 delay = self.max_delay if fatal else delay
             except asyncio.CancelledError:
@@ -145,6 +153,8 @@ class SlotTracker:
         cmd = msg.get("cmd")
         st = self.state
         if cmd == "RoomInfo":
+            if st.seed_name is not None and msg.get("seed_name") != st.seed_name:
+                self._reset_slot_data()  # another seed is hosted at this address
             st.seed_name = msg.get("seed_name")
             st.games = list(msg.get("games", []))
             st.datapackage_checksums = dict(msg.get("datapackage_checksums", {}))
@@ -153,7 +163,8 @@ class SlotTracker:
                 await self._send({"cmd": "GetDataPackage", "games": wanted})
             await self._send({"cmd": "Connect", "password": self.password, "game": "", "name": st.name,
                               "uuid": self._uuid, "version": net.AP_VERSION,
-                              "items_handling": ITEMS_HANDLING_ALL, "tags": ["Tracker"], "slot_data": True})
+                              "items_handling": ITEMS_HANDLING_ALL, "tags": ["Tracker", "NoText"],
+                              "slot_data": True})
         elif cmd == "DataPackage":
             games = msg.get("data", {}).get("games", {})
             self.datapackage.add(games)
@@ -179,11 +190,13 @@ class SlotTracker:
                 st.game = real_game
             st.items = []
             st.hints = []
+            st.synced = False
             st.connected_at = time.time()
+            self._had_session = True
             st.status, st.error = "connected", None
             keys = [self.hints_key, self.status_key]
             await self._send({"cmd": "Get", "keys": keys}, {"cmd": "SetNotify", "keys": keys})
-            self._changed({"status", "checks", "items", "hints", "goal"})
+            self._changed({"connected", "status", "checks", "items", "hints", "goal"})
         elif cmd == "ReceivedItems":
             index = msg.get("index", 0)
             items = msg.get("items", [])
@@ -219,6 +232,10 @@ class SlotTracker:
             if self.status_key in values:
                 st.client_status = int(values[self.status_key] or 0)
                 kinds.add("goal")
+            if cmd == "Retrieved" and not st.synced:
+                # Answered after the ReceivedItems that followed Connected: the item list is now complete.
+                st.synced = True
+                kinds.add("synced")
             if kinds:
                 self._changed(kinds)
         elif cmd == "InvalidPacket":
@@ -231,6 +248,13 @@ class SlotTracker:
     @property
     def status_key(self) -> str:
         return f"_read_client_status_{self.state.team}_{self.state.slot}"
+
+    def _reset_slot_data(self) -> None:
+        st = self.state
+        st.items, st.hints, st.checked, st.missing = [], [], set(), set()
+        st.players, st.client_status, st.slot_data, st.synced = {}, 0, {}, False
+        st.team = st.slot = None
+        self._changed({"connected", "items", "checks", "hints", "goal"})
 
     def _set_status(self, status: str, error: str | None = None) -> None:
         if (self.state.status, self.state.error) != (status, error):

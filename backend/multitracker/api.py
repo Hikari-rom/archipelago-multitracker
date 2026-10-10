@@ -56,13 +56,13 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         service = get_service(request)
         return {"server": service.config.server, "slots": [service.summary(n) for n in service.trackers]}
 
-    @app.get("/api/slots/{name}")
+    @app.get("/api/slots/{name:path}")
     async def slot_detail(name: str, request: Request) -> dict[str, Any]:
         service = get_service(request)
         require_slot(service, name)
         return service.detail(name)
 
-    @app.post("/api/slots/{name}/seen")
+    @app.post("/api/slots/{name:path}/seen")
     async def mark_seen(name: str, request: Request, body: SeenBody | None = None) -> dict[str, Any]:
         service = get_service(request)
         require_slot(service, name)
@@ -90,6 +90,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                     except asyncio.TimeoutError:
                         yield ": keepalive\n\n"
                         continue
+                    if event["type"] == "_close":
+                        break
                     yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
             finally:
                 service.unsubscribe(queue)
@@ -105,9 +107,12 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         async def spa(path: str) -> FileResponse:
             if path.startswith("api/"):
                 raise HTTPException(404)
-            candidate = (frontend_dist / path).resolve()
-            if path and candidate.is_file() and frontend_dist.resolve() in candidate.parents:
-                return FileResponse(candidate)
+            try:
+                candidate = (frontend_dist / path).resolve()
+                if path and candidate.is_file() and frontend_dist.resolve() in candidate.parents:
+                    return FileResponse(candidate)
+            except (ValueError, OSError):
+                pass
             return FileResponse(frontend_dist / "index.html")
 
     return app
