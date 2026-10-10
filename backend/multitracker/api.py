@@ -14,6 +14,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .apenv import ROOT
+from .config import PLAYERS_DIR, ConfigError, RoomConfig, SlotConfig, safe_yaml_path
+from .config import save as save_config
 from .service import Service
 
 log = logging.getLogger(__name__)
@@ -23,6 +25,33 @@ SSE_KEEPALIVE = 20.0
 
 class SeenBody(BaseModel):
     count: int | None = None  # mark items [0, count) as seen; default: everything received so far
+
+
+class DiscoverBody(BaseModel):
+    url: str
+
+
+class SlotBody(BaseModel):
+    name: str
+    game: str | None = None
+    yaml: str | None = None
+    owner: str | None = None
+
+
+class ConfigBody(BaseModel):
+    room_url: str | None = None
+    server: str | None = None
+    password: str | None = None  # None = keep the current password
+    slots: list[SlotBody]
+
+
+def _rel(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    try:
+        return str(Path(path).resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def create_app(service_factory: Callable[[], Service], frontend_dist: Path | None = FRONTEND_DIST) -> FastAPI:
@@ -54,7 +83,53 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
     @app.get("/api/slots")
     async def slots(request: Request) -> dict[str, Any]:
         service = get_service(request)
-        return {"server": service.config.server, "slots": [service.summary(n) for n in service.trackers]}
+        return {"server": service.current_server, "room_url": service.config.room_url,
+                "room_error": service.room_error, "slots": [service.summary(n) for n in service.trackers]}
+
+    @app.get("/api/config")
+    async def get_config(request: Request) -> dict[str, Any]:
+        cfg = get_service(request).config
+        return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
+                "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
+                           "yaml": _rel(s.yaml)} for s in cfg.slots],
+                "player_yamls": sorted(_rel(p) for p in PLAYERS_DIR.glob("*.y*ml"))}
+
+    @app.post("/api/discover")
+    async def discover(body: DiscoverBody) -> dict[str, Any]:
+        from .room import RoomError, fetch_room
+        try:
+            info = await asyncio.to_thread(fetch_room, body.url, 15.0, True)
+        except RoomError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return {"room_url": info.url, "server": info.server,
+                "players": [{"name": n, "game": g} for n, g in info.players]}
+
+    @app.put("/api/config")
+    async def put_config(body: ConfigBody, request: Request) -> dict[str, Any]:
+        service = get_service(request)
+        current = service.config
+        try:
+            if not (body.room_url or body.server):
+                raise ConfigError("indique l'URL de la room ou l'adresse du serveur")
+            if body.room_url:
+                from .room import RoomError, parse_room_url
+                try:
+                    parse_room_url(body.room_url)
+                except RoomError as exc:
+                    raise ConfigError(str(exc)) from exc
+            names = [s.name.strip() for s in body.slots]
+            if any(not n for n in names) or len(set(names)) != len(names):
+                raise ConfigError("noms de slots vides ou en double")
+            slots = [SlotConfig(name=s.name.strip(), game=s.game or None, yaml=safe_yaml_path(s.yaml),
+                                owner=(s.owner or "").strip() or None) for s in body.slots]
+        except ConfigError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        new = RoomConfig(server=(body.server or "").strip(), slots=slots, path=current.path,
+                         password=current.password if body.password is None else body.password,
+                         room_url=(body.room_url or "").strip() or None)
+        save_config(new)
+        await service.reload(new)
+        return {"ok": True, "slots": len(slots)}
 
     @app.get("/api/slots/{name:path}")
     async def slot_detail(name: str, request: Request) -> dict[str, Any]:

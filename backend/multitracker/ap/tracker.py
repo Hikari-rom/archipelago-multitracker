@@ -67,10 +67,12 @@ ChangeCallback = Callable[["SlotTracker", set[str]], None]
 class SlotTracker:
     """Keeps one tracker connection alive (auto-reconnect) and mirrors the slot state."""
 
-    def __init__(self, server: str, password: str, name: str, game: str,
+    def __init__(self, server: str | Callable[[], str], password: str, name: str, game: str,
                  datapackage: "DataPackageProvider", on_change: ChangeCallback | None = None,
-                 min_delay: float = 2.0, max_delay: float = 60.0) -> None:
-        self.server = server
+                 min_delay: float = 2.0, max_delay: float = 60.0,
+                 on_connect_error: Callable[["SlotTracker"], None] | None = None) -> None:
+        self.server = server  # address, or a callable returning the current address (room port changes)
+        self.on_connect_error = on_connect_error
         self.password = password or None
         self.state = SlotState(name=name, game=game)
         self.datapackage = datapackage
@@ -104,7 +106,15 @@ class SlotTracker:
         while not self._stopping:
             try:
                 self._set_status("connecting")
-                self._sock, self.state.url = await net.open_socket(self.server)
+                address = self.server() if callable(self.server) else self.server
+                if not address:
+                    raise ConnectionError("adresse du serveur inconnue (room endormie ?)")
+                try:
+                    self._sock, self.state.url = await net.open_socket(address)
+                except ConnectionError:
+                    if self.on_connect_error:
+                        self.on_connect_error(self)
+                    raise
                 self._had_session = False
                 try:
                     await self._session()

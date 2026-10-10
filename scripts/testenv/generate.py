@@ -51,6 +51,20 @@ def main() -> int:
         def _no_output(self, output_directory: str) -> None:  # no ROM, no game files
             return None
 
+        oot = AutoWorldRegister.world_types.get("Ocarina of Time")
+        if oot is not None:
+            # OoT computes client-only slot_data (collectible flags) while patching the ROM, and its
+            # fill_slot_data waits for it: provide empty values so the multidata can still be written.
+            original_fill_slot_data = oot.fill_slot_data
+
+            def _oot_fill_slot_data(self):
+                self.collectible_override_flags = getattr(self, "collectible_override_flags", None) or {}
+                self.collectible_flag_offsets = getattr(self, "collectible_flag_offsets", None) or {}
+                self.collectible_flags_available.set()
+                return original_fill_slot_data(self)
+
+            oot.fill_slot_data = _oot_fill_slot_data
+
         def _no_rom_check(cls, multiworld) -> None:  # worlds like OoT check for their ROM before generating
             return None
 

@@ -30,6 +30,7 @@ class RoomConfig:
     password: str = ""
     slots: list[SlotConfig] = field(default_factory=list)
     path: Path | None = None
+    room_url: str | None = None  # archipelago.gg room link: the port is refreshed from it
 
     def slot(self, name: str) -> SlotConfig | None:
         return next((s for s in self.slots if s.name == name), None)
@@ -45,8 +46,8 @@ def load(path: Path | None = None) -> RoomConfig:
         raise ConfigError(f"{path} introuvable : copie config/room.example.yaml en config/room.yaml")
     with open(path, encoding="utf-8") as fh:
         raw = yaml.safe_load(fh) or {}
-    if not isinstance(raw, dict) or not raw.get("server"):
-        raise ConfigError(f"{path} : la clé 'server' est obligatoire")
+    if not isinstance(raw, dict) or not (raw.get("server") or raw.get("room_url")):
+        raise ConfigError(f"{path} : il faut 'server' ou 'room_url'")
     slots: list[SlotConfig] = []
     seen: set[str] = set()
     for i, entry in enumerate(raw.get("slots") or []):
@@ -64,4 +65,53 @@ def load(path: Path | None = None) -> RoomConfig:
             if not yaml_path.is_absolute():
                 yaml_path = ROOT / yaml_path
         slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner")))
-    return RoomConfig(server=str(raw["server"]), password=str(raw.get("password") or ""), slots=slots, path=path)
+    return RoomConfig(server=str(raw.get("server") or ""), password=str(raw.get("password") or ""), slots=slots,
+                      path=path, room_url=raw.get("room_url") or None)
+
+
+PLAYERS_DIR = ROOT / "config" / "players"
+
+
+def safe_yaml_path(value: str | None) -> Path | None:
+    """Player yamls set from the web UI must live in config/players/ (the logic engine reads them)."""
+    if not value:
+        return None
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT / path
+    path = path.resolve()
+    if PLAYERS_DIR.resolve() not in path.parents or path.suffix.lower() not in (".yaml", ".yml"):
+        raise ConfigError(f"le yaml doit être un fichier .yaml de config/players/ : {value}")
+    return path
+
+
+def save(cfg: RoomConfig, path: Path | None = None) -> Path:
+    """Write the config as YAML (atomic replace). The file stays out of git (password)."""
+    path = Path(path or cfg.path or config_path())
+    data: dict = {}
+    if cfg.room_url:
+        data["room_url"] = cfg.room_url
+    if cfg.server:
+        data["server"] = cfg.server
+    data["password"] = cfg.password
+    data["slots"] = []
+    for slot in cfg.slots:
+        entry: dict = {"name": slot.name}
+        if slot.game:
+            entry["game"] = slot.game
+        if slot.yaml:
+            try:
+                entry["yaml"] = str(Path(slot.yaml).resolve().relative_to(ROOT))
+            except ValueError:
+                entry["yaml"] = str(slot.yaml)
+        if slot.owner:
+            entry["owner"] = slot.owner
+        data["slots"].append(entry)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text("# Écrit par l'app (page Configuration). Modifiable à la main.\n"
+                   + yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    os.chmod(tmp, 0o600)
+    tmp.replace(path)
+    cfg.path = path
+    return path

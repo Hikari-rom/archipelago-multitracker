@@ -41,24 +41,74 @@ class Service:
         self._publish_task: asyncio.Task | None = None
         self.subscribers: set[asyncio.Queue] = set()
         self.started_at = time.time()
+        self.current_server = config.server
+        self.room_error: str | None = None
+        self._room_task: asyncio.Task | None = None
+        self._room_checked_at = 0.0
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
         await self.logic_engine.start()
+        self._start_trackers()
+
+    def _start_trackers(self) -> None:
+        self.current_server = self.config.server
+        if self.config.room_url:
+            self.refresh_room(force=True)
         for slot in self.config.slots:
-            tracker = SlotTracker(self.config.server, self.config.password, slot.name, slot.game or "",
+            tracker = SlotTracker(lambda: self.current_server, self.config.password, slot.name, slot.game or "",
                                   self.datapackage, on_change=self._on_change,
-                                  min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1])
+                                  min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1],
+                                  on_connect_error=lambda _t: self.refresh_room())
             self.trackers[slot.name] = tracker
             self.logic[slot.name] = LogicResult("pending")
             tracker.start()
 
-    async def stop(self) -> None:
-        for task in [*self._logic_tasks.values(), self._publish_task]:
+    async def _stop_trackers(self) -> None:
+        for task in [*self._logic_tasks.values(), self._publish_task, self._room_task]:
             if task is not None:
                 task.cancel()
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
+        if self._publish_task is not None:  # stopping the trackers may have scheduled one last publish
+            self._publish_task.cancel()
+        self.trackers, self.logic, self._logic_tasks = {}, {}, {}
+        self._logic_dirty, self._publish_pending = set(), set()
+
+    async def stop(self) -> None:
+        await self._stop_trackers()
         await self.logic_engine.stop()
+
+    async def reload(self, config: RoomConfig) -> None:
+        """Apply a new room configuration (from the web UI) without restarting the app."""
+        await self._stop_trackers()
+        self.config = config
+        self.slot_configs = {s.name: s for s in config.slots}
+        self._start_trackers()
+        self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
+
+    # -- archipelago.gg room: the port changes when a sleeping room wakes up ------------------
+    def refresh_room(self, force: bool = False, min_interval: float = 60.0) -> None:
+        if not self.config.room_url:
+            return
+        if self._room_task is not None and not self._room_task.done():
+            return
+        if not force and time.monotonic() - self._room_checked_at < min_interval:
+            return
+        self._room_checked_at = time.monotonic()
+        self._room_task = asyncio.create_task(self._refresh_room())
+
+    async def _refresh_room(self) -> None:
+        from .room import RoomError, fetch_room
+        try:
+            info = await asyncio.to_thread(fetch_room, self.config.room_url, 15.0, True)
+        except RoomError as exc:
+            self.room_error = str(exc)
+            log.warning("room refresh failed: %s", exc)
+            return
+        self.room_error = None if info.server else "la room ne publie pas de port (endormie ?)"
+        if info.server and info.server != self.current_server:
+            log.info("room server is now %s (was %s)", info.server, self.current_server)
+            self.current_server = info.server
 
     # -- change handling -----------------------------------------------------------------
     def _on_change(self, tracker: SlotTracker, kinds: set[str]) -> None:

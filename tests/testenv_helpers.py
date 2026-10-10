@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "testenv"))
 sys.path.insert(0, str(ROOT / "backend"))
 
 
-def generated_seed(fixture: str, seed: int = 42) -> Path:
+def generated_seed(fixture: str, seed: int = 42, spoiler: int = 3) -> Path:
     """Generate (or reuse from cache) the multiworld for tests/fixtures/<fixture>. Returns the AP_*.zip path."""
     players = FIXTURES / fixture
     digest = hashlib.sha256()
@@ -23,12 +23,13 @@ def generated_seed(fixture: str, seed: int = 42) -> Path:
         digest.update(path.name.encode() + path.read_bytes())
     digest.update((ROOT / "scripts/testenv/generate.py").read_bytes())
     digest.update((ROOT / "config/apworlds.lock.yaml").read_bytes())
-    out = SEEDS / f"{fixture}-{seed}-{digest.hexdigest()[:12]}"
+    out = SEEDS / f"{fixture}-{seed}-s{spoiler}-{digest.hexdigest()[:12]}"
     info = out / "generation.json"
     if not info.exists():
         env = {**os.environ, "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED", "0")}
         proc = subprocess.run([sys.executable, str(ROOT / "scripts/testenv/generate.py"), str(players), str(out),
-                               "--seed", str(seed)], capture_output=True, text=True, timeout=1800, env=env)
+                               "--seed", str(seed), "--spoiler", str(spoiler)], capture_output=True, text=True,
+                              timeout=1800, env=env)
         if proc.returncode != 0:
             raise RuntimeError(f"generation of {fixture} failed:\n{proc.stderr[-4000:]}")
     return Path(json.loads(info.read_text())["zip"])
