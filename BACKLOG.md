@@ -5,7 +5,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 ## M0 — Prise en main
 - [x] Inspecter le Pi (versions, RAM, disque, port 42753, exposition d'Enigmatik)
 - [x] Créer BACKLOG.md, PROGRESS.md, DECISIONS.md, .gitignore, squelette
-- [ ] Commit + push M0
+- [x] Commit + push M0
 
 ## M1 — Archipelago headless sur le Pi
 - [ ] `scripts/bootstrap.sh` idempotent : clone AP 0.6.7, venv, deps sans GUI
