@@ -55,7 +55,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 
 ## M7 — Étendre la logique
 - [x] Super Mario 64 (sm64ex) — adaptateur area rando, 6/6 seeds
-- [ ] Super Mario Odyssey
+- [x] Super Mario Odyssey
 - [x] Ori and the Blind Forest
 - [ ] Ori and the Will of the Wisps
 - [ ] Balatro
@@ -70,7 +70,7 @@ Légende : `- [ ]` ouverte · `- [x]` faite · `- [!]` bloquée (avec la raison)
 - [x] Ratchet & Clank 3
 - [x] AEMinecraft
 - [x] The Binding of Isaac: Repentance
-- [ ] Mario Kart Wii
+- [x] Mario Kart Wii — adaptateur
 - [ ] The Legend of Zelda: Ocarina of Time (en dernier)
 - [ ] Relecture M7 + commit/push + notif
 

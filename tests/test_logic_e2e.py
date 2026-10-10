@@ -153,3 +153,10 @@ async def test_bot_finishes_m7_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m7a", 11, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m7a.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m7b_batch_using_only_in_logic_locations(tmp_path):
+    """Super Mario Odyssey (Spicy Meatball Overdrive), Mario Kart Wii, Super Mario 64."""
+    result = await play_until_done("m7b", 13, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m7b.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

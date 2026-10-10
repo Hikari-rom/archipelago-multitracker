@@ -23,9 +23,9 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | Jak and Daxter: The Precursor Legacy | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 + e2e | Yaml nécessaire. Logique activée |
 | The Wind Waker HD | Teotia444/twwhd-apworld v1.0.2-beta | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 7/7 + e2e | Adaptateur : entrées depuis `slot_data`, donjons requis déduits des locations. Releases « beta » uniquement, pas de manifeste. Distinct de « The Wind Waker » (core) |
 | Super Mario 64 (sm64ex) | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 6/6 + e2e | Adaptateur : `AreaRando` du `slot_data`. Logique activée |
-| Super Mario Odyssey | mdietz94/smo_archipelago v1.5.3 | ✅ | ✅ | ✅ | ❌ | ✅ | ⚠️ 5/5 comparables, e2e ⏳ | Nom de jeu **« Spicy Meatball Overdrive »**. Génération non reproductible d'un process à l'autre (runs « NC ») |
+| Super Mario Odyssey | mdietz94/smo_archipelago v1.5.3 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 comparables + e2e | Nom de jeu **« Spicy Meatball Overdrive »**. Sa génération n'est pas reproductible d'un process à l'autre (ordre de remplissage) : certains runs de validation sont « non comparables », sans effet sur la logique. Logique activée |
 | Ori and the Blind Forest | c-ostic/Archipelago v0.4.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Logique activée |
-| Ori and the Will of the Wisps | Satisha10/APwotw_release v0.6.5 | ✅ | ✅ | ✅ | ✅ | ⚠️ | ❌ | Bug apworld corrigé par adaptateur (spawn), reste des écarts (ressources/combat) : logique désactivée |
+| Ori and the Will of the Wisps | Satisha10/APwotw_release v0.6.5 | ✅ | ✅ | ✅ | ✅ (incomplet) | ⚠️ yaml + slot_data | ⚠️ 3/4 | Le `slot_data` ne couvre pas toutes les options : régénération depuis le yaml + `slot_data`. Adaptateurs : bug du spawn (coût des portes à keystones faux, aussi dans UT) et « Spawn item » en double. Reste une surestimation (événements de combat) sur 1 seed : logique désactivée |
 | Balatro | BurndiL/BalatroAP v0.1.9f | ✅ | ✅ | ✅ | ❌ | ⏳ | ⏳ | En cours d'analyse |
 | Slay the Spire | cjmang/StS-AP-World 2.3.5 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Logique activée |
 | Kingdom Hearts: Birth by Sleep Final Mix | gaithernOrg/ArchipelagoKHBBS 0.2.0 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 8/8 + e2e | Nom « Kingdom Hearts Birth by Sleep ». Logique activée |
@@ -38,7 +38,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | Ratchet & Clank 3 | Taoshix/Archipelago-RaC3 v0.6.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Ratchet and Clank 3 ». Logique activée |
 | AEMinecraft | KuroLynx/AEMinecraft v0.6.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | v0.7.0-rc.1 (prerelease) ignorée. Logique activée |
 | The Binding of Isaac: Repentance | NaveTK/Archipelago v0.4.3 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « The Binding of Isaac Repentance ». Logique activée |
-| Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 5/5, e2e ⏳ | Adaptateur : coupes/persos/véhicules de départ et options depuis `slot_data` |
+| Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 5/5 + e2e | Adaptateur : coupes/persos/véhicules de départ et options depuis `slot_data`. Logique activée |
 | The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ⏳ | ⏳ | En dernier. Génération de test sans ROM : `fill_slot_data` débloqué (champs client seulement) |
 
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
