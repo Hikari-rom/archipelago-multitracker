@@ -43,7 +43,8 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
 ```json
 {
   "items_list": [
-    {"index": 0, "name": "Dash Refill", "sender": "KH2", "own": false, "location": "Some Location",
+    {"index": 0, "name": "Dash Refill", "sender": "KH2", "own": false, "origin": "other",  // start | server | own | other
+     "location": "Some Location",
      "progression": true, "useful": false, "trap": false, "new": true}
   ],
   "hints_mine_elsewhere": [Hint, ...],

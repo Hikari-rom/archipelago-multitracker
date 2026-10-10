@@ -232,13 +232,18 @@ class Service:
         for index, item in enumerate(st.items):
             sender = item.get("player", 0)
             flags = item.get("flags", 0) or 0
+            location = item.get("location")
+            location = -1 if location is None else location
+            origin = ("start" if location == -2 else "server" if location < 0 or sender == 0
+                      else "own" if sender == st.slot else "other")
             items.append({
                 "index": index,
                 "name": self.datapackage.item_name(st.game, item.get("item")),
                 "sender": self.player_name(st, sender),
                 "own": sender == st.slot,
+                "origin": origin,  # start (inventaire de départ) | server | own | other
                 "location": self.datapackage.location_name(self.player_game(st, sender), item.get("location"))
-                if (item.get("location") or -1) >= 0 else None,
+                if location >= 0 else None,
                 "progression": bool(flags & ITEM_FLAG_PROGRESSION),
                 "useful": bool(flags & ITEM_FLAG_USEFUL),
                 "trap": bool(flags & ITEM_FLAG_TRAP),

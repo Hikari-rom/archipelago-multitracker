@@ -43,3 +43,35 @@ Chaque choix non trivial, avec sa raison et les alternatives écartées.
 - `fetch_apworlds.py` réutilise la version verrouillée tant qu'on ne passe pas `--update` (reproductible).
 - Le nom de jeu de Super Mario Odyssey est **« Spicy Meatball Overdrive »** dans l'apworld v1.5.3 : c'est ce nom qui
   sert de clé (il apparaît tel quel dans le datapackage du serveur).
+
+## D6 — Sweep maison plutôt que `TrackerCore.updateTracker` (M5)
+- UT crée chaque item reçu avec `create_item` (classification par défaut) et n'applique les flags du serveur qu'en OU.
+  Les items que la génération a rétrogradés (ex. fraises Celeste excédentaires, cellules de Jak) comptaient donc
+  comme progression → logique surestimée (détecté par la comparaison de référence).
+- **Choix :** on garde UT pour la **régénération** du monde (yaml / `slot_data` / hooks UT) et on fait le sweep
+  nous-mêmes (`SlotLogic.in_logic`) avec la classification **exacte** issue de `NetworkItem.flags`.
+  Exception : l'inventaire de départ (location −2) et les items serveur (−1) sont envoyés avec `flags = 0` par
+  MultiServer → on garde la classification du monde (comme UT).
+- La logique « glitched » d'UT n'est pas exposée (pas demandée).
+
+## D7 — Adaptateurs de régénération par jeu (M5)
+- Certains mondes font des tirages aléatoires qui changent la logique sans implémenter les hooks UT. Quand le résultat
+  est connu d'un tracker classique, un adaptateur (`backend/multitracker/logic/adapters.py`) le rejoue pendant la
+  régénération (patch de classe actif uniquement pendant la régénération du slot, dans le process worker).
+- **TWW HD** : entrées = `slot_data["entrances"]` ; donjons requis (mode required bosses) déduits de la liste des
+  locations du slot (cochées + manquantes, envoyée par le serveur au Connect) : les locations des donjons bannis
+  n'existent pas. Aucune donnée de spoiler.
+
+## D8 — Options aléatoires dans les yamls du joueur (M5)
+- Une option `random`/pondérée serait re-tirée différemment par la régénération. Si le monde met l'option sous le
+  même nom dans `slot_data`, on injecte la vraie valeur ; sinon la logique reste calculée mais un avertissement
+  s'affiche sous le badge (« logique peut-être approximative »).
+
+## D9 — Activation de la logique par jeu (M5)
+- `logic: true` dans `config/apworlds.yaml` seulement pour les jeux validés (référence + bout en bout + campagne
+  d'options aléatoires). Les autres affichent « Logique indisponible » (niveau 1 seulement), modifiable à la main.
+
+## D10 — Un seul process worker pour la logique (M5)
+- La génération AP n'est pas thread-safe et garde de l'état global : un process `spawn` dédié, requêtes sérialisées,
+  redémarré s'il meurt ou dépasse 300 s. Un monde régénéré est gardé en mémoire par slot (clé : jeu, slot,
+  `slot_data`, contenu du yaml). Sur la seed de test : ~8 s pour le premier calcul (import des mondes), puis < 0,1 s.
