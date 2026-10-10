@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash scripts/overnight/notify.sh *)",
+      "Bash(scripts/overnight/notify.sh *)"
+    ],
+    "deny": [
+      "Bash(sudo *)", "Bash(su *)", "Bash(doas *)",
+      "Bash(apt *)", "Bash(apt-get *)", "Bash(dpkg *)", "Bash(snap *)",
+      "Bash(systemctl *)", "Bash(crontab *)", "Bash(chsh *)",
+      "Bash(reboot*)", "Bash(shutdown*)", "Bash(poweroff*)", "Bash(halt*)",
+      "Bash(rm -rf /)", "Bash(rm -rf /*)", "Bash(rm -rf ~)", "Bash(rm -rf ~/*)", "Bash(rm -rf $HOME*)", "Bash(rm -rf ..*)",
+      "Bash(npm install -g *)", "Bash(npm i -g *)", "Bash(npm uninstall -g *)",
+      "Bash(pip install --user *)", "Bash(pip3 install --user *)",
+      "Bash(pip install --break-system-packages*)", "Bash(pip3 install --break-system-packages*)",
+      "Bash(pip uninstall *)", "Bash(pip3 uninstall *)",
+      "Bash(git push --force*)", "Bash(git push -f*)",
+      "Bash(tailscale up*)", "Bash(tailscale down*)", "Bash(tailscale logout*)", "Bash(tailscale serve reset*)",
+      "Edit(~/.bashrc)", "Edit(~/.zshrc)", "Edit(~/.profile)", "Edit(~/.zprofile)", "Edit(~/.oh-my-zsh/**)",
+      "Edit(~/.claude/**)", "Edit(~/.ssh/**)", "Edit(~/.gitconfig)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/overnight/stop-hook.sh\"" } ] }
+    ],
+    "StopFailure": [
+      { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/overnight/stop-failure-hook.sh\"" } ] }
+    ],
+    "Notification": [
+      { "matcher": "permission_prompt",
+        "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/overnight/notify.sh\" \"Claude attend une validation\" \"Une action demande ton accord dans la session de nuit.\"" } ] }
+    ]
+  },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Primary use: building a personal web app (Archipelago multiworld tracker) on the user's own Raspberry Pi dev server",
+      "Source control: github.com/Hikari-rom/archipelago-multitracker is the user's own repository; committing and pushing to its main branch is expected",
+      "Trusted sources: cloning and downloading public releases from github.com (ArchipelagoMW/Archipelago, FarisTheAncient/Archipelago and the Archipelago apworld repositories listed in OVERNIGHT_BRIEF.md); installing packages from PyPI and npm into the project's own .venv and node_modules",
+      "Notifications: ntfy.sh is the user's own push notification service; posting short progress messages through scripts/overnight/notify.sh is expected",
+      "Local services: Archipelago test servers on 127.0.0.1 ports 38281-38290 and the app on port 42753 are started by the agent itself for testing",
+      "Host containment: the sibling Enigmatik project directory may be read but must never be modified; nothing outside the repository may be modified"
+    ]
+  }
+}

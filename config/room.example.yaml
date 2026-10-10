@@ -1,0 +1,7 @@
+# Copier ce fichier en config/room.yaml (gitignoré) et le remplir.
+server: "archipelago.gg:38281"
+password: ""
+slots:
+  - name: "Romain_Celeste"
+    game: "Celeste (Open World)"
+    yaml: "config/players/celeste.yaml"   # optionnel, utile pour la logique
