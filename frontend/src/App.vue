@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { Monitor, Moon, Settings, Sun } from 'lucide-vue-next'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ConfigView from './components/ConfigView.vue'
 import SlotCard from './components/SlotCard.vue'
+import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
 import { stableOrder } from './lib/order'
 import { sortSlots, summaryText } from './lib/logic'
@@ -33,10 +41,12 @@ const chips = computed(() => [
   ...(hasNoOwner(tracker.slots) ? [{ key: NO_OWNER, label: 'Sans joueur' }] : []),
 ])
 const activeChip = computed(() => (chips.value.some((c) => c.key === ownerChoice.value) ? ownerChoice.value : ALL_OWNERS))
-function pick(k: string) {
+function pick(k: unknown) {
+  if (typeof k !== 'string' || !k) return // clicking the active chip again keeps it selected
   ownerChoice.value = k
   saveOwnerChoice(k)
 }
+const themeIcon = computed(() => ({ auto: Monitor, light: Sun, dark: Moon })[theme.value])
 const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
 const summary = computed(() => summaryText(filterByOwner(tracker.slots, activeChip.value)))
@@ -48,53 +58,69 @@ const sseLabel = computed(
 </script>
 
 <template>
-  <header class="top">
-    <div class="top-inner">
-      <div class="brand">
-        <h1>Archipelago Multitracker</h1>
-        <p v-if="tracker.server || tracker.roomUrl" class="muted server">
+  <header class="bg-card/95 supports-[backdrop-filter]:bg-card/85 sticky top-0 z-10 border-b backdrop-blur">
+    <div class="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+      <div class="min-w-0 flex-[1_1_220px]">
+        <h1 class="text-lg font-semibold">Archipelago Multitracker</h1>
+        <p v-if="tracker.server || tracker.roomUrl" class="text-muted-foreground text-xs break-all">
           <template v-if="tracker.server">Serveur : {{ tracker.server }}</template>
           <template v-if="tracker.roomUrl">
-            {{ tracker.server ? ' · ' : '' }}Room : <a v-if="roomHref" :href="roomHref" target="_blank" rel="noopener">{{ tracker.roomUrl }}</a><template v-else>{{ tracker.roomUrl }}</template>
+            {{ tracker.server ? ' · ' : '' }}Room :
+            <a v-if="roomHref" :href="roomHref" target="_blank" rel="noopener" class="text-primary underline-offset-2 hover:underline">{{ tracker.roomUrl }}</a>
+            <template v-else>{{ tracker.roomUrl }}</template>
           </template>
         </p>
       </div>
-      <span class="live" :class="'live-' + tracker.sse" role="status">
-        <span class="dot" aria-hidden="true"></span>{{ sseLabel }}
-      </span>
-      <button type="button" class="btn" aria-label="Configuration" :aria-pressed="showConfig" @click="setView(showConfig && tracker.slots.length ? 'dashboard' : 'config')">
-        <span aria-hidden="true">⚙</span> Configuration
-      </button>
-      <button
-        type="button"
-        class="btn theme"
-        :aria-label="`Thème : ${themeLabel[theme]}. Changer de thème`"
-        @click="theme = nextTheme(theme)"
+      <StatusDot :status="tracker.sse" :label="sseLabel" />
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label="Configuration"
+        :aria-pressed="showConfig"
+        @click="setView(showConfig && tracker.slots.length ? 'dashboard' : 'config')"
       >
-        Thème : {{ themeLabel[theme] }}
-      </button>
+        <Settings aria-hidden="true" /> Configuration
+      </Button>
+      <Button variant="outline" size="sm" :aria-label="`Thème : ${themeLabel[theme]}. Changer de thème`" @click="theme = nextTheme(theme)">
+        <component :is="themeIcon" aria-hidden="true" /> Thème : {{ themeLabel[theme] }}
+      </Button>
     </div>
-    <div v-if="!showConfig && filterOn" class="top-inner chips" role="group" aria-label="Filtrer par joueur">
-      <button v-for="c in chips" :key="c.key" type="button" class="chipbtn" :class="{ on: activeChip === c.key }" :aria-pressed="activeChip === c.key" @click="pick(c.key)">{{ c.label }}</button>
+    <div v-if="!showConfig && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        class="flex-wrap"
+        :model-value="activeChip"
+        aria-label="Filtrer par joueur"
+        @update:model-value="pick"
+      >
+        <ToggleGroupItem v-for="c in chips" :key="c.key" :value="c.key" class="px-3">{{ c.label }}</ToggleGroupItem>
+      </ToggleGroup>
     </div>
-    <div v-if="!showConfig" class="top-inner sub">
-      <p class="summary">{{ summary }}</p>
-      <label class="check"><input v-model="hideDone" type="checkbox" /> Masquer les jeux terminés</label>
+    <div v-if="!showConfig" class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 pb-2.5">
+      <Badge variant="good" class="px-2.5 py-0.5 text-sm font-semibold">{{ summary }}</Badge>
+      <div class="flex min-h-8 items-center gap-2">
+        <Checkbox id="hide-done" v-model="hideDone" />
+        <Label for="hide-done" class="font-normal">Masquer les jeux terminés</Label>
+      </div>
     </div>
   </header>
 
-  <main class="main-grid-wrap">
+  <main class="mx-auto max-w-[1400px] px-4 pt-3.5 pb-10">
     <ConfigView v-if="showConfig" />
     <template v-else>
-    <p v-if="tracker.roomError" class="warn-banner" role="alert">Room : {{ tracker.roomError }}</p>
-    <p v-if="tracker.loadError && !tracker.slots.length" class="banner" role="alert">
-      Impossible de joindre le serveur : {{ tracker.loadError }}
-    </p>
-    <p v-else-if="!tracker.loaded" class="muted">Chargement…</p>
-    <p v-else-if="!visible.length" class="muted">Tous les jeux sont terminés 🎉</p>
-    <div v-else class="grid">
-      <SlotCard v-for="s in visible" :key="s.name" :summary="s" />
-    </div>
+      <Alert v-if="tracker.roomError" class="bg-warn text-warn-foreground mb-3 border-transparent" role="alert">
+        <AlertDescription class="text-warn-foreground">Room : {{ tracker.roomError }}</AlertDescription>
+      </Alert>
+      <Alert v-if="tracker.loadError && !tracker.slots.length" variant="destructive" role="alert">
+        <AlertDescription>Impossible de joindre le serveur : {{ tracker.loadError }}</AlertDescription>
+      </Alert>
+      <p v-else-if="!tracker.loaded" class="text-muted-foreground">Chargement…</p>
+      <p v-else-if="!visible.length" class="text-muted-foreground">Tous les jeux sont terminés 🎉</p>
+      <div v-else class="grid grid-cols-1 items-start gap-3 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-3">
+        <SlotCard v-for="s in visible" :key="s.name" :summary="s" />
+      </div>
     </template>
   </main>
 </template>

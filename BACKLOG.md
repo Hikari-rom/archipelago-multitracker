@@ -94,8 +94,8 @@ Lecture seule absolue vers la vraie room : seule l'app s'y connecte, jamais le b
 ## M10 — Design avec shadcn-vue (demandé par Romain le 2026-10-11)
 Avant de refaire la page Configuration, pour ne pas la coder deux fois. Garder : interface en français, clair/sombre/auto
 sans flash, mobile d'abord (390 px), accessibilité (labels, focus, aria), perf sur le Pi (bundle raisonnable).
-- [ ] Mettre en place Tailwind CSS + shadcn-vue dans `frontend/` (dépendances locales uniquement, versions figées, composants copiés dans `src/components/ui/`, thème via variables CSS reliées au thème clair/sombre existant) ; noter le choix dans DECISIONS.md
-- [ ] Migrer le tableau de bord : cartes (Card), badges (Badge), boutons (Button), sections repliables (Collapsible/Accordion), barre de progression (Progress), filtres par joueur (Toggle group), bandeaux (Alert) ; tests vitest adaptés, captures avant/après mobile + desktop, clair + sombre
+- [x] Mettre en place Tailwind CSS + shadcn-vue dans `frontend/` (dépendances locales uniquement, versions figées, composants copiés dans `src/components/ui/`, thème via variables CSS reliées au thème clair/sombre existant) ; noter le choix dans DECISIONS.md
+- [x] Migrer le tableau de bord : cartes (Card), badges (Badge), boutons (Button), sections repliables (Collapsible/Accordion), barre de progression (Progress), filtres par joueur (Toggle group), bandeaux (Alert) ; tests vitest adaptés, captures avant/après mobile + desktop, clair + sombre
 - [ ] Relecture M10 + commit/push + notif
 
 ## M11 — Configuration : page et vraie room (demandé par Romain le 2026-10-11)

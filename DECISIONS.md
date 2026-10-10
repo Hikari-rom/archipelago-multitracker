@@ -87,3 +87,12 @@ en logique (ce qu'il y a à faire tout de suite), puis le plus de checks restant
 Pour un apworld non core, la logique n'est activée que si le checksum du datapackage du jeu dans la room est
 identique à celui de l'apworld installé : sinon la logique pourrait venir d'une autre version que celle de la
 génération et mentir.
+
+## D13 — shadcn-vue + Tailwind CSS 4 pour l'interface (2026-10-11, demandé par Romain)
+Composants shadcn-vue (style new-york) copiés dans `frontend/src/components/ui/` (modifiables : variantes de badge
+`good`/`warn`/`info`/`muted`, `Card` avec prop `as`), sur reka-ui, Tailwind CSS 4 via `@tailwindcss/vite`, icônes
+lucide. Versions figées dans `package.json`, tout en local (`node_modules/`). Les couleurs restent celles de l'app,
+exposées en variables shadcn (`--background`, `--primary`…) et reliées au thème existant : la variante `dark:` suit
+`data-theme="dark"`, ou le système quand le choix est « Auto » (`@custom-variant dark` dans `style.css`), donc pas de
+classe `.dark` à gérer en JS. Coût : JS 92 → 221 Ko (77 Ko gzip), acceptable sur le réseau local.
+Ajouter un composant : `cd frontend && npx shadcn-vue@2.8.2 add <nom>`.

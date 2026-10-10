@@ -33,7 +33,7 @@ describe('SlotCard', () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ seen: 4 }), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     const w = mount(SlotCard, { props: { summary: tracker.slots[0] } })
-    await w.find('button.btn').trigger('click')
+    await w.find('button.seen').trigger('click')
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/slots/Romain%2FCeleste/seen')
