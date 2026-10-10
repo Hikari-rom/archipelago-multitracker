@@ -53,7 +53,8 @@ async function onWake() {
   waking.value = true
   wakeError.value = ''
   try {
-    await wakeRoom()
+    const r = await wakeRoom()
+    if (!r.ok && r.room_error) wakeError.value = r.room_error
   } catch (e) {
     wakeError.value = e instanceof Error ? e.message : String(e)
   } finally {

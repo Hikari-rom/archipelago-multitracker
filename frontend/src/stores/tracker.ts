@@ -182,7 +182,7 @@ export function connect(): void {
   cur.addEventListener('room', (e) => {
     const d = parse(e)
     if (!d) return
-    if (typeof d.server === 'string') tracker.server = d.server
+    tracker.server = typeof d.server === 'string' ? d.server : ''
     tracker.roomUrl = d.room_url ?? ''
     tracker.roomError = d.room_error ?? ''
     tracker.roomSleeping = !!d.room_sleeping

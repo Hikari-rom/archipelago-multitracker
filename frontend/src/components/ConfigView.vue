@@ -75,7 +75,8 @@ const visible = computed(() =>
 const gameOptions = computed(() => distinctGames(rows.value))
 const diags = computed(() => {
   const out: Record<string, Diag[]> = {}
-  for (const r of rows.value) out[r.name] = diagnose(r, yamls.value, games.value)
+  const roomSlots = room.value ? new Set(room.value.players.map((p) => p.name)) : undefined
+  for (const r of rows.value) out[r.name] = diagnose(r, yamls.value, games.value, roomSlots)
   return out
 })
 const summary = computed(() => {
@@ -145,8 +146,10 @@ async function onDiscover(wake = false): Promise<void> {
     const d = await api.discover(roomUrl.value.trim(), wake)
     room.value = d
     if (d.room_url) roomUrl.value = d.room_url
-    const known = new Set(rows.value.map((r) => r.name))
-    const merged = mergeDiscovered(rows.value, d.players)
+    const inRoom = new Set(d.players.map((p) => p.name))
+    const kept = rows.value.filter((r) => r.checked || inRoom.has(r.name)) // e.g. slots of another room
+    const known = new Set(kept.map((r) => r.name))
+    const merged = mergeDiscovered(kept, d.players)
     // newly found slots that have exactly one matching yaml are pre-selected
     const fresh = merged.filter((r) => !known.has(r.name))
     const assoc = autoAssociate(fresh, yamls.value, true).rows
@@ -228,6 +231,14 @@ function onAssociate(): void {
     : 'Aucune nouvelle association (même nom et même jeu requis).'
 }
 
+/** Enter never saves the whole configuration by accident; in the room field it runs the discovery. */
+function onEnter(ev: KeyboardEvent): void {
+  const target = ev.target as HTMLElement
+  if (target.tagName !== 'INPUT') return
+  ev.preventDefault()
+  if (target.id === 'cfg-room') void onDiscover()
+}
+
 function setVisible(value: boolean): void {
   rows.value = setChecked(rows.value, new Set(visible.value.map((r) => r.name)), value)
 }
@@ -288,7 +299,7 @@ const selectClass =
     <Alert v-else-if="loadError" variant="destructive" role="alert">
       <AlertDescription>Impossible de lire la configuration : {{ loadError }}</AlertDescription>
     </Alert>
-    <form v-else class="flex flex-col gap-4" @submit.prevent="onSave">
+    <form v-else class="flex flex-col gap-4" novalidate @submit.prevent="onSave" @keydown.enter="onEnter">
       <!-- 1. Room -->
       <Card class="gap-4 py-5">
         <CardHeader class="px-5">
@@ -315,7 +326,7 @@ const selectClass =
             <p v-if="discoverError" class="text-destructive text-sm" role="alert">{{ discoverError }}</p>
           </div>
 
-          <div v-if="room" class="bg-muted/60 flex flex-wrap items-center gap-2 rounded-lg p-3 text-sm" role="status">
+          <div v-if="room" class="bg-muted/60 flex flex-wrap items-center gap-2 rounded-lg p-3 text-sm">
             <Badge variant="outline">{{ room.players.length }} slots</Badge>
             <Badge variant="outline">{{ roomGames }} jeux</Badge>
             <Badge v-if="room.server" variant="outline">{{ room.server }}</Badge>
@@ -486,7 +497,7 @@ const selectClass =
       <!-- 4. Save -->
       <Card class="gap-3 py-4">
         <CardContent class="flex flex-col gap-3 px-5">
-          <p class="text-sm" role="status">
+          <p class="text-sm">
             <strong>{{ summary.count }}</strong> slot(s) suivi(s) · {{ summary.withLogic }} avec logique
             <template v-if="summary.warnings"> · <span class="text-warn-foreground bg-warn rounded px-1">{{ summary.warnings }} avertissement(s)</span></template>
             <template v-if="summary.errors"> · <span class="text-destructive">{{ summary.errors }} erreur(s)</span></template>

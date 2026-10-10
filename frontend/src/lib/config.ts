@@ -137,18 +137,56 @@ export const setAll = (rows: SlotRow[], value: boolean): SlotRow[] => rows.map((
 
 // ---- yamls: slot <-> yaml association and per-slot diagnosis ----
 
-/** Does a yaml `name` (which may use Archipelago's {player}/{PLAYER}/{number}/{NUMBER} placeholders) give this slot name? */
+const PLACEHOLDER = /\{(number|NUMBER|player|PLAYER)(?::[^}]*)?\}/g
+/** Archipelago keeps 16 characters of the formatted name, stripped (Generate.handle_name). */
+const truncateName = (n: string) => n.trim().slice(0, 16).trim()
+
+/** Does a yaml `name` give this slot name? Follows Generate.handle_name: `%number%`/`%player%` aliases, `%%`
+ * escape, {player}/{number} (always a number) and {PLAYER}/{NUMBER} (empty for 1), then 16 characters max. */
 export function nameMatches(pattern: string, slot: string): boolean {
-  if (!/\{(player|PLAYER|number|NUMBER)\}/.test(pattern)) return pattern === slot
-  const parts = pattern.split(/\{(?:player|PLAYER|number|NUMBER)\}/)
-  const re = parts.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\d*')
-  return new RegExp(`^${re}$`).test(slot)
+  const normalized = pattern
+    .split('%%')
+    .map((x) => x.replace(/%number%/g, '{number}').replace(/%player%/g, '{player}'))
+    .join('%')
+    .trim()
+  type Tok = { lit: string } | { min: number }
+  const toks: Tok[] = []
+  let last = 0
+  for (const m of normalized.matchAll(PLACEHOLDER)) {
+    if (m.index! > last) toks.push({ lit: normalized.slice(last, m.index) })
+    toks.push({ min: m[1] === m[1].toLowerCase() ? 1 : 0 }) // {player}/{number}: a number; {PLAYER}/{NUMBER}: may be empty
+    last = m.index! + m[0].length
+  }
+  if (last < normalized.length) toks.push({ lit: normalized.slice(last) })
+  if (!toks.some((t) => 'min' in t)) return truncateName(normalized) === slot
+  // exact: the whole formatted name; truncated (16 characters kept): the slot is a prefix of a formatted name
+  const truncated = slot.length >= 15
+  const walk = (ti: number, si: number): boolean => {
+    if (si === slot.length) return truncated || toks.slice(ti).every((t) => 'min' in t && t.min === 0)
+    if (ti === toks.length) return false
+    const t = toks[ti]
+    if ('lit' in t) {
+      for (let k = 0; k < t.lit.length; k++) {
+        if (si + k === slot.length) return truncated
+        if (slot[si + k] !== t.lit[k]) return false
+      }
+      return walk(ti + 1, si + t.lit.length)
+    }
+    let digits = 0
+    while (si + digits < slot.length && /\d/.test(slot[si + digits])) digits++
+    for (let j = digits; j >= t.min; j--) if (walk(ti + 1, si + j)) return true
+    return false
+  }
+  return walk(0, 0)
 }
+
+/** Games of a yaml player document (weighted games are joined with " | " by the backend). */
+export const playerGames = (p: YamlPlayer) => p.game.split(' | ')
 
 /** Yamls (no read error) holding a player document for this slot: same game and matching name. */
 export function yamlCandidates(row: Pick<SlotRow, 'name' | 'game'>, yamls: YamlEntry[]): string[] {
   return yamls
-    .filter((y) => !y.error && y.players.some((p) => p.game === row.game && nameMatches(p.name, row.name)))
+    .filter((y) => !y.error && y.players.some((p) => playerGames(p).includes(row.game) && nameMatches(p.name, row.name)))
     .map((y) => y.path)
 }
 
@@ -171,8 +209,14 @@ export interface Diag {
   text: string
 }
 
-export function diagnose(row: SlotRow, yamls: YamlEntry[], games: Record<string, GameInfo>): Diag[] {
+export function diagnose(
+  row: SlotRow,
+  yamls: YamlEntry[],
+  games: Record<string, GameInfo>,
+  roomSlots?: Set<string>,
+): Diag[] {
   const out: Diag[] = []
+  if (roomSlots && !roomSlots.has(row.name)) out.push({ level: 'error', text: 'slot absent de cette room' })
   const info = games[row.game]
   if (!row.game) out.push({ level: 'info', text: 'jeu inconnu tant que la room n\'est pas découverte' })
   else if (!info) out.push({ level: 'info', text: 'pas d\'apworld : suivi des checks seulement' })
@@ -181,8 +225,8 @@ export function diagnose(row: SlotRow, yamls: YamlEntry[], games: Record<string,
     const y = yamls.find((e) => e.path === row.yaml)
     if (!y) out.push({ level: 'warn', text: 'yaml introuvable dans config/players/' })
     else if (y.error) out.push({ level: 'error', text: `yaml illisible : ${y.error}` })
-    else if (row.game && !y.players.some((p) => p.game === row.game)) {
-      const other = [...new Set(y.players.map((p) => p.game))].join(', ')
+    else if (row.game && !y.players.some((p) => playerGames(p).includes(row.game))) {
+      const other = [...new Set(y.players.flatMap(playerGames))].join(', ')
       out.push({ level: 'error', text: `ce yaml est pour ${other}` })
     } else if (!y.players.some((p) => nameMatches(p.name, row.name))) {
       const names = y.players.map((p) => p.name).join(', ')
@@ -218,6 +262,7 @@ export function distinctGames(rows: SlotRow[]): string[] {
 
 /** "#config?room=https://..." or "?room=..." -> the room link to pre-fill, if any. */
 export function roomFromLocation(hash: string, search: string): string {
+  if (!/^#config(\?|$)/.test(hash)) return ''
   const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : search.replace(/^\?/, '')
   try {
     return new URLSearchParams(q).get('room')?.trim() ?? ''

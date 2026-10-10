@@ -108,10 +108,27 @@ describe('yaml association and diagnosis', () => {
 
   it('name placeholders', () => {
     expect(nameMatches('Bob{number}', 'Bob2')).toBe(true)
-    expect(nameMatches('Bob{number}', 'Bob')).toBe(true)
+    expect(nameMatches('Bob{number}', 'Bob')).toBe(false) // {number} is always a number
+    expect(nameMatches('Bob{NUMBER}', 'Bob')).toBe(true)
     expect(nameMatches('Bob{number}', 'Bobby')).toBe(false)
     expect(nameMatches('a.b', 'axb')).toBe(false)
     expect(nameMatches('P{player}_x', 'P12_x')).toBe(true)
+    expect(nameMatches('P{player}', 'P')).toBe(false) // {player} is always a number
+    expect(nameMatches('P{PLAYER}', 'P')).toBe(true) // {PLAYER} is empty for player 1
+    expect(nameMatches('Bob%number%', 'Bob3')).toBe(true)
+    expect(nameMatches('100%%{number}', '100%2')).toBe(true)
+    expect(nameMatches('Bob{number:02}', 'Bob07')).toBe(true)
+    // Archipelago keeps 16 characters
+    expect(nameMatches('Romain_Ocarina_Of_Time', 'Romain_Ocarina_O')).toBe(true)
+    expect(nameMatches(' romain_kh2 ', 'romain_kh2')).toBe(true)
+    expect(nameMatches('Romain_Ocarina_Of_Time_{number}', 'Romain_Ocarina_O')).toBe(true)
+    expect(nameMatches('Romain_Ocarina_Of_Time_{number}', 'Romain_Ocarina_X')).toBe(false)
+  })
+  it('weighted games and slots missing from the room', () => {
+    const weighted = [{ path: 'w.yaml', players: [{ name: 'W', game: 'Balatro | Jak 3' }], error: null }]
+    expect(autoAssociate([row('W', 'Jak 3')], weighted).matched).toBe(1)
+    expect(diagnose(row('W', 'Jak 3', 'w.yaml'), weighted, {})).toEqual([{ level: 'info', text: "pas d'apworld : suivi des checks seulement" }])
+    expect(diagnose(row('Old', 'Jak 3'), [], {}, new Set(['W']))[0]).toEqual({ level: 'error', text: 'slot absent de cette room' })
   })
   it('associates only unambiguous matches', () => {
     const rows = [row('romain_kh2', 'Kingdom Hearts 2'), row('Bob3', 'Celeste (Open World)'), row('Bob', 'Hades')]
@@ -150,6 +167,7 @@ describe('yaml association and diagnosis', () => {
     expect(roomFromLocation('#config?room=https%3A%2F%2Farchipelago.gg%2Froom%2FAbc', '')).toBe('https://archipelago.gg/room/Abc')
     expect(roomFromLocation('#config', '?room=https://archipelago.gg/room/X')).toBe('https://archipelago.gg/room/X')
     expect(roomFromLocation('#config', '')).toBe('')
+    expect(roomFromLocation('', '?room=https://archipelago.gg/room/X')).toBe('') // only for the config page
   })
   it('probe messages', () => {
     expect(probeMessage({ ok: false, errors: ['InvalidPassword'] }, 'a')).toBe('Échec : mot de passe refusé')

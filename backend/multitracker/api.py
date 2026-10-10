@@ -133,9 +133,12 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         same_origin(request)
         service = get_service(request)
         try:
-            await service.wake_room_now()
+            woke = await service.wake_room_now()
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
+        if not woke:
+            return {"ok": False, "server": service.current_server,
+                    "room_error": "réveil déjà demandé il y a moins de 30 s : patiente un peu"}
         return {"ok": service.room_error is None, "server": service.current_server, "room_error": service.room_error}
 
     @app.post("/api/config/test")

@@ -9,6 +9,7 @@ from typing import Any
 from .ap.tracker import SlotTracker
 from .config import RoomConfig, SlotConfig
 from .datapackage import DataPackageCache
+from .history import History
 from .logic import LogicEngine, LogicRequest, LogicResult, NullLogicEngine
 from .store import Store
 
@@ -27,6 +28,7 @@ class Service:
         self.config = config
         self.store = store
         self.datapackage = DataPackageCache(store)
+        self.history = History(store)
         self.logic_engine = logic or NullLogicEngine()
         self.logic_debounce = logic_debounce
         self.publish_debounce = publish_debounce
@@ -115,20 +117,22 @@ class Service:
             self._room_woken_at = time.monotonic()
         self._room_task = asyncio.create_task(self._refresh_room(wake))
 
-    async def wake_room_now(self) -> None:
+    async def wake_room_now(self) -> bool:
         """One explicit wake-up ("Réveiller maintenant"), whatever the wake_room option says. Serialised and
-        rate-limited: the room page is loaded at most every 30 seconds."""
+        rate-limited: the room page is loaded at most every 30 seconds. Returns False when rate-limited."""
         if not self.config.room_url:
             raise ValueError("aucune room archipelago.gg configurée")
         async with self._wake_lock:
             if self._room_task is not None and not self._room_task.done():
                 await asyncio.gather(self._room_task, return_exceptions=True)
-            if time.monotonic() - self._room_woken_at > 30:
+            woke = time.monotonic() - self._room_woken_at > 30
+            if woke:
                 self._room_checked_at = self._room_woken_at = time.monotonic()
                 self._room_task = asyncio.create_task(self._refresh_room(True))
                 await self._room_task
         for tracker in self.trackers.values():
             tracker.retry_now()
+        return woke
 
     async def _refresh_room(self, wake: bool = True) -> None:
         from .room import RoomError, fetch_room
@@ -136,6 +140,7 @@ class Service:
             info = await asyncio.to_thread(fetch_room, self.config.room_url, 15.0, wake)
         except Exception as exc:  # RoomError, or an unexpected answer from the site
             self.room_error = str(exc) if isinstance(exc, RoomError) else f"réponse inattendue du site : {exc}"[:300]
+            self.room_sleeping = False  # unknown: the site could not be read
             log.warning("room refresh failed: %s", exc)
             self._publish_room()
             return
@@ -156,6 +161,11 @@ class Service:
         if "connected" in kinds and self.room_sleeping:  # someone woke the room up
             self.room_sleeping, self.room_error = False, None
             self._publish_room()
+        st = tracker.state
+        if st.synced and st.seed_name and kinds & {"items", "synced", "checks"}:
+            self.history.on_items(st.seed_name, name, len(st.items))
+            if "checks" in kinds and "connected" not in kinds:
+                self.history.on_checks(st.seed_name, name)
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
@@ -331,6 +341,7 @@ class Service:
                       "in_my_world": sum(1 for h in in_my_world if not h["found"]),
                       "in_my_world_in_logic": hinted_in_logic},
             "goal": st.goal_reached,
+            "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
             "logic": logic.to_json(),
             "updated_at": st.updated_at,
         }
@@ -358,6 +369,7 @@ class Service:
                 "useful": bool(flags & ITEM_FLAG_USEFUL),
                 "trap": bool(flags & ITEM_FLAG_TRAP),
                 "new": index >= seen,
+                "received_at": self.history.item_time(st.seed_name, name, index) if st.seed_name else None,
             })
         mine_elsewhere, in_my_world = self._hints(name)
         hinted = {h["location_id"]: h for h in in_my_world if not h["found"]}
