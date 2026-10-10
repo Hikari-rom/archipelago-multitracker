@@ -141,10 +141,50 @@ def _ori_wotw(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]
         del world_cls.spawn_region_name  # instances keep their values in __dict__
 
 
+def apply_options(world, slot_data: dict[str, Any], names: list[str]) -> None:
+    """Set world options from slot_data entries named like the options (values the seed really used)."""
+    for name in names:
+        option = getattr(world.options, name, None)
+        if option is not None and name in slot_data and slot_data[name] is not None:
+            try:
+                setattr(world.options, name, type(option).from_any(slot_data[name]))
+            except Exception as exc:  # unknown format: keep the yaml/default value
+                log.warning("%s: cannot apply option %s=%r from slot_data: %s", world.game, name, slot_data[name], exc)
+
+
+@contextlib.contextmanager
+def _mkwii(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Mario Kart Wii: its interpret_slot_data only runs after the regions/rules were built from freshly
+    rolled starting cups/characters/vehicles, and the slot_data options are never re-applied. Apply both
+    during generate_early instead."""
+    if "starting_cups" not in slot_data:
+        yield
+        return
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        apply_options(self, slot_data, ["enabled_ccs", "enabled_cup_check_tiers", "include_race_checks",
+                                        "lock_default_characters", "lock_default_vehicles",
+                                        "enable_item_randomization", "enable_traps", "starting_items",
+                                        "cups_required_for_goal", "goal_difficulty", "goal_cc"])
+        original(self)
+        self.starting_cups = dict(slot_data["starting_cups"])
+        self.starting_characters = list(slot_data.get("starting_characters") or [])
+        self.starting_kart = slot_data.get("starting_kart")
+        self.starting_bike = slot_data.get("starting_bike")
+
+    world_cls.generate_early = generate_early
+    try:
+        yield
+    finally:
+        world_cls.generate_early = original
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "The Wind Waker HD": _twwhd,
     "Super Mario 64": _sm64ex,
     "Ori and the Will of the Wisps": _ori_wotw,
+    "Mario Kart Wii": _mkwii,
 }
 
 
