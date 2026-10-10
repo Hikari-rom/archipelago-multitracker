@@ -3,7 +3,7 @@
 ## État actuel (5 lignes)
 1. M0 à M6 faits et relus ; M7 quasi fini (17 jeux sur 22 avec logique validée) ; M8 fait (découverte de room, multi-joueurs, robustesse, perf).
 2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur le multiworld de **test** local (5 jeux).
-3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 15 jeux, voir `docs/COMPAT.md`.
+3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 17 jeux, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 
@@ -70,4 +70,4 @@
 - Serveur de test local (port 38281) lancé pour la démo : `.venv/bin/python scripts/testenv/serve.py stop` pour l'arrêter.
 
 ## Prochaines étapes
-- Finir Balatro / PokePark / Phantom Hourglass, retenter Ori WotW (événements de combat).
+- Session interrompue par la limite d'usage : reprendre Balatro / PokePark / Phantom Hourglass (adaptateurs partiels dans backend/multitracker/logic/adapters_m7.py, logique non activée), puis retenter Ori WotW (événements de combat).
