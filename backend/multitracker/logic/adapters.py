@@ -188,6 +188,11 @@ ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] 
 }
 
 
+from .adapters_m7 import ADAPTERS_M7  # noqa: E402
+
+ADAPTERS.update(ADAPTERS_M7)
+
+
 def regeneration_patch(game: str, world_cls: type, slot_data: dict[str, Any],
                        location_ids: set[int]) -> ContextManager:
     """location_ids: every location of the slot as known by the server (checked + missing)."""

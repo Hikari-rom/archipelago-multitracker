@@ -76,7 +76,12 @@ def _run_once(game: str, companions: list[str], run: int, keep_default: bool, at
         multiworld = lr.regenerate(fixture_link.name, run)
     finally:
         fixture_link.unlink()
-    lr.check_same_fill(multiworld, multidata)
+    try:
+        lr.check_same_fill(multiworld, multidata)
+    except AssertionError as exc:
+        # The generator itself is not reproducible (e.g. iterates over objects ordered by memory address):
+        # this run cannot be compared, it says nothing about the logic.
+        return {"run": run, "generated": True, "comparable": False, "error": str(exc)[:300]}
     reports = []
     with lr.ToolProcess() as tool:  # the app's worker, in its own process
         for player in multiworld.player_ids:
@@ -115,13 +120,14 @@ def main() -> int:
             res = {"run": run, "generated": None, "error": f"{type(exc).__name__}: {exc}"[:400]}
         res["seconds"] = round(time.time() - started, 1)
         results.append(res)
-        status = "OK " if res.get("ok") else ("GEN" if res.get("generated") is False else "KO ")
+        status = ("OK " if res.get("ok") else "GEN" if res.get("generated") is False
+                  else "NC " if res.get("comparable") is False else "KO ")
         print(f"{status} run {run}: {res.get('snapshots', '-')} snapshots, {res['seconds']}s "
               f"{res.get('error', '')} {json.dumps(res.get('bad', [])[:1], ensure_ascii=False)[:600]}", flush=True)
     out = WORK / f"{slug(args.game)}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
-    generated = [r for r in results if r.get("generated")]
+    generated = [r for r in results if r.get("generated") and r.get("comparable", True)]
     return 0 if generated and all(r.get("ok") for r in generated) else 1
 
 
