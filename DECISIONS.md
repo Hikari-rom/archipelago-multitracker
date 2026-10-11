@@ -82,6 +82,9 @@ fiable : la connexion de l'app (tag Tracker) fait passer le slot à CLIENT_CONNE
 le serveur ne remet pas le statut à CLIENT_UNKNOWN quand le jeu se déconnecte. Un slot est donc « actif » s'il a fait
 un check dans les 30 dernières minutes (horodatage vu par l'app, persisté). « Le plus de checks » = le plus de checks
 en logique (ce qu'il y a à faire tout de suite), puis le plus de checks restants.
+Limites acceptées (relecture M12) : une mise à jour de plus de 10 checks d'un coup (`!release`, `!collect`, but d'un
+autre jeu) n'est pas de l'activité ; un `!collect` plus petit d'un autre joueur, si. L'heure affichée est celle du
+serveur : le navigateur corrige son horloge avec `now` de `/api/slots`.
 
 ## D12 — Logique d'autres jeux seulement à version identique (2026-10-11)
 Pour un apworld non core, la logique n'est activée que si le checksum du datapackage du jeu dans la room est

@@ -511,7 +511,6 @@ const selectClass =
             <select
               :value="tracker.activeMinutes"
               :class="cn(selectClass, 'w-auto')"
-              aria-label="Durée pour être actif"
               @change="onActiveMinutes"
             >
               <option v-for="m in ACTIVE_CHOICES" :key="m" :value="m">{{ m >= 60 ? `${m / 60} h` : `${m} min` }}</option>

@@ -74,6 +74,7 @@ class Service:
     async def _stop_trackers(self) -> None:
         # Trackers first (stopping them may still schedule logic/publish tasks), then every task.
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
+        self.history.flush()
         tasks = [t for t in [*self._logic_tasks.values(), self._publish_task, self._room_task] if t is not None]
         for task in tasks:
             task.cancel()
@@ -162,10 +163,12 @@ class Service:
             self.room_sleeping, self.room_error = False, None
             self._publish_room()
         st = tracker.state
-        if st.synced and st.seed_name and kinds & {"items", "synced", "checks"}:
-            self.history.on_items(st.seed_name, name, len(st.items))
+        if st.seed_name and st.status != "connected":
+            self.history.lost(st.seed_name, name)
+        elif st.synced and st.seed_name and kinds & {"items", "synced", "checks"}:
+            self.history.on_items(st.seed_name, name, len(st.items), fresh="synced" in kinds)
             if "checks" in kinds and "connected" not in kinds:
-                self.history.on_checks(st.seed_name, name)
+                self.history.on_checks(st.seed_name, name, st.new_checks)
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
@@ -349,8 +352,10 @@ class Service:
     def detail(self, name: str) -> dict[str, Any]:
         st = self.trackers[name].state
         seen = self.seen_count(name)
+        times = self.history.times(st.seed_name, name) if st.seed_name else []
         items = []
         for index, item in enumerate(st.items):
+            received_at, received_after = times[index] if index < len(times) else (None, None)
             sender = item.get("player", 0)
             flags = item.get("flags", 0) or 0
             location = item.get("location")
@@ -369,7 +374,8 @@ class Service:
                 "useful": bool(flags & ITEM_FLAG_USEFUL),
                 "trap": bool(flags & ITEM_FLAG_TRAP),
                 "new": index >= seen,
-                "received_at": self.history.item_time(st.seed_name, name, index) if st.seed_name else None,
+                "received_at": received_at,  # null: before the app tracked this slot
+                "received_after": received_after,  # set: received between received_after and received_at
             })
         mine_elsewhere, in_my_world = self._hints(name)
         hinted = {h["location_id"]: h for h in in_my_world if not h["found"]}

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { groupLocations, hintInMyWorld, hintMineElsewhere } from '../lib/logic'
 import type { Hint, ItemEntry, SlotDetail } from '../lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { HISTORY_PAGE, formatWhen, historyItems, type HistoryFilter } from '../lib/history'
+import { HISTORY_PAGE, formatReceived, historyItems, receivedTitle, type HistoryFilter } from '../lib/history'
 import { tracker } from '../stores/tracker'
 import { cn } from '@/lib/utils'
 import Section from './Section.vue'
@@ -22,6 +22,13 @@ function setFilter(v: unknown) {
     historyFilter.value = v
     historyLimit.value = HISTORY_PAGE
   }
+}
+const historyList = ref<HTMLUListElement | null>(null)
+async function showMore() {
+  const first = historyLimit.value
+  historyLimit.value += HISTORY_PAGE
+  await nextTick() // the button may be gone: keep the keyboard focus on the first item just shown
+  ;(historyList.value?.children[first] as HTMLElement | undefined)?.focus()
 }
 const sortFound = (hs: Hint[]) => [...hs].sort((a, b) => Number(a.found) - Number(b.found))
 const mine = computed(() => sortFound(props.detail.hints_mine_elsewhere))
@@ -99,17 +106,17 @@ const fromWhere = (i: ItemEntry) => (i.location ? `${from(i)} · ${i.location}` 
         <ToggleGroupItem value="useful" class="px-3">◆ Utiles</ToggleGroupItem>
       </ToggleGroup>
       <p v-if="!history.length" class="text-muted-foreground text-sm">Aucun item.</p>
-      <ul v-else class="divide-y">
-        <li v-for="i in shown" :key="i.index" class="history-item flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
+      <ul v-else ref="historyList" class="divide-y">
+        <li v-for="i in shown" :key="i.index" tabindex="-1" class="history-item outline-none focus-visible:ring-2 focus-visible:ring-ring flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
           <span :class="cn('break-words', i.progression && 'font-bold', i.new && 'text-primary')">
             <span v-if="kind(i)" :class="cn('inline-block w-5 text-center', kind(i)!.cls)" :title="kind(i)!.label" :aria-label="kind(i)!.label">{{ kind(i)!.sym }}</span>
             {{ i.name }}
           </span>
           <span class="text-muted-foreground min-w-0 flex-1 break-words">{{ fromWhere(i) }}</span>
-          <span class="text-muted-foreground ml-auto text-xs whitespace-nowrap tabular-nums">{{ formatWhen(i.received_at, tracker.nowMs) }}</span>
+          <span class="text-muted-foreground ml-auto text-xs whitespace-nowrap tabular-nums" :title="receivedTitle(i) || undefined">{{ formatReceived(i, tracker.nowMs) }}</span>
         </li>
       </ul>
-      <Button v-if="history.length > shown.length" variant="ghost" size="sm" class="mt-1" @click="historyLimit += HISTORY_PAGE">
+      <Button v-if="history.length > shown.length" variant="ghost" size="sm" class="mt-1" @click="showMore">
         Afficher {{ Math.min(HISTORY_PAGE, history.length - shown.length) }} de plus ({{ history.length - shown.length }} restants)
       </Button>
     </Section>

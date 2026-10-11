@@ -54,6 +54,7 @@ class SlotState:
     datapackage_checksums: dict[str, str] = field(default_factory=dict)
     connected_at: float | None = None
     synced: bool = False  # item list complete for this session
+    new_checks: int = 0  # locations newly checked by the last RoomUpdate
     updated_at: float = field(default_factory=time.time)
 
     @property
@@ -235,6 +236,7 @@ class SlotTracker:
             if "checked_locations" in msg:
                 new = set(msg["checked_locations"])
                 if new - st.checked:
+                    st.new_checks = len(new - st.checked)
                     st.checked |= new
                     st.missing -= new
                     kinds.add("checks")

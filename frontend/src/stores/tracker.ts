@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 import * as api from '../lib/api'
 import { roomFromLocation } from '../lib/config'
-import { loadActiveMinutes } from '../lib/history'
+import { clockOffset, loadActiveMinutes } from '../lib/history'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { SlotDetail, SseState } from '../lib/types'
@@ -75,6 +75,7 @@ export async function refreshMeta(): Promise<void> {
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
     tracker.roomSleeping = !!r.room_sleeping
+    syncClock(r.now)
   } catch {
     /* ignore */
   }
@@ -199,17 +200,23 @@ export function connect(): void {
 }
 
 let clock: ReturnType<typeof setInterval> | undefined
+let offset = 0
+function syncClock(serverNow: number | undefined): void {
+  offset = clockOffset(serverNow)
+  tracker.nowMs = Date.now() + offset
+}
 
 export async function start(): Promise<void> {
   stop()
   connect()
-  clock = setInterval(() => (tracker.nowMs = Date.now()), 30_000)
+  clock = setInterval(() => (tracker.nowMs = Date.now() + offset), 30_000)
   try {
     const r = await api.getSlots()
     dispatch({ type: 'snapshot', slots: r.slots, server: r.server })
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
     tracker.roomSleeping = !!r.room_sleeping
+    syncClock(r.now)
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)
   }

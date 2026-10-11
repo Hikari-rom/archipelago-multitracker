@@ -30,6 +30,24 @@ export function formatWhen(ts: number | null | undefined, nowMs = Date.now()): s
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${hm(d)}`
 }
 
+/** Time of an item of the history; items received while the app was not watching the slot come with a range. */
+export function formatReceived(item: Pick<ItemEntry, 'received_at' | 'received_after'>, nowMs = Date.now()): string {
+  if (item.received_at != null && item.received_after != null)
+    return `${formatWhen(item.received_after, nowMs)} → ${formatWhen(item.received_at, nowMs)}`
+  return formatWhen(item.received_at, nowMs)
+}
+export function receivedTitle(item: Pick<ItemEntry, 'received_at' | 'received_after'>): string {
+  if (item.received_at == null) return "Reçu avant que l'app suive ce slot : heure inconnue"
+  if (item.received_after != null) return "Reçu pendant que l'app ne suivait pas ce slot (app arrêtée, room endormie…), entre ces deux moments"
+  return ''
+}
+
+/** Difference between the server clock (epoch seconds from /api/slots) and this device's clock, in ms. Times
+ * shown are server times, so "active" and "il y a 3 min" are computed on the server clock. */
+export function clockOffset(serverNow: number | null | undefined, localMs = Date.now()): number {
+  return typeof serverNow === 'number' && Number.isFinite(serverNow) ? serverNow * 1000 - localMs : 0
+}
+
 const KEY = 'amt-active-minutes'
 export const ACTIVE_CHOICES = [10, 30, 60, 120]
 export function loadActiveMinutes(): number {

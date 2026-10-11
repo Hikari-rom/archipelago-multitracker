@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { hintInMyWorld, hintMineElsewhere, isActive, logicBadge, sortSlots, summaryText } from '../src/lib/logic'
 import type { Hint } from '../src/lib/types'
+import { stableOrder } from '../src/lib/order'
 import { mk } from './helpers'
 
 describe('logicBadge', () => {
@@ -51,6 +52,13 @@ describe('sortSlots', () => {
     expect(isActive(mk({ name: 'a', last_check_at: ago(31) }), now)).toBe(false)
     expect(isActive(mk({ name: 'a', last_check_at: null }), now)).toBe(false)
     expect(isActive(mk({ name: 'a', goal: true, last_check_at: ago(1) }), now)).toBe(false)
+  })
+  it('a slot becoming active does not move while a card is open', () => {
+    const slots = [mk({ name: 'a', logic: { state: 'ok', count: 5, message: null } }), mk({ name: 'b' })]
+    const before = names(sortSlots(slots, now))
+    const later = [slots[0], { ...slots[1], last_check_at: ago(1) }]
+    expect(names(sortSlots(later, now))).toEqual(['b', 'a'])
+    expect(names(stableOrder(before, sortSlots(later, now), true))).toEqual(['a', 'b'])
   })
   it('does not mutate and is stable', () => {
     const slots = [mk({ name: 'x' }), mk({ name: 'y' })]

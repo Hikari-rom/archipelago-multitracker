@@ -50,7 +50,9 @@ logique puis checks restants décroissants (D11).
     {"index": 0, "name": "Dash Refill", "sender": "KH2", "own": false, "origin": "other",  // start | server | own | other
      "location": "Some Location",
      "progression": true, "useful": false, "trap": false, "new": true,
-     "received_at": 1791593000.0}       // date de réception (epoch) ; null = reçu avant que l'app suive ce slot
+     "received_at": 1791593000.0,       // date de réception (epoch) ; null = reçu avant que l'app suive ce slot
+     "received_after": null}            // renseigné si l'item est arrivé pendant que l'app ne suivait pas le slot :
+                                        // reçu entre received_after et received_at
   ],
   "hints_mine_elsewhere": [Hint, ...],
   "hints_in_my_world": [Hint, ...],
@@ -63,7 +65,10 @@ logique puis checks restants décroissants (D11).
 ```
 Historique : les dates sont stockées en SQLite (`data/`, tables `tracking` et `item_times`) par seed et par slot.
 À la première synchronisation d'un slot, les items déjà reçus restent sans date (« avant le suivi ») ; chaque item
-reçu ensuite prend l'heure à laquelle l'app l'a vu arriver.
+reçu ensuite prend l'heure à laquelle l'app l'a vu arriver. Les items arrivés pendant que l'app ne suivait pas le slot
+(app arrêtée, room endormie, réseau coupé plus de 2 min) n'ont qu'un intervalle : de la dernière fois où l'app suivait
+le slot à la synchronisation suivante. `last_check_at` ignore les rafales de plus de 10 checks (`!release`,
+`!collect`). Les écritures SQLite sont regroupées (au plus une toutes les 30 s par slot, plus à la déconnexion).
 
 `in_logic_locations` est trié : locations hintées d'abord, puis par nom.
 
@@ -145,7 +150,9 @@ Réveille la room une fois (au plus toutes les 30 s), relit son port et relance 
 Réponse `{"ok": true, "server": "...", "room_error": null}`.
 
 ### Champs ajoutés à `GET /api/slots` et événement SSE `room`
-`room_url`, `room_error` (message si la room n'a pas pu être lue ou dort), `room_sleeping`, `wake_room`.
+`room_url`, `room_error` (message si la room n'a pas pu être lue ou dort), `room_sleeping`, `wake_room`, `now` (horloge
+du serveur en secondes epoch : le navigateur s'en sert pour corriger son horloge avant de calculer « actif » et
+« il y a 3 min »).
 Le flux `/api/events` envoie aussi `event: room` — `{"type": "room", "server", "room_url", "room_error", "room_sleeping"}` —
 juste après le `snapshot` puis à chaque changement.
 

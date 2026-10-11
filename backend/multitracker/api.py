@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import time
 from urllib.parse import urlparse
 import logging
 from contextlib import asynccontextmanager
@@ -104,6 +105,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         return {"server": service.current_server, "room_url": service.config.room_url,
                 "room_error": service.room_error, "room_sleeping": service.room_sleeping,
                 "wake_room": service.config.wake_room,
+                "now": time.time(),  # the browser corrects its clock with this (activity, item times)
                 "slots": [service.summary(n) for n in service.trackers]}
 
     @app.get("/api/config")

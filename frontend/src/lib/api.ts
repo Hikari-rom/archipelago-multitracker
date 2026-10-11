@@ -7,6 +7,8 @@ export interface SlotsResponse {
   room_url?: string | null
   room_error?: string | null
   room_sleeping?: boolean
+  /** server clock, epoch seconds */
+  now?: number
   wake_room?: boolean
 }
 

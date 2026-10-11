@@ -96,7 +96,7 @@ Avant de refaire la page Configuration, pour ne pas la coder deux fois. Garder :
 sans flash, mobile d'abord (390 px), accessibilité (labels, focus, aria), perf sur le Pi (bundle raisonnable).
 - [x] Mettre en place Tailwind CSS + shadcn-vue dans `frontend/` (dépendances locales uniquement, versions figées, composants copiés dans `src/components/ui/`, thème via variables CSS reliées au thème clair/sombre existant) ; noter le choix dans DECISIONS.md
 - [x] Migrer le tableau de bord : cartes (Card), badges (Badge), boutons (Button), sections repliables (Collapsible/Accordion), barre de progression (Progress), filtres par joueur (Toggle group), bandeaux (Alert) ; tests vitest adaptés, captures avant/après mobile + desktop, clair + sombre
-- [ ] Relecture M10 + commit/push + notif
+- [x] Relecture M10 + commit/push + notif (relu par un sous-agent, corrections dans d661ed6)
 
 ## M11 — Configuration : page et vraie room (demandé par Romain le 2026-10-11)
 Prérequis prêts : yamls de Romain dans `config/players/romain/`, lien + mot de passe dans `config/room.real.yaml` (gitignoré).
@@ -114,7 +114,7 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 ## M12 — Historique et tri (demandé par Romain le 2026-10-11)
 - [x] Historique des items reçus par slot : date de réception (persistée en SQLite, à partir du moment où l'app suit le slot ; les items reçus avant sont marqués « avant le suivi »), envoyeur, location d'origine, classification ; affiché dans le détail du slot, du plus récent au plus ancien, filtrable (progression / utile / tous), paginé ; API documentée dans `docs/API.md` ; tests
 - [x] Tri du tableau de bord : d'abord les jeux **actifs** (en cours de partie), puis par nombre de checks en logique décroissant, puis par checks restants ; jeux finis en dernier. « Actif » = un check fait par ce slot dans les 30 dernières minutes (horodatage persisté, seuil réglable), voir D11. Badge « actif » sur la carte. Ordre figé quand une carte est ouverte (comme aujourd'hui). Tests vitest + captures (maquette : `test-output/screenshots/m12/`)
-- [ ] Relecture M12 + commit/push + notif
+- [x] Relecture M12 + commit/push + notif (horloge serveur, rafales release/collect, intervalles pendant les absences, écritures regroupées, migration)
 
 ## M13 — Logique : jeux restants de Romain
 - [x] PokéPark Wii: Pikachu's Adventure — 5/5 aléatoires + 6/6 avec le yaml de Romain, lot `m13` bout en bout, logique activée (2026-10-11). Était : compléter (seeds aléatoires si elles génèrent, sinon `--default-options`), lot bout en bout, activation, COMPAT

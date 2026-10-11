@@ -69,6 +69,14 @@
   5. 142 slots : le champ « Nom contenant… » ne filtre pas la liste, pas de filtre par jeu ;
   6. « Découvrir » réveillait la room ; pas d'info sur la room (endormie, nombre de jeux) ;
   7. pas de test du mot de passe avant d'enregistrer, pas de retour en arrière.
+- M10 (shadcn-vue) et M11 (page Configuration refaite, lien `#config?room=`, vraie room branchée) : faits et relus ;
+  M11 attend encore la vérification sur la vraie room **éveillée** (connexion des 22 slots, logique, RAM, temps).
+- M12 : historique des items reçus dans le détail d'un slot (date de réception, filtre ★/◆, pagination ; « avant le
+  suivi » pour les items déjà là, intervalle « hier 22:15 → aujourd'hui 08:00 » pour ceux arrivés pendant que l'app
+  ne suivait pas), badge « Actif » et tri actifs → checks en logique → restants (durée réglable dans Configuration →
+  Affichage). Relecture : horloge du navigateur corrigée par celle du serveur, rafales `!release`/`!collect` ignorées,
+  écritures SQLite regroupées, migration des tables. Captures maquette : `test-output/screenshots/m12/`.
+- M13 : PokePark validé (5/5 aléatoires, 6/6 avec ton yaml, lot `m13`) et activé → 20 jeux sur 22 avec logique.
 
 ## À faire par Romain
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
@@ -81,11 +89,9 @@
   et `sudo loginctl enable-linger romain`.
 - **Tailscale** n'est pas installé sur le Pi : `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`.
   Ensuite `http://<ip-tailscale-du-pi>:42753` fonctionne (l'app écoute sur `0.0.0.0`).
-- **Avant la nuit** : remplir `room_url` et `password` dans `config/room.real.yaml` (gitignoré, déjà créé avec
-  tes 22 slots ; les yamls sont copiés de `~/romaing` et `~/romaing/Validés` dans `config/players/romain/`). Puis, juste avant de lancer
-  la session : `rm -f .overnight/STOP .overnight/continues`.
 
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
 et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
+Reste (2026-10-11) : vérification M11 sur la room éveillée, Ori WotW, puis M14.
 OoT est mis de côté à la demande de Romain.

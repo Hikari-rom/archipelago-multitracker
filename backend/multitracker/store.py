@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS tracking (
     slot_name TEXT NOT NULL,
     started_at REAL NOT NULL,
     last_check_at REAL,
+    last_seen_at REAL,
     PRIMARY KEY (seed_name, slot_name)
 );
 CREATE TABLE IF NOT EXISTS item_times (
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS item_times (
     slot_name TEXT NOT NULL,
     idx INTEGER NOT NULL,
     received_at REAL,
+    received_after REAL,
     PRIMARY KEY (seed_name, slot_name, idx)
 );
 CREATE TABLE IF NOT EXISTS datapackage (
@@ -51,7 +53,15 @@ class Store:
         self._lock = threading.Lock()
         self._db = sqlite3.connect(str(path), check_same_thread=False)
         self._db.executescript(SCHEMA)
+        self._migrate()
         self._db.commit()
+
+    def _migrate(self) -> None:
+        """Columns added after the first release of a table (CREATE TABLE IF NOT EXISTS keeps old tables)."""
+        for table, column in (("tracking", "last_seen_at"), ("item_times", "received_after")):
+            columns = {row[1] for row in self._db.execute(f"PRAGMA table_info({table})")}
+            if column not in columns:
+                self._db.execute(f"ALTER TABLE {table} ADD COLUMN {column} REAL")
 
     def close(self) -> None:
         with self._lock:
@@ -72,35 +82,46 @@ class Store:
             self._db.commit()
 
     # -- history: when each item arrived, last check of each slot ---------------------------
-    def tracking(self, seed_name: str, slot_name: str) -> tuple[float, float | None] | None:
+    def tracking(self, seed_name: str, slot_name: str) -> dict[str, float | None] | None:
+        """{started_at, last_check_at, last_seen_at} or None if the app never synced this slot."""
         with self._lock:
-            row = self._db.execute("SELECT started_at, last_check_at FROM tracking WHERE seed_name=? AND slot_name=?",
-                                   (seed_name, slot_name)).fetchone()
-        return None if row is None else (float(row[0]), None if row[1] is None else float(row[1]))
+            row = self._db.execute("SELECT started_at, last_check_at, last_seen_at FROM tracking "
+                                   "WHERE seed_name=? AND slot_name=?", (seed_name, slot_name)).fetchone()
+        if row is None:
+            return None
+        return dict(zip(("started_at", "last_check_at", "last_seen_at"), (None if v is None else float(v) for v in row)))
 
-    def start_tracking(self, seed_name: str, slot_name: str, started_at: float) -> None:
-        with self._lock:
-            self._db.execute("INSERT OR IGNORE INTO tracking(seed_name, slot_name, started_at) VALUES (?,?,?)",
-                             (seed_name, slot_name, started_at))
-            self._db.commit()
-
-    def set_last_check(self, seed_name: str, slot_name: str, at: float) -> None:
-        with self._lock:
-            self._db.execute("UPDATE tracking SET last_check_at=? WHERE seed_name=? AND slot_name=?",
-                             (at, seed_name, slot_name))
-            self._db.commit()
-
-    def item_times(self, seed_name: str, slot_name: str) -> list[float | None]:
-        with self._lock:
-            rows = self._db.execute("SELECT idx, received_at FROM item_times WHERE seed_name=? AND slot_name=? "
-                                    "ORDER BY idx", (seed_name, slot_name)).fetchall()
-        return [None if at is None else float(at) for _, at in rows]
-
-    def add_item_times(self, seed_name: str, slot_name: str, start: int, count: int, at: float | None) -> None:
-        with self._lock:
+    def start_tracking(self, seed_name: str, slot_name: str, started_at: float, count: int) -> None:
+        """First sync: the `count` items already received have no known time (one transaction)."""
+        with self._lock, self._db:
+            self._db.execute("INSERT OR IGNORE INTO tracking(seed_name, slot_name, started_at, last_seen_at) "
+                             "VALUES (?,?,?,?)", (seed_name, slot_name, started_at, started_at))
             self._db.executemany("INSERT OR IGNORE INTO item_times(seed_name, slot_name, idx, received_at) "
-                                 "VALUES (?,?,?,?)", [(seed_name, slot_name, i, at) for i in range(start, start + count)])
-            self._db.commit()
+                                 "VALUES (?,?,?,NULL)", [(seed_name, slot_name, i) for i in range(count)])
+
+    def set_tracking_times(self, seed_name: str, slot_name: str, *, last_check_at: float | None = None,
+                           last_seen_at: float | None = None) -> None:
+        with self._lock, self._db:
+            if last_check_at is not None:
+                self._db.execute("UPDATE tracking SET last_check_at=? WHERE seed_name=? AND slot_name=?",
+                                 (last_check_at, seed_name, slot_name))
+            if last_seen_at is not None:
+                self._db.execute("UPDATE tracking SET last_seen_at=? WHERE seed_name=? AND slot_name=?",
+                                 (last_seen_at, seed_name, slot_name))
+
+    def item_times(self, seed_name: str, slot_name: str) -> list[tuple[float | None, float | None]]:
+        """[(received_at, received_after)] by item index; received_after is set when the time is only a range."""
+        with self._lock:
+            rows = self._db.execute("SELECT received_at, received_after FROM item_times "
+                                    "WHERE seed_name=? AND slot_name=? ORDER BY idx", (seed_name, slot_name)).fetchall()
+        return [tuple(None if v is None else float(v) for v in row) for row in rows]
+
+    def add_item_times(self, seed_name: str, slot_name: str, start: int, count: int, at: float | None,
+                       after: float | None = None) -> None:
+        with self._lock, self._db:
+            self._db.executemany("INSERT OR IGNORE INTO item_times(seed_name, slot_name, idx, received_at, "
+                                 "received_after) VALUES (?,?,?,?,?)",
+                                 [(seed_name, slot_name, i, at, after) for i in range(start, start + count)])
 
     # -- datapackage ---------------------------------------------------------------------
     def load_datapackages(self) -> dict[tuple[str, str], dict[str, Any]]:

@@ -37,6 +37,8 @@ export interface ItemEntry {
   new: boolean
   /** epoch seconds when the app received it; null = before the app tracked this slot */
   received_at?: number | null
+  /** set when the item arrived while the app was not watching: between received_after and received_at */
+  received_after?: number | null
 }
 
 export interface Hint {
