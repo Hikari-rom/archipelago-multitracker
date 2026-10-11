@@ -385,6 +385,30 @@ def _lethal_company(world_cls: type, slot_data: dict[str, Any], location_ids: se
         yield
 
 
+@contextlib.contextmanager
+def _satisfactory(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Satisfactory: in a Universal Tracker regeneration (`generation_is_fake`), Hub tiers 1-2 are opened
+    without the buildings the generator requires. Build the regions as the generator does; the rest of the
+    UT path (slot_data replay) is untouched."""
+    original = world_cls.create_regions
+
+    def create_regions(self) -> None:
+        fake = getattr(self.multiworld, "generation_is_fake", None)
+        self.multiworld.generation_is_fake = False
+        try:
+            original(self)
+        finally:
+            if fake is None:
+                del self.multiworld.generation_is_fake
+            else:
+                self.multiworld.generation_is_fake = fake
+
+    with patch_attr(world_cls, "create_regions", create_regions):
+        yield
+
+
+ADAPTERS["Satisfactory"] = _satisfactory
+
 START_ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int], list[str]], ContextManager]] = {
     "Lethal Company": _lethal_company,
 }

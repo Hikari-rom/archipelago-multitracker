@@ -203,7 +203,8 @@ async def test_bot_finishes_m14b_batch_using_only_in_logic_locations(tmp_path):
     alone get no yaml (the case of another player's slot). Subnautica and VVVVVV (areas shuffled) need their
     adapters, Overcooked! 2 too (kitchens shuffled) and Hollow Knight (random costs), Stardew Valley its
     received-items hook (progression items counted by pre-fill classification), Lethal Company its adapter
-    (starting moon from the start inventory, scrap map); Haste needs its yaml."""
+    (starting moon from the start inventory, scrap map), Satisfactory its yaml and adapter (Hub tiers as
+    generated); Haste needs its yaml."""
     result = await play_until_done("m14b", 17, tmp_path, spoiler=1, no_yaml=M14B_NO_YAML)
     (ROOT / "test-output" / "e2e_m14b.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1

@@ -44,7 +44,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 ## Autres jeux de la room (M14, jeux core d'AP 0.6.7, joués par d'autres)
 
 Version identique à la room vérifiée par `scripts/room_inventory.py` (voir `docs/COMPAT-room.md`). Aucun de ces mondes
-ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logique demande le **yaml du joueur**
+ne sait se reconstruire depuis le seul `slot_data` (Satisfactory le peut, mais avec une logique fausse) : la logique demande le **yaml du joueur**
 (clé `yaml` du slot). Validation : 3 seeds aux options aléatoires (`campaign.sh 3`, runs 501–503) + lot `m14`.
 
 | Jeu | Validation | Logique | Notes |
@@ -56,7 +56,7 @@ ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logi
 | Subnautica | ✅ 4/4 + e2e `m14b` | activée (yaml) | adaptateur : créatures à scanner tirées au hasard, rejouées depuis `slot_data["creatures_to_scan"]`. `creature_scan_logic` n'est pas dans le `slot_data` : le yaml doit le fixer (pas `random`) |
 | Stardew Valley | ✅ 6/8 (2 retards d'un point) + e2e `m14b` | activée (yaml) | crochet sur les items reçus : Stardew ne compte dans « items de progression reçus » (mois vécus, % de progression) que les items progression *avant* le remplissage, alors qu'un item reçu est recréé depuis son nom. Chaque copie reçue prend la valeur d'une copie du pool régénéré, la plus basse d'abord. Limite : quand des copies d'un même nom diffèrent (saplings, dernier Trash Can, Qi Gems), le serveur ne dit pas laquelle a été reçue (`skip_balancing` n'est pas transmis) → retard possible d'un point de pourcentage, jamais d'avance (si la régénération reproduit le pool d'items de la génération) |
 | Factorio | [!] 0/3 | non | impossible sans spoiler : le monde n'a pas de `fill_slot_data` (slot_data vide) ; les ingrédients des technologies `AP-1-xxx` sont tirés au hasard à la génération et écrits seulement dans le mod du jeu |
-| Satisfactory | ❌ 0/3 | non | le monde assouplit volontairement ses règles pour Universal Tracker (paliers 1–2 du Hub « toujours accessibles en jeu ») : non comparable à la génération |
+| Satisfactory | ✅ 8/8 + e2e `m14b` | activée (**yaml obligatoire**) | le `slot_data` n'a pas les options de placement des bâtiments (MAM, AWESOME, splitters…) : régénération yaml du joueur + `slot_data` ; sans yaml, « logique indisponible ». Adaptateur : en mode Universal Tracker le monde ouvre les paliers 1–2 du Hub sans les bâtiments exigés à la génération ; les régions sont construites comme à la génération |
 | TUNIC | — | non | la room utilise une version plus récente que le core 0.6.7 (checksum différent, D12) |
 
 Apworlds non core de la room, installés à une release dont le checksum est celui de la room (plusieurs releases

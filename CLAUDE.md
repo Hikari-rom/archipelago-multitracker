@@ -24,9 +24,10 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/players/romain/`, `config/room.real.yaml`, gitignorés) → M12 historique/tri → M13 PokePark/WotW → M14.
 - `validate_logic.py --yaml <yaml>` valide la logique avec les vraies options d'un joueur (test seulement).
-- M14/M15 : logique aussi pour 22 autres jeux de la room (joués par les amis de Romain) (liste et limites dans `docs/COMPAT.md`), dont
+- M14/M15 : logique aussi pour 23 autres jeux de la room (joués par les amis de Romain) (liste et limites dans `docs/COMPAT.md`), dont
   Stardew Valley (crochet `RECEIVED_HOOKS` dans `adapters.py`) et Lethal Company (`START_ADAPTERS` : adaptateur qui
-  reçoit aussi l'inventaire de départ). Factorio impossible (slot_data vide).
+  reçoit aussi l'inventaire de départ), Satisfactory (`YAML_REQUIRED` dans `ut_worker.py` : yaml + slot_data).
+  Factorio impossible (slot_data vide).
 - `config/room.yaml` (gitignoré) pointe sur la **vraie room** de Romain depuis le 2026-10-11 (elle dort souvent :
   `curl localhost:42753/api/slots` → `room_sleeping`) ; ne jamais y connecter le bot ni les tests.
 

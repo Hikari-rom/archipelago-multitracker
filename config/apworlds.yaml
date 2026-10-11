@@ -41,6 +41,7 @@ apworlds:
   overcooked2: {game: "Overcooked! 2", source: core, logic: true, needs_yaml: true}  # adapter: kitchen order
   hk: {game: "Hollow Knight", source: core, logic: true, needs_yaml: true}  # adapter: notch and location costs
   stardew: {game: "Stardew Valley", source: core, logic: true, needs_yaml: true}  # hook: pre-fill progression count of received items
+  satisfactory: {game: "Satisfactory", source: core, logic: true, needs_yaml: true}  # adapter: Hub tiers as generated; yaml + slot_data
 
   twwhd:
     game: "The Wind Waker HD"

@@ -82,13 +82,13 @@
   importante : la room a été générée avec **TWW HD `main`** (pas la release v1.0.2-beta) et **AEMinecraft 0.7.0-rc** :
   apworlds alignés (épinglage par commit dans `config/apworlds.yaml`), logique revalidée à ces versions. Le worker
   refuse maintenant la logique si la version d'un jeu diffère de celle de la room (D12).
-- M14 (suite) : logique pour **22 autres jeux de la room** (tous validés sur seeds aléatoires + lots `m14`, `m14b`) :
+- M14 (suite) : logique pour **23 autres jeux de la room** (tous validés sur seeds aléatoires + lots `m14`, `m14b`) :
   13 jeux core (The Witness, Risk of Rain 2, Terraria, Undertale, A Short Hike, Inscryption, shapez, Raft,
   Civilization VI, Paint, et avec adaptateurs Subnautica, VVVVVV, Overcooked! 2) + 6 apworlds installés à la version de la room
   (Mario Kart Double Dash, Archipeladoku, Lego Star Wars TCS, Outer Wilds, Portal 2 — ces 5-là **sans yaml**, donc
   utilisables pour les slots de tes amis — et Haste). Les autres demandent le yaml du joueur (clé `yaml` du slot).
   Hollow Knight ajouté ensuite (adaptateur des coûts), puis Stardew Valley (crochet sur les items reçus ; peut retarder
-  d'un point de pourcentage, jamais avancer). Lethal Company aussi (adaptateur). Non activés : Satisfactory (écarts), Factorio (impossible
+  d'un point de pourcentage, jamais avancer). Lethal Company et Satisfactory aussi (adaptateurs). Non activés : Factorio (impossible
   sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 ## À faire par Romain
@@ -106,6 +106,6 @@
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
 et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
-Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : Satisfactory, recherche
+Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : e2e `m14b` instable (BACKLOG), recherche
 d'autres apworlds (jeux à 1 slot).
 OoT est mis de côté à la demande de Romain.

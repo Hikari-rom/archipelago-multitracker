@@ -142,4 +142,5 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
   `test-output/e2e_stuck_m14b_flaky_sdv.json`). Le worker, avec les 10 mondes du lot régénérés dans un
   même process, donne aussi les 2 locations : interaction entre mondes écartée ; piste restante, une course
   entre réception d'items et `logic_settled` (service ou boucle du test).
+- [x] Satisfactory : options de placement absentes du slot_data et paliers 1–2 du Hub assouplis pour UT → yaml + slot_data obligatoire (`YAML_REQUIRED`) et adaptateur, 8/8 + e2e (2026-10-11)
 - [x] Relecture M15 (sous-agent Sonnet : pas de bug ; doc et robustesse corrigées) + commit/push + notif

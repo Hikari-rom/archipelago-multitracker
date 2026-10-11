@@ -106,7 +106,9 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
 
 # Worlds that can regenerate from slot_data alone, but whose slot_data misses options that change the
 # logic: when the player's yaml is configured, regenerate from it with slot_data applied on top.
-YAML_PLUS_SLOT_DATA = {"Ori and the Will of the Wisps"}
+YAML_PLUS_SLOT_DATA = {"Ori and the Will of the Wisps", "Satisfactory"}
+# ... and among them, those whose slot_data alone gives a wrong logic (Satisfactory: building placements).
+YAML_REQUIRED = {"Satisfactory"}
 
 
 class SlotLogic:
@@ -164,6 +166,9 @@ class SlotLogic:
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "yaml+slot_data"
             return
+        if game in YAML_REQUIRED:
+            raise LogicUnavailable("ce jeu a besoin du yaml du joueur (clé `yaml` du slot dans config/room.yaml)"
+                                   if yaml_path is None else f"yaml introuvable : {yaml_path}")
         if getattr(world_cls, "ut_can_gen_without_yaml", False):
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "slot_data"
