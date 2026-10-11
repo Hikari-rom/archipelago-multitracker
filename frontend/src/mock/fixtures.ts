@@ -22,7 +22,7 @@ export const mockSlots: SlotSummary[] = [
   slot({ name: 'Romain_Celeste', game: 'Celeste (Open World)', checks: { done: 3, total: 233, remaining: 230 },
     items: { received: 12, new: 2 }, hints: { mine_elsewhere: 1, in_my_world: 2, in_my_world_in_logic: 1 },
     logic: { state: 'ok', count: 14, message: null } }),
-  slot({ name: 'Romain_TWW', owner: 'Romain', game: 'The Wind Waker HD', checks: { done: 40, total: 300, remaining: 260 },
+  slot({ name: 'Romain_TWW', owner: 'Romain', last_check_at: Date.now() / 1000 - 4 * 60, game: 'The Wind Waker HD', checks: { done: 40, total: 300, remaining: 260 },
     items: { received: 55, new: 0 }, hints: { mine_elsewhere: 3, in_my_world: 1, in_my_world_in_logic: 0 },
     logic: { state: 'ok', count: 1, message: null } }),
   slot({ name: 'Romain_KH2', game: 'Kingdom Hearts 2', checks: { done: 10, total: 450, remaining: 440 },
@@ -61,6 +61,7 @@ export function mockDetail(name: string): SlotDetail {
     useful: i % 7 === 5,
     trap: i % 7 === 3,
     new: i < s.items.new,
+    received_at: i < 9 ? Date.now() / 1000 - i * i * 1500 : null,
   }))
   const logicLocs = Array.from({ length: s.logic.state === 'ok' ? s.logic.count : 0 }, (_, i) => ({
     id: 211877922 + i,

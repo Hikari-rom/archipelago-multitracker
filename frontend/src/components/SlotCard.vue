@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import { ChevronRight, Star, TriangleAlert, Trophy } from '@lucide/vue'
+import { Activity, ChevronRight, Star, TriangleAlert, Trophy } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { connectionMessage, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
+import { formatWhen } from '../lib/history'
+import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
 import SlotDetailPanel from './SlotDetailPanel.vue'
@@ -15,6 +16,7 @@ import StatusDot from './StatusDot.vue'
 const props = defineProps<{ summary: SlotSummary }>()
 
 const badge = computed(() => logicBadge(props.summary))
+const active = computed(() => isActive(props.summary, tracker.nowMs, tracker.activeMinutes))
 const badgeVariant = computed(() =>
   badge.value.variant === 'good' ? 'good' : badge.value.variant === 'muted' ? 'muted' : 'secondary',
 )
@@ -57,6 +59,9 @@ async function onSeen() {
         <p class="text-muted-foreground text-sm break-words">
           {{ summary.name }}<span v-if="summary.owner" class="italic"> · {{ summary.owner }}</span>
         </p>
+        <Badge v-if="active" variant="good" class="active mt-1" :title="`Dernier check : ${formatWhen(summary.last_check_at, tracker.nowMs)}`">
+          <Activity aria-hidden="true" /> Actif · {{ formatWhen(summary.last_check_at, tracker.nowMs) }}
+        </Badge>
       </div>
       <StatusDot :status="summary.status" :label="statusLabel(summary.status)" :title="rawError || statusLabel(summary.status)" />
     </header>

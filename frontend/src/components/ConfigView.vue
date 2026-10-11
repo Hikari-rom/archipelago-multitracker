@@ -28,6 +28,7 @@ import {
   type SlotRow,
   type YamlEntry,
 } from '../lib/config'
+import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setView, tracker } from '../stores/tracker'
 
 const emit = defineEmits<{ saved: [] }>()
@@ -229,6 +230,11 @@ function onAssociate(): void {
   assocInfo.value = r.matched
     ? `${r.matched} slot(s) associé(s) à leur yaml.`
     : 'Aucune nouvelle association (même nom et même jeu requis).'
+}
+
+function onActiveMinutes(e: Event): void {
+  tracker.activeMinutes = Number((e.target as HTMLSelectElement).value)
+  saveActiveMinutes(tracker.activeMinutes)
 }
 
 /** Enter never saves the whole configuration by accident; in the room field it runs the discovery. */
@@ -494,7 +500,27 @@ const selectClass =
         </CardContent>
       </Card>
 
-      <!-- 4. Save -->
+      <!-- 4. Display preferences (this device only) -->
+      <Card class="gap-3 py-4">
+        <CardHeader class="px-5">
+          <CardTitle>Affichage <span class="text-muted-foreground text-sm font-normal">(sur cet appareil)</span></CardTitle>
+        </CardHeader>
+        <CardContent class="px-5">
+          <label class="flex flex-wrap items-center gap-2 text-sm">
+            Un jeu est « actif » (affiché en premier) s'il a fait un check depuis
+            <select
+              :value="tracker.activeMinutes"
+              :class="cn(selectClass, 'w-auto')"
+              aria-label="Durée pour être actif"
+              @change="onActiveMinutes"
+            >
+              <option v-for="m in ACTIVE_CHOICES" :key="m" :value="m">{{ m >= 60 ? `${m / 60} h` : `${m} min` }}</option>
+            </select>
+          </label>
+        </CardContent>
+      </Card>
+
+      <!-- 5. Save -->
       <Card class="gap-3 py-4">
         <CardContent class="flex flex-col gap-3 px-5">
           <p class="text-sm">

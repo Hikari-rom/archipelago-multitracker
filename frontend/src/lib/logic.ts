@@ -54,27 +54,31 @@ export function hasSomethingToDo(s: SlotSummary): boolean {
   )
 }
 
-function group(s: SlotSummary): number {
-  if (s.goal) return 2
-  return hasSomethingToDo(s) ? 0 : 1
+export const DEFAULT_ACTIVE_MINUTES = 30
+
+/** "Active" = the slot checked a location recently (the server's client status cannot tell, see DECISIONS D11). */
+export function isActive(s: SlotSummary, nowMs: number, minutes = DEFAULT_ACTIVE_MINUTES): boolean {
+  return !s.goal && !!s.last_check_at && nowMs / 1000 - s.last_check_at < minutes * 60
 }
 
-export function sortSlots(slots: SlotSummary[]): SlotSummary[] {
+const inLogic = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
+
+/** Active games first, then the most checks in logic, then the most checks left; finished games last. */
+export function sortSlots(slots: SlotSummary[], nowMs = Date.now(), activeMinutes = DEFAULT_ACTIVE_MINUTES): SlotSummary[] {
+  const group = (s: SlotSummary) => (s.goal ? 2 : isActive(s, nowMs, activeMinutes) ? 0 : 1)
   return slots
     .map((s, i) => ({ s, i }))
     .sort((a, b) => {
       const ga = group(a.s)
       const gb = group(b.s)
       if (ga !== gb) return ga - gb
-      if (ga === 0) {
-        const d =
-          b.s.hints.in_my_world_in_logic - a.s.hints.in_my_world_in_logic ||
-          (b.s.logic.state === 'ok' ? b.s.logic.count : 0) -
-            (a.s.logic.state === 'ok' ? a.s.logic.count : 0) ||
-          b.s.items.new - a.s.items.new
-        if (d) return d
-      }
-      return a.i - b.i
+      return (
+        inLogic(b.s) - inLogic(a.s) ||
+        b.s.checks.remaining - a.s.checks.remaining ||
+        b.s.hints.in_my_world_in_logic - a.s.hints.in_my_world_in_logic ||
+        b.s.items.new - a.s.items.new ||
+        a.i - b.i
+      )
     })
     .map((x) => x.s)
 }

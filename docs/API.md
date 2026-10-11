@@ -34,9 +34,13 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
     "computed_at": 1791593223.0,
     "seconds": 0.42
   },
-  "updated_at": 1791593222.5
+  "updated_at": 1791593222.5,
+  "last_check_at": 1791593100.0         // dernier check de ce slot vu par l'app (epoch), null avant le premier
 }
 ```
+Le tableau de bord trie avec : jeux « actifs » (`last_check_at` dans les N dernières minutes, 30 par défaut, réglable
+dans Configuration → Affichage) d'abord, puis les autres, jeux finis en dernier ; dans chaque groupe, par checks en
+logique puis checks restants décroissants (D11).
 
 ## `GET /api/slots/{name}`
 `SlotSummary` + :
@@ -45,7 +49,8 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
   "items_list": [
     {"index": 0, "name": "Dash Refill", "sender": "KH2", "own": false, "origin": "other",  // start | server | own | other
      "location": "Some Location",
-     "progression": true, "useful": false, "trap": false, "new": true}
+     "progression": true, "useful": false, "trap": false, "new": true,
+     "received_at": 1791593000.0}       // date de réception (epoch) ; null = reçu avant que l'app suive ce slot
   ],
   "hints_mine_elsewhere": [Hint, ...],
   "hints_in_my_world": [Hint, ...],
@@ -56,6 +61,10 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
   "players": {"1": {"name": "Celeste", "game": "Celeste (Open World)"}}
 }
 ```
+Historique : les dates sont stockées en SQLite (`data/`, tables `tracking` et `item_times`) par seed et par slot.
+À la première synchronisation d'un slot, les items déjà reçus restent sans date (« avant le suivi ») ; chaque item
+reçu ensuite prend l'heure à laquelle l'app l'a vu arriver.
+
 `in_logic_locations` est trié : locations hintées d'abord, puis par nom.
 
 ### Hint

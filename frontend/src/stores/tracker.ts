@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import * as api from '../lib/api'
 import { roomFromLocation } from '../lib/config'
+import { loadActiveMinutes } from '../lib/history'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { SlotDetail, SseState } from '../lib/types'
@@ -15,6 +16,10 @@ export const tracker = reactive({
   /** room link from "#config?room=..." (pre-fills the Configuration page) */
   prefillRoom: typeof location !== 'undefined' ? roomFromLocation(location.hash, location.search) : '',
   roomSleeping: false,
+  /** ticks every 30 s: "active" slots and relative times expire on their own */
+  nowMs: Date.now(),
+  /** a slot is "active" when it checked a location in the last N minutes (setting of this device) */
+  activeMinutes: loadActiveMinutes(),
   details: {} as Record<string, SlotDetail>,
   open: {} as Record<string, boolean>,
   detailError: {} as Record<string, string>,
@@ -193,9 +198,12 @@ export function connect(): void {
   })
 }
 
+let clock: ReturnType<typeof setInterval> | undefined
+
 export async function start(): Promise<void> {
   stop()
   connect()
+  clock = setInterval(() => (tracker.nowMs = Date.now()), 30_000)
   try {
     const r = await api.getSlots()
     dispatch({ type: 'snapshot', slots: r.slots, server: r.server })
@@ -209,6 +217,7 @@ export async function start(): Promise<void> {
 
 export function stop(): void {
   clearTimeout(retryTimer)
+  clearInterval(clock)
   backoff = 3000
   es?.close()
   es = null

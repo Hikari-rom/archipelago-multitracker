@@ -112,8 +112,8 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 - [ ] Relecture M11 + commit/push + notif — relue (Entrée qui enregistrait, règles de noms d'Archipelago `handle_name`, slots d'une autre room, jeux pondérés, live regions : corrigés) ; reste à cocher après la vérification de la vraie room éveillée
 
 ## M12 — Historique et tri (demandé par Romain le 2026-10-11)
-- [ ] Historique des items reçus par slot : date de réception (persistée en SQLite, à partir du moment où l'app suit le slot ; les items reçus avant sont marqués « avant le suivi »), envoyeur, location d'origine, classification ; affiché dans le détail du slot, du plus récent au plus ancien, filtrable (progression / utile / tous), paginé ; API documentée dans `docs/API.md` ; tests
-- [ ] Tri du tableau de bord : d'abord les jeux **actifs** (en cours de partie), puis par nombre de checks en logique décroissant, puis par checks restants ; jeux finis en dernier. « Actif » = un check fait par ce slot dans les 30 dernières minutes (horodatage persisté, seuil réglable), voir D11. Badge « actif » sur la carte. Ordre figé quand une carte est ouverte (comme aujourd'hui). Tests vitest + captures
+- [x] Historique des items reçus par slot : date de réception (persistée en SQLite, à partir du moment où l'app suit le slot ; les items reçus avant sont marqués « avant le suivi »), envoyeur, location d'origine, classification ; affiché dans le détail du slot, du plus récent au plus ancien, filtrable (progression / utile / tous), paginé ; API documentée dans `docs/API.md` ; tests
+- [x] Tri du tableau de bord : d'abord les jeux **actifs** (en cours de partie), puis par nombre de checks en logique décroissant, puis par checks restants ; jeux finis en dernier. « Actif » = un check fait par ce slot dans les 30 dernières minutes (horodatage persisté, seuil réglable), voir D11. Badge « actif » sur la carte. Ordre figé quand une carte est ouverte (comme aujourd'hui). Tests vitest + captures (maquette : `test-output/screenshots/m12/`)
 - [ ] Relecture M12 + commit/push + notif
 
 ## M13 — Logique : jeux restants de Romain

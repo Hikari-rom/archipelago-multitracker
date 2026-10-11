@@ -1,15 +1,28 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { groupLocations, hintInMyWorld, hintMineElsewhere } from '../lib/logic'
 import type { Hint, ItemEntry, SlotDetail } from '../lib/types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { HISTORY_PAGE, formatWhen, historyItems, type HistoryFilter } from '../lib/history'
+import { tracker } from '../stores/tracker'
 import { cn } from '@/lib/utils'
 import Section from './Section.vue'
 
 const props = defineProps<{ detail: SlotDetail }>()
 
 const newItems = computed(() => props.detail.items_list.filter((i) => i.new))
-const allItems = computed(() => [...props.detail.items_list].sort((a, b) => b.index - a.index))
+const historyFilter = ref<HistoryFilter>('all')
+const historyLimit = ref(HISTORY_PAGE)
+const history = computed(() => historyItems(props.detail.items_list, historyFilter.value))
+const shown = computed(() => history.value.slice(0, historyLimit.value))
+function setFilter(v: unknown) {
+  if (v === 'all' || v === 'progression' || v === 'useful') {
+    historyFilter.value = v
+    historyLimit.value = HISTORY_PAGE
+  }
+}
 const sortFound = (hs: Hint[]) => [...hs].sort((a, b) => Number(a.found) - Number(b.found))
 const mine = computed(() => sortFound(props.detail.hints_mine_elsewhere))
 const world = computed(() => sortFound(props.detail.hints_in_my_world))
@@ -29,6 +42,7 @@ const from = (i: ItemEntry) =>
       : i.own
         ? 'trouvé par toi'
         : `de ${i.sender}`
+const fromWhere = (i: ItemEntry) => (i.location ? `${from(i)} · ${i.location}` : from(i))
 </script>
 
 <template>
@@ -69,17 +83,35 @@ const from = (i: ItemEntry) =>
       </ul>
     </Section>
 
-    <Section :title="`Tous les items reçus (${allItems.length})`" :start-open="false">
-      <p v-if="!allItems.length" class="text-muted-foreground text-sm">Aucun item reçu.</p>
+    <Section :title="`Historique des items reçus (${detail.items_list.length})`" :start-open="false">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        :spacing="1"
+        class="mb-2 flex-wrap"
+        :model-value="historyFilter"
+        aria-label="Filtrer l'historique"
+        @update:model-value="setFilter"
+      >
+        <ToggleGroupItem value="all" class="px-3">Tous</ToggleGroupItem>
+        <ToggleGroupItem value="progression" class="px-3">★ Progression</ToggleGroupItem>
+        <ToggleGroupItem value="useful" class="px-3">◆ Utiles</ToggleGroupItem>
+      </ToggleGroup>
+      <p v-if="!history.length" class="text-muted-foreground text-sm">Aucun item.</p>
       <ul v-else class="divide-y">
-        <li v-for="i in allItems" :key="i.index" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
+        <li v-for="i in shown" :key="i.index" class="history-item flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
           <span :class="cn('break-words', i.progression && 'font-bold', i.new && 'text-primary')">
             <span v-if="kind(i)" :class="cn('inline-block w-5 text-center', kind(i)!.cls)" :title="kind(i)!.label" :aria-label="kind(i)!.label">{{ kind(i)!.sym }}</span>
             {{ i.name }}
           </span>
-          <span class="text-muted-foreground">{{ from(i) }}</span>
+          <span class="text-muted-foreground min-w-0 flex-1 break-words">{{ fromWhere(i) }}</span>
+          <span class="text-muted-foreground ml-auto text-xs whitespace-nowrap tabular-nums">{{ formatWhen(i.received_at, tracker.nowMs) }}</span>
         </li>
       </ul>
+      <Button v-if="history.length > shown.length" variant="ghost" size="sm" class="mt-1" @click="historyLimit += HISTORY_PAGE">
+        Afficher {{ Math.min(HISTORY_PAGE, history.length - shown.length) }} de plus ({{ history.length - shown.length }} restants)
+      </Button>
     </Section>
 
     <Section title="Hints">

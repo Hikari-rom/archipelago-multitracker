@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hintInMyWorld, hintMineElsewhere, logicBadge, sortSlots, summaryText } from '../src/lib/logic'
+import { hintInMyWorld, hintMineElsewhere, isActive, logicBadge, sortSlots, summaryText } from '../src/lib/logic'
 import type { Hint } from '../src/lib/types'
 import { mk } from './helpers'
 
@@ -31,17 +31,26 @@ describe('logicBadge', () => {
 
 describe('sortSlots', () => {
   const names = (l: ReturnType<typeof sortSlots>) => l.map((s) => s.name)
-  it('orders groups and ranks', () => {
+  const now = 1_000_000_000_000
+  const ago = (min: number) => now / 1000 - min * 60
+  it('active first, then checks in logic, then checks left, finished last', () => {
     const slots = [
-      mk({ name: 'goal', goal: true, logic: { state: 'ok', count: 9, message: null } }),
-      mk({ name: 'idle' }),
+      mk({ name: 'goal', goal: true, last_check_at: ago(1), logic: { state: 'ok', count: 9, message: null } }),
+      mk({ name: 'idle', checks: { done: 0, total: 50, remaining: 50 } }),
       mk({ name: 'logic3', logic: { state: 'ok', count: 3, message: null } }),
       mk({ name: 'logic8', logic: { state: 'ok', count: 8, message: null } }),
-      mk({ name: 'new5', logic: { state: 'unavailable', count: 0, message: null }, items: { received: 5, new: 5 } }),
-      mk({ name: 'hint', hints: { mine_elsewhere: 0, in_my_world: 1, in_my_world_in_logic: 1 } }),
+      mk({ name: 'active', last_check_at: ago(5), logic: { state: 'ok', count: 1, message: null } }),
+      mk({ name: 'stale', last_check_at: ago(45), logic: { state: 'ok', count: 2, message: null } }),
       mk({ name: 'err', status: 'error', logic: { state: 'error', count: 0, message: null } }),
     ]
-    expect(names(sortSlots(slots))).toEqual(['hint', 'logic8', 'logic3', 'new5', 'idle', 'err', 'goal'])
+    expect(names(sortSlots(slots, now))).toEqual(['active', 'logic8', 'logic3', 'stale', 'idle', 'err', 'goal'])
+    expect(names(sortSlots(slots, now, 60))).toEqual(['stale', 'active', 'logic8', 'logic3', 'idle', 'err', 'goal'])
+  })
+  it('isActive', () => {
+    expect(isActive(mk({ name: 'a', last_check_at: ago(29) }), now)).toBe(true)
+    expect(isActive(mk({ name: 'a', last_check_at: ago(31) }), now)).toBe(false)
+    expect(isActive(mk({ name: 'a', last_check_at: null }), now)).toBe(false)
+    expect(isActive(mk({ name: 'a', goal: true, last_check_at: ago(1) }), now)).toBe(false)
   })
   it('does not mutate and is stable', () => {
     const slots = [mk({ name: 'x' }), mk({ name: 'y' })]

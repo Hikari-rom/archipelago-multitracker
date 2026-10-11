@@ -12,6 +12,8 @@ export interface SlotSummary {
   items: { received: number; new: number }
   hints: { mine_elsewhere: number; in_my_world: number; in_my_world_in_logic: number }
   goal: boolean
+  /** epoch seconds of the slot's last location check seen by the app (null = none since tracking) */
+  last_check_at?: number | null
   logic: {
     state: LogicState
     count: number
@@ -33,6 +35,8 @@ export interface ItemEntry {
   useful: boolean
   trap: boolean
   new: boolean
+  /** epoch seconds when the app received it; null = before the app tracked this slot */
+  received_at?: number | null
 }
 
 export interface Hint {

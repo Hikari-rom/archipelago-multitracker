@@ -25,7 +25,7 @@ watch(theme, (t) => {
   saveTheme(t)
 })
 
-const sorted = computed(() => sortSlots(tracker.slots))
+const sorted = computed(() => sortSlots(tracker.slots, tracker.nowMs, tracker.activeMinutes))
 let lastOrder: string[] = []
 const anyOpen = computed(() => Object.values(tracker.open).some(Boolean))
 const ordered = computed(() => {
