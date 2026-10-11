@@ -2,15 +2,15 @@
 
 Généré par `scripts/room_inventory.py` (room de 142 slots, 96 jeux). « Checksum » compare le datapackage de l'apworld installé ici à celui de la room : la logique d'un jeu n'est activée que s'il est identique (D12). « UT sans yaml » : Universal Tracker sait régénérer ce monde sans le yaml du joueur (seule possibilité pour les slots des autres joueurs).
 
-Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
+Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 
 | Jeu | Slots | Romain | Apworld ici | Checksum | UT sans yaml | Logique activée |
 |---|---|---|---|---|---|---|
-| Portal 2 | 5 |  | — | — |  |  |
+| Portal 2 | 5 |  | custom | ✅ | oui |  |
 | AEMinecraft | 4 | oui | custom | ✅ |  | ✅ |
 | Balatro | 4 | oui | custom | ✅ |  | ✅ |
 | Celeste (Open World) | 3 | oui | core | ✅ |  | ✅ |
-| Mario Kart Double Dash | 3 |  | — | — |  |  |
+| Mario Kart Double Dash | 3 |  | custom | ✅ | oui |  |
 | Ori and the Blind Forest | 3 | oui | custom | ✅ |  | ✅ |
 | Ori and the Will of the Wisps | 3 | oui | custom | ✅ | oui | ✅ |
 | Paint | 3 |  | core | ✅ |  | ✅ |
@@ -19,16 +19,16 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | The Binding of Isaac Repentance | 3 | oui | custom | ✅ | oui | ✅ |
 | A Dance of Fire and Ice | 2 |  | — | — |  |  |
 | ArchipelaCode | 2 |  | — | — |  |  |
-| Archipeladoku | 2 |  | — | — |  |  |
+| Archipeladoku | 2 |  | custom | ✅ | oui |  |
 | Bloons TD6 | 2 |  | — | — |  |  |
 | Burnout Paradise Remastered | 2 |  | — | — |  |  |
 | Clair Obscur Expedition 33 | 2 |  | — | — |  |  |
 | Cookie Clicker | 2 |  | — | — |  |  |
-| Haste | 2 |  | — | — |  |  |
-| Lego Star Wars: The Complete Saga | 2 |  | — | — |  |  |
-| Lethal Company | 2 |  | — | — |  |  |
+| Haste | 2 |  | custom | ✅ |  |  |
+| Lego Star Wars: The Complete Saga | 2 |  | custom | ✅ | oui |  |
+| Lethal Company | 2 |  | custom | ✅ |  |  |
 | Mario Kart Wii | 2 | oui | custom | ✅ | oui | ✅ |
-| Outer Wilds | 2 |  | — | — |  |  |
+| Outer Wilds | 2 |  | custom | ✅ | oui |  |
 | Pokemon Black and White | 2 | oui | custom | ✅ | oui | ✅ |
 | Satisfactory | 2 |  | core | ✅ | oui |  |
 | Slime Rancher | 2 |  | — | — |  |  |

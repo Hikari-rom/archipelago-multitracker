@@ -35,8 +35,8 @@ fi
 # AP requirements minus the GUI (kivy, kivymd) and Windows-only (Pymem) packages.
 grep -vE '^\s*(kivy|kivymd|Pymem)\b|^\s*#|^\s*$' "$AP_DIR/requirements.txt" > .venv/ap-requirements.txt
 .venv/bin/pip install --quiet -r .venv/ap-requirements.txt
-# Client-side deps that some worlds (KH2, Jak) import at load time; unused by the tracker.
-.venv/bin/pip install --quiet "Pymem>=1.10.0" "PyMemoryEditor>=2.0.1"
+# Client-side deps that some worlds (KH2, Jak) import at load time; unused by the tracker. attrs: Portal 2.
+.venv/bin/pip install --quiet "Pymem>=1.10.0" "PyMemoryEditor>=2.0.1" "attrs==24.2.0"
 # dolphin-memory-engine does not build on aarch64: backend/ap_stubs/ provides a stub.
 .venv/bin/pip install --quiet -r backend/requirements.txt
 

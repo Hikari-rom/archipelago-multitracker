@@ -167,6 +167,52 @@ apworlds:
     asset: "*.apworld"
     logic: true
 
+
+  # M14: other games of the room, at the newest release whose datapackage checksum equals the room's (D12;
+  # several releases share it, the exact one used by the room is unknown). Logic only after validation.
+  mkdd:
+    game: "Mario Kart Double Dash"
+    source: github
+    repo: aXu-AP/archipelago-double-dash
+    tag: v1.0.1
+    asset: "*.apworld"
+  archipeladoku:
+    game: "Archipeladoku"
+    source: github
+    repo: galdiuz/archipeladoku
+    tag: v2026.09.26
+    asset: "*.apworld"
+  lego_tcs:
+    game: "Lego Star Wars: The Complete Saga"
+    source: github
+    repo: Mysteryem/Archipelago-TCS
+    tag: v1.4.4
+    asset: "*.apworld"
+  lethal_company:
+    game: "Lethal Company"
+    source: github
+    repo: T0r1nn/APLC
+    tag: v0.7.13
+    asset: "*.apworld"
+  outer_wilds:
+    game: "Outer Wilds"
+    source: github
+    repo: Ixrec/OuterWildsArchipelagoRandomizer
+    tag: v1.3.0
+    asset: "*.apworld"
+  portal2:
+    game: "Portal 2"
+    source: github
+    repo: GlassToadstool/Portal2ArchipelagoMod
+    tag: "0.8.2"
+    asset: "*.apworld"
+  haste:
+    game: "Haste"
+    source: github
+    repo: WritingHusky/haste_apworld
+    tag: v0.5.1
+    asset: "*.apworld"
+
 # Not a game: Universal Tracker, used headless as the logic engine.
 # Tracker_v0.3.0 is the newest release whose core is Archipelago 0.6.7 (v0.3.1+ target 0.6.8).
 tools:
