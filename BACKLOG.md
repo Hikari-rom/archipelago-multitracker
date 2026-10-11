@@ -119,7 +119,7 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 ## M13 — Logique : jeux restants de Romain
 - [x] PokéPark Wii: Pikachu's Adventure — 5/5 aléatoires + 6/6 avec le yaml de Romain, lot `m13` bout en bout, logique activée (2026-10-11). Était : compléter (seeds aléatoires si elles génèrent, sinon `--default-options`), lot bout en bout, activation, COMPAT
 - [x] Ori and the Will of the Wisps — 5/5 avec le yaml de Romain + lot `m13w` bout en bout : logique activée (2026-10-11). Options aléatoires : 3/4, et les écarts sont des **sous-estimations** (quelques locations atteignables non montrées, jamais l'inverse)
-- [ ] Relecture M13 + commit/push + notif
+- [x] Relecture M13 + commit/push + notif (D12 fermé par défaut, archives vérifiées)
 
 ## M14 — Autres jeux de la room (seulement quand tout le reste est fini ou bloqué)
 Le niveau 1 marche déjà pour n'importe quel jeu (noms via le datapackage du serveur) : ce jalon ne concerne que la logique.

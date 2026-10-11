@@ -12,11 +12,14 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
    puis commit + push sur `main` (le dépôt est celui de Romain).
 
 ## État au 2026-10-10 (fin de la session de nuit, interrompue par la limite d'usage)
-- Niveau 1 OK pour les 22 jeux. Logique validée et activée pour 17 jeux (`logic: true` dans `config/apworlds.yaml`).
+- Niveau 1 OK pour les 22 jeux. Logique validée et activée pour 17 jeux (21 au 2026-10-11) (`logic: true` dans `config/apworlds.yaml`).
 - Ouvert : Balatro, PokePark, Phantom Hourglass (adaptateurs partiels dans
   `backend/multitracker/logic/adapters_m7.py`, logique désactivée), Ori WotW (3/4 seeds, surestime des événements
   de combat, logique désactivée). OoT bloqué (`[!]`) : récompenses de donjon impossibles à connaître sans spoiler.
-- 2026-10-11 : Balatro, Phantom Hourglass puis PokePark activés (20 jeux avec logique). OoT mis de côté par Romain.
+- 2026-10-11 : Balatro, Phantom Hourglass, PokePark et Ori WotW activés (21 jeux avec logique, OoT mis de côté).
+  Versions d'apworlds = celles de la room (D12, vérifié par le worker) : `scripts/room_inventory.py` compare les
+  checksums sans réveiller la room ; TWW HD épinglé sur un commit de `main`, AEMinecraft sur 0.7.0-rc.2.
+  `validate_logic.py --no-yaml` valide le mode « slot_data seul » (slots d'autres joueurs). OoT mis de côté par Romain.
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/players/romain/`, `config/room.real.yaml`, gitignorés) → M12 historique/tri → M13 PokePark/WotW → M14.
 - `validate_logic.py --yaml <yaml>` valide la logique avec les vraies options d'un joueur (test seulement).

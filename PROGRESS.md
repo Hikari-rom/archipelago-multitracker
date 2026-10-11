@@ -1,9 +1,9 @@
 # Progression
 
 ## État actuel (5 lignes)
-1. M0 à M12 faits (M11 : reste la vérification sur la vraie room éveillée) ; M13 : PokePark activé, reste Ori WotW.
+1. M0 à M13 faits (M11 : reste la vérification sur la vraie room éveillée) ; M14 (autres jeux de la room) en cours.
 2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (endormie tant que personne n'ouvre son lien).
-3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 20 jeux sur 22, voir `docs/COMPAT.md`.
+3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 21 jeux sur 22, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 
@@ -76,7 +76,12 @@
   ne suivait pas), badge « Actif » et tri actifs → checks en logique → restants (durée réglable dans Configuration →
   Affichage). Relecture : horloge du navigateur corrigée par celle du serveur, rafales `!release`/`!collect` ignorées,
   écritures SQLite regroupées, migration des tables. Captures maquette : `test-output/screenshots/m12/`.
-- M13 : PokePark validé (5/5 aléatoires, 6/6 avec ton yaml, lot `m13`) et activé → 20 jeux sur 22 avec logique.
+- M13 : PokePark validé (5/5 aléatoires, 6/6 avec ton yaml, lot `m13`) et activé ; Ori WotW validé avec ton yaml
+  (5/5 + lot `m13w`) et activé → **21 jeux sur 22 avec logique** (OoT mis de côté).
+- M14 : inventaire de la room (`scripts/room_inventory.py` → `docs/COMPAT-room.md`, sans réveiller la room). Découverte
+  importante : la room a été générée avec **TWW HD `main`** (pas la release v1.0.2-beta) et **AEMinecraft 0.7.0-rc** :
+  apworlds alignés (épinglage par commit dans `config/apworlds.yaml`), logique revalidée à ces versions. Le worker
+  refuse maintenant la logique si la version d'un jeu diffère de celle de la room (D12).
 
 ## À faire par Romain
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
@@ -93,5 +98,6 @@
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
 et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
-Reste (2026-10-11) : vérification M11 sur la room éveillée, Ori WotW, puis M14.
+Reste (2026-10-11) : vérification M11 sur la room éveillée, M14 (jeux core de la room : campagne de validation
+en cours, résultats dans `test-output/logs/campaign.summary`).
 OoT est mis de côté à la demande de Romain.
