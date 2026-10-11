@@ -1,9 +1,9 @@
 # Progression
 
 ## État actuel (5 lignes)
-1. M0 à M6 faits et relus ; M7 quasi fini (17 jeux sur 22 avec logique validée) ; M8 fait (découverte de room, multi-joueurs, robustesse, perf).
-2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur le multiworld de **test** local (5 jeux).
-3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 17 jeux, voir `docs/COMPAT.md`.
+1. M0 à M12 faits (M11 : reste la vérification sur la vraie room éveillée) ; M13 : PokePark activé, reste Ori WotW.
+2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (endormie tant que personne n'ouvre son lien).
+3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 20 jeux sur 22, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 
@@ -47,7 +47,7 @@
   R&C 2/3, AEMinecraft, Isaac, Mario Kart Wii (adaptateur). Lots bout en bout : `m7a`, `m7b`.
 - Ori WotW : 3/4 seeds (adaptateurs spawn + doublons, régénération yaml + slot_data), logique désactivée.
 - OoT : **bloqué** (récompenses de donjon inconnaissables sans spoiler), niveau 1 seulement.
-- Balatro, PokePark, Phantom Hourglass : en cours.
+- Balatro, Phantom Hourglass (2026-10-11) puis PokePark (M13, 2026-10-11) : validés et activés.
 
 ### M8 — Bonus
 - Page Configuration : lien de room archipelago.gg → slots découverts, mot de passe, yamls, joueur par slot.

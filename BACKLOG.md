@@ -117,7 +117,7 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 - [ ] Relecture M12 + commit/push + notif
 
 ## M13 — Logique : jeux restants de Romain
-- [ ] PokéPark Wii: Pikachu's Adventure — validation en cours avec le yaml de Romain (2/2 OK au 2026-10-11) ; compléter (seeds aléatoires si elles génèrent, sinon `--default-options`), lot bout en bout, activation, COMPAT
+- [x] PokéPark Wii: Pikachu's Adventure — 5/5 aléatoires + 6/6 avec le yaml de Romain, lot `m13` bout en bout, logique activée (2026-10-11). Était : compléter (seeds aléatoires si elles génèrent, sinon `--default-options`), lot bout en bout, activation, COMPAT
 - [ ] Ori and the Will of the Wisps — 3/4 seeds, surestimation sur des événements de combat ; tester aussi avec le yaml de Romain
 - [ ] Relecture M13 + commit/push + notif
 

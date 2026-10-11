@@ -16,7 +16,7 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - Ouvert : Balatro, PokePark, Phantom Hourglass (adaptateurs partiels dans
   `backend/multitracker/logic/adapters_m7.py`, logique désactivée), Ori WotW (3/4 seeds, surestime des événements
   de combat, logique désactivée). OoT bloqué (`[!]`) : récompenses de donjon impossibles à connaître sans spoiler.
-- 2026-10-11 : Balatro et Phantom Hourglass activés (19 jeux avec logique). OoT mis de côté par Romain.
+- 2026-10-11 : Balatro, Phantom Hourglass puis PokePark activés (20 jeux avec logique). OoT mis de côté par Romain.
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/players/romain/`, `config/room.real.yaml`, gitignorés) → M12 historique/tri → M13 PokePark/WotW → M14.
 - `validate_logic.py --yaml <yaml>` valide la logique avec les vraies options d'un joueur (test seulement).

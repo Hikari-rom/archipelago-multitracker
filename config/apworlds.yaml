@@ -112,6 +112,7 @@ apworlds:
     repo: Mekurushi/Archipelago_Pokepark
     tag: latest
     asset: "*.apworld"
+    logic: true
   rac2:
     game: "Ratchet & Clank 2"
     needs_yaml: true

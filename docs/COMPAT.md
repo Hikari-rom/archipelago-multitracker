@@ -33,7 +33,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | The Legend of Zelda: Phantom Hourglass | carrotinator/Archipelago ph-v0.10.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 4/4 aléatoires + 5/5 yaml de Romain + e2e | Nom « The Legend of Zelda - Phantom Hourglass ». Adaptateur : entrées de `slot_data["er_pairings"]` connectées, règles de clés du générateur (pas la variante prudente d'UT). Logique activée |
 | Pokémon Platinum | ljtpetersen/platinum_archipelago v0.2.2 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Platinum ». Beaucoup d'options aléatoires ne génèrent pas. Logique activée |
 | Pokémon Black and White | BlastSlimey/PokemonBWAP 0.3.37 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Pokemon Black and White ». Logique activée |
-| PokéPark Wii: Pikachu's Adventure | Mekurushi/Archipelago_Pokepark 1.2.8 | ✅ | ✅ | ✅ | ✅ | ⏳ | ⏳ | Nom « PokePark ». Stub `dolphin_memory_engine`. En cours d'analyse |
+| PokéPark Wii: Pikachu's Adventure | Mekurushi/Archipelago_Pokepark 1.2.8 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ 5/5 aléatoires + 6/6 yaml de Romain + e2e | Nom « PokePark ». Stub `dolphin_memory_engine`. Pas d'adaptateur nécessaire. Logique activée |
 | Ratchet & Clank 2 | evilwb/APRac2 v0.6.4 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | Pas de manifeste. Logique activée |
 | Ratchet & Clank 3 | Taoshix/Archipelago-RaC3 v0.6.0 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ + e2e | Nom « Ratchet and Clank 3 ». Logique activée |
 | AEMinecraft | KuroLynx/AEMinecraft v0.6.2 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ + e2e | v0.7.0-rc.1 (prerelease) ignorée. Logique activée |
