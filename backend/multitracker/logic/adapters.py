@@ -215,6 +215,7 @@ def _subnautica(world_cls: type, slot_data: dict[str, Any], location_ids: set[in
     """Subnautica: the creatures to scan are a random sample drawn in generate_early, sent in slot_data but
     never read back (no interpret_slot_data). Replay them, and the options slot_data carries."""
     if not isinstance(slot_data.get("creatures_to_scan"), list):
+        log.warning("Subnautica: no creatures_to_scan in slot_data, creature scans may be wrong")
         yield
         return
     original = world_cls.generate_early
@@ -238,9 +239,10 @@ def _v6(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         conn = {int(k): int(v) for k, v in slot_data["AreaRando"].items()}
         cost = {int(k): int(v) for k, v in slot_data["AreaCostRando"].items()}
     except (KeyError, AttributeError, TypeError, ValueError):
+        log.warning("VVVVVV: no readable AreaRando/AreaCostRando in slot_data, areas may be wrong")
         yield
         return
-    original = world_cls.set_rules
+    original_early, original = world_cls.generate_early, world_cls.set_rules
     n = len(conn) - 1  # key 0 is the menu
 
     class _Replay:
@@ -253,8 +255,11 @@ def _v6(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         def __getattr__(self, name: str):
             return getattr(self.real, name)
 
+    def generate_early(self) -> None:
+        apply_options(self, {"door_cost": slot_data.get("DoorCost")}, ["door_cost"])  # before create_items
+        original_early(self)
+
     def set_rules(self) -> None:
-        apply_options(self, {"door_cost": slot_data.get("DoorCost")}, ["door_cost"])
         options = self.options
         saved = (options.area_rando.value, options.area_cost.value, self.multiworld.random)
         options.area_rando.value = options.area_cost.value = 1
@@ -264,7 +269,33 @@ def _v6(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         finally:
             options.area_rando.value, options.area_cost.value, self.multiworld.random = saved
 
-    with patch_attr(world_cls, "set_rules", set_rules):
+    with patch_attr(world_cls, "generate_early", generate_early), patch_attr(world_cls, "set_rules", set_rules):
+        yield
+
+
+@contextlib.contextmanager
+def _overcooked2(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Overcooked! 2: with shuffle_level_order, generate_early assigns a random kitchen to each overworld level
+    (level_mapping, which sets the star requirements); slot_data["CustomLevelOrder"]["Story"] holds the result
+    but is never read back. Rebuild the mapping from it."""
+    try:
+        story = slot_data["CustomLevelOrder"]["Story"]
+        order = {int(k): (str(v["DLC"]), int(v["LevelID"])) for k, v in story.items()}
+    except (KeyError, AttributeError, TypeError, ValueError):
+        log.warning("Overcooked! 2: no readable CustomLevelOrder in slot_data, kitchens may be wrong")
+        order = {}
+    if not order:  # level order not shuffled (or unreadable)
+        yield
+        return
+    levels = importlib.import_module(f"{world_cls.__module__}.Overcooked2Levels")
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        self.level_mapping = {level_id: levels.Overcooked2GenericLevel(number, levels.Overcooked2Dlc(dlc))
+                              for level_id, (dlc, number) in order.items()}
+
+    with patch_attr(world_cls, "generate_early", generate_early):
         yield
 
 
@@ -275,6 +306,7 @@ ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] 
     "Mario Kart Wii": _mkwii,
     "Subnautica": _subnautica,
     "VVVVVV": _v6,
+    "Overcooked! 2": _overcooked2,
 }
 
 

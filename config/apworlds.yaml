@@ -38,6 +38,7 @@ apworlds:
   paint: {game: "Paint", source: core, logic: true, needs_yaml: true}
   subnautica: {game: "Subnautica", source: core, logic: true, needs_yaml: true}  # adapter: creatures to scan
   v6: {game: "VVVVVV", source: core, logic: true, needs_yaml: true}  # adapter: area permutations
+  overcooked2: {game: "Overcooked! 2", source: core, logic: true, needs_yaml: true}  # adapter: kitchen order
 
   twwhd:
     game: "The Wind Waker HD"
@@ -172,7 +173,8 @@ apworlds:
 
   # M14: other games of the room, at the newest release whose datapackage checksum equals the room's (D12;
   # several releases share it, the exact one used by the room is unknown). Logic only after validation
-  # (3/3 random seeds + e2e batch m14b); these five rebuild from slot_data alone: no yaml needed.
+  # (random seeds + e2e batch m14b, see docs/COMPAT.md); mkdd, archipeladoku, lego_tcs, outer_wilds and portal2
+  # rebuild from slot_data alone: no yaml needed.
   mkdd:
     game: "Mario Kart Double Dash"
     source: github

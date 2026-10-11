@@ -50,10 +50,10 @@ ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logi
 | Jeu | Validation | Logique | Notes |
 |---|---|---|---|
 | The Witness, Risk of Rain 2, Terraria, Undertale, A Short Hike, Inscryption, shapez, Raft, Civilization VI, Paint | ✅ 3/3 + e2e `m14` | activée (yaml) | |
-| VVVVVV | ✅ 5/5 + e2e `m14b` | activée (yaml) | adaptateur : zones et coûts mélangés avec `multiworld.random`, rejoués depuis `slot_data` (`AreaRando`, `AreaCostRando`) |
-| Overcooked! 2 | ⚠️ 2/3 | non | cuisines mélangées (`shuffle_level_order`, `level_shuffle_factory`) non rejouées depuis le `slot_data` : adaptateur à écrire |
+| VVVVVV | ✅ 8/8 + e2e `m14b` | activée (yaml) | adaptateur : zones et coûts mélangés avec `multiworld.random`, rejoués depuis `slot_data` (`AreaRando`, `AreaCostRando`) |
+| Overcooked! 2 | ✅ 5/5 + e2e `m14b` | activée (yaml) | adaptateur : cuisines mélangées (`shuffle_level_order`), ordre rejoué depuis `slot_data["CustomLevelOrder"]` |
 | Hollow Knight | ⚠️ 1/3 | non | une location de trop (Salubra charmes, Seer) : compte de charmes/essence |
-| Subnautica | ✅ 4/4 + e2e `m14b` | activée (yaml) | adaptateur : créatures à scanner tirées au hasard, rejouées depuis `slot_data["creatures_to_scan"]` |
+| Subnautica | ✅ 4/4 + e2e `m14b` | activée (yaml) | adaptateur : créatures à scanner tirées au hasard, rejouées depuis `slot_data["creatures_to_scan"]`. `creature_scan_logic` n'est pas dans le `slot_data` : le yaml doit le fixer (pas `random`) |
 | Stardew Valley | ❌ 0/3 | non | surestimation : « mois vécus » = pourcentage d'items de progression reçus, total différent à la régénération |
 | Factorio | ❌ 0/3 | non | forte sous-estimation dès la sphère 0 (arbre technologique) |
 | Satisfactory | ❌ 0/3 | non | le monde assouplit volontairement ses règles pour Universal Tracker (paliers 1–2 du Hub « toujours accessibles en jeu ») : non comparable à la génération |
