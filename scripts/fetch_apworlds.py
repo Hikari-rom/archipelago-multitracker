@@ -29,7 +29,7 @@ import sys
 import urllib.error
 import urllib.request
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -108,12 +108,17 @@ def repack_archive(archive: Path, dest: Path) -> None:
     tmp = dest.with_name(dest.name + ".part")
     try:
         with zipfile.ZipFile(archive) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
-            tops = {info.filename.split("/", 1)[0] for info in src.infolist()}
-            if len(tops) != 1:
+            infos = src.infolist()
+            tops = {info.filename.split("/", 1)[0] for info in infos}
+            if len(tops) != 1 or any("/" not in info.filename for info in infos):
                 raise RuntimeError(f"expected one top folder in the repository archive, found {sorted(tops)}")
-            top = tops.pop()
-            for info in src.infolist():
-                rest = info.filename.split("/", 1)[1] if "/" in info.filename else ""
+            for info in infos:
+                rest = info.filename.split("/", 1)[1]
+                parts = PurePosixPath(rest).parts
+                if rest.startswith("/") or ".." in parts or "\\" in rest:
+                    raise RuntimeError(f"unsafe path in the repository archive: {info.filename!r}")
+                if (info.external_attr >> 16) & 0o170000 == 0o120000:
+                    raise RuntimeError(f"symbolic link in the repository archive: {info.filename!r}")
                 new = zipfile.ZipInfo(f"{module}/{rest}" if rest else f"{module}/", info.date_time)
                 new.external_attr, new.compress_type = info.external_attr, zipfile.ZIP_DEFLATED
                 out.writestr(new, b"" if info.is_dir() else src.read(info))
@@ -222,7 +227,8 @@ def main() -> int:
                     digest = sha256(dest)
                 else:
                     digest = gh.download(resolved["url"], dest, resolved.get("size"))
-                if same_version and digest != locked["sha256"] and not args.update:
+                # A commit archive is immutable: its repack may differ by a byte (zlib) but not in content.
+                if same_version and digest != locked["sha256"] and not args.update and not resolved.get("archive"):
                     dest.unlink(missing_ok=True)
                     raise RuntimeError(f"sha256 mismatch for {resolved['url']} (asset replaced upstream?); "
                                        f"rerun with --update to accept the new file")

@@ -78,7 +78,9 @@ def main() -> int:
         room_sum = room_sums.get(game)
         if mine is None:
             state = "absent"
-        elif room_sum and mine["checksum"] == room_sum:
+        elif not room_sum:
+            state = "inconnu"
+        elif mine["checksum"] == room_sum:
             state = "identique"
         else:
             state = "différent"
@@ -93,7 +95,7 @@ def main() -> int:
 
     def line(r: dict) -> str:
         installed = "—" if not r["installed"] else r["kind"]
-        check = {"identique": "✅", "différent": "❌ autre version", "absent": "—"}[r["checksum"]]
+        check = {"identique": "✅", "différent": "❌ autre version", "absent": "—", "inconnu": "?"}[r["checksum"]]
         return (f"| {r['game']} | {r['slots']} | {'oui' if r['romain'] else ''} | {installed} | {check} | "
                 f"{'oui' if r['ut_can_gen_without_yaml'] else ''} | {'✅' if r['logic'] else ''} |")
 

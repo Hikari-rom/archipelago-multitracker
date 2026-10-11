@@ -128,9 +128,10 @@ class SlotLogic:
         if getattr(world_cls, "disable_ut", False):
             raise LogicUnavailable("l'auteur de l'apworld a désactivé Universal Tracker pour ce jeu")
         local_checksum = worlds.network_data_package["games"].get(game, {}).get("checksum")
-        if room_checksum and local_checksum and room_checksum != local_checksum:  # D12
+        if room_checksum is not None and room_checksum != local_checksum:  # D12 (None: caller does not check)
             raise LogicUnavailable("la room utilise une autre version de l'apworld que celle installée ici : "
-                                   "logique désactivée pour ne pas se tromper")
+                                   "logique désactivée pour ne pas se tromper" if room_checksum else
+                                   "la room n'indique pas la version de ce jeu : logique désactivée")
 
         core = TrackerCore(logging.getLogger(f"ut.{slot_name}"), False, False)
         # TrackerCore caches multiworlds per slot_data at class level: keep the cache per slot.

@@ -61,6 +61,8 @@ def test_other_apworld_version_in_the_room():
            "slot_data": {}, "yaml": None, "items": [], "missing": [1], "checked": [], "checksum": "0" * 40}
     res = Worker().handle(req)
     assert res["state"] == "unavailable" and "autre version" in res["message"]
+    req["checksum"] = ""  # the room did not say: refused too
+    assert "n'indique pas" in Worker().handle(req)["message"]
     import worlds
     req["checksum"] = worlds.network_data_package["games"]["Kingdom Hearts 2"]["checksum"]
     assert "yaml" in Worker().handle(req)["message"]  # same version: goes on (and needs the yaml)

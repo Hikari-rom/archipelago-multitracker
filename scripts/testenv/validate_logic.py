@@ -6,6 +6,7 @@ then compare the app's logic with the full-multiworld reference at every sphere.
 
   validate_logic.py "Celeste (Open World)" --runs 5 [--companions "Super Mario 64"]
   validate_logic.py "Balatro" --runs 3 --yaml config/players/romain/romain_balatro.yaml   (real player options)
+  validate_logic.py "Hollow Knight" --runs 3 --no-yaml   (logic from slot_data only: another player's slot)
 
 Results: test-output/logic_validation/<game>.json, one line per run on stdout.
 Exit code 0 only if every run that generated had zero difference.
@@ -33,11 +34,11 @@ def slug(text: str) -> str:
 
 
 def run_once(game: str, companions: list[str], run: int, keep_default: bool, retries: int = 3,
-             player_yaml: Path | None = None) -> dict:
+             player_yaml: Path | None = None, tool_yaml: bool = True) -> dict:
     """One validation run; random options that make the generation itself fail are re-rolled."""
     res: dict = {}
     for attempt in range(retries + 1):
-        res = _run_once(game, companions, run, keep_default, attempt, player_yaml)
+        res = _run_once(game, companions, run, keep_default, attempt, player_yaml, tool_yaml)
         if res.get("generated") is not False:
             break
     res["attempts"] = attempt + 1
@@ -45,7 +46,7 @@ def run_once(game: str, companions: list[str], run: int, keep_default: bool, ret
 
 
 def _run_once(game: str, companions: list[str], run: int, keep_default: bool, attempt: int,
-              player_yaml: Path | None = None) -> dict:
+              player_yaml: Path | None = None, tool_yaml: bool = True) -> dict:
     import logic_reference as lr
     base = WORK / slug(game) / f"run{run}"
     players = base / "players"
@@ -98,7 +99,7 @@ def _run_once(game: str, companions: list[str], run: int, keep_default: bool, at
             if multiworld.game[player] != game:
                 continue
             reports.append(lr.compare_slot(multiworld, multidata, player,
-                                           players / f"{multiworld.player_name[player]}.yaml",
+                                           players / f"{multiworld.player_name[player]}.yaml" if tool_yaml else None,
                                            max_snapshots=30, tool=tool))
     bad = [s for r in reports for s in r["snapshots"] if s["under"] or s["over"]]
     bad += [{"error": r["error"]} for r in reports if r.get("error")]
@@ -121,6 +122,8 @@ def main() -> int:
     parser.add_argument("--companions", nargs="*", default=["Super Mario 64"])
     parser.add_argument("--default-options", action="store_true", help="first slot with default options")
     parser.add_argument("--yaml", type=Path, help="first slot from this player yaml (name replaced)")
+    parser.add_argument("--no-yaml", action="store_true",
+                        help="the tool gets no yaml (slot_data only), like for another player's slot")
     args = parser.parse_args()
     if args.yaml:
         args.yaml = args.yaml.resolve()  # the runs change the working directory
@@ -128,7 +131,8 @@ def main() -> int:
     for run in range(args.first_run, args.first_run + args.runs):
         started = time.time()
         try:
-            res = run_once(args.game, args.companions, run, args.default_options, player_yaml=args.yaml)
+            res = run_once(args.game, args.companions, run, args.default_options, player_yaml=args.yaml,
+                           tool_yaml=not args.no_yaml)
         except Exception as exc:  # report and continue with the next run
             res = {"run": run, "generated": None, "error": f"{type(exc).__name__}: {exc}"[:400]}
         res["seconds"] = round(time.time() - started, 1)
@@ -137,7 +141,7 @@ def main() -> int:
                   else "NC " if res.get("comparable") is False else "KO ")
         print(f"{status} run {run}: {res.get('snapshots', '-')} snapshots, {res['seconds']}s "
               f"{res.get('error', '')} {json.dumps(res.get('bad', [])[:1], ensure_ascii=False)[:600]}", flush=True)
-    out = WORK / f"{slug(args.game)}{'_yaml' if args.yaml else ''}.json"
+    out = WORK / f"{slug(args.game)}{'_yaml' if args.yaml else ''}{'_noyaml' if args.no_yaml else ''}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     generated = [r for r in results if r.get("generated") and r.get("comparable", True)]
