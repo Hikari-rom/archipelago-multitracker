@@ -13,7 +13,7 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | Mario Kart Double Dash | 3 |  | — | — |  |  |
 | Ori and the Blind Forest | 3 | oui | custom | ✅ |  | ✅ |
 | Ori and the Will of the Wisps | 3 | oui | custom | ✅ | oui | ✅ |
-| Paint | 3 |  | core | ✅ |  |  |
+| Paint | 3 |  | core | ✅ |  | ✅ |
 | PEAK | 3 |  | — | — |  |  |
 | R.E.P.O | 3 |  | — | — |  |  |
 | The Binding of Isaac Repentance | 3 | oui | custom | ✅ | oui | ✅ |
@@ -34,17 +34,17 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | Slime Rancher | 2 |  | — | — |  |  |
 | Subnautica | 2 |  | core | ✅ |  |  |
 | Super Mario 64 | 2 | oui | core | ✅ |  | ✅ |
-| Terraria | 2 |  | core | ✅ |  |  |
+| Terraria | 2 |  | core | ✅ |  | ✅ |
 | The Legend of Zelda - Phantom Hourglass | 2 | oui | custom | ✅ | oui | ✅ |
-| Undertale | 2 |  | core | ✅ |  |  |
+| Undertale | 2 |  | core | ✅ |  | ✅ |
 | 2048 | 1 |  | — | — |  |  |
-| A Short Hike | 1 |  | core | ✅ |  |  |
+| A Short Hike | 1 |  | core | ✅ |  | ✅ |
 | Archipelago | 1 |  | core | ✅ |  |  |
 | Baldur's Gate 3 | 1 |  | — | — |  |  |
 | Beat Saber | 1 |  | — | — |  |  |
 | Big Walk | 1 |  | — | — |  |  |
 | Blue Prince | 1 |  | — | — |  |  |
-| Civilization VI | 1 |  | core | ✅ |  |  |
+| Civilization VI | 1 |  | core | ✅ |  | ✅ |
 | CloverPit | 1 |  | — | — |  |  |
 | ClusterTruck | 1 |  | — | — |  |  |
 | Cuphead | 1 |  | — | — |  |  |
@@ -62,7 +62,7 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | Hades | 1 |  | — | — |  |  |
 | Hades2Rogue | 1 |  | — | — |  |  |
 | Hollow Knight | 1 |  | core | ✅ |  |  |
-| Inscryption | 1 |  | core | ✅ |  |  |
+| Inscryption | 1 |  | core | ✅ |  | ✅ |
 | Jak 3 | 1 | oui | custom | ✅ |  | ✅ |
 | Jak and Daxter: The Precursor Legacy | 1 | oui | core | ✅ |  | ✅ |
 | Kingdom Hearts 2 | 1 | oui | core | ✅ |  | ✅ |
@@ -78,11 +78,11 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | Pokemon Platinum | 1 | oui | custom | ✅ | oui | ✅ |
 | PokePark | 1 | oui | custom | ✅ | oui | ✅ |
 | Powerwash Simulator | 1 |  | — | — |  |  |
-| Raft | 1 |  | core | ✅ |  |  |
+| Raft | 1 |  | core | ✅ |  | ✅ |
 | Ratchet & Clank 2 | 1 | oui | custom | ✅ |  | ✅ |
 | Ratchet and Clank 3 | 1 | oui | custom | ✅ | oui | ✅ |
-| Risk of Rain 2 | 1 |  | core | ✅ |  |  |
-| shapez | 1 |  | core | ✅ |  |  |
+| Risk of Rain 2 | 1 |  | core | ✅ |  | ✅ |
+| shapez | 1 |  | core | ✅ |  | ✅ |
 | Slay the Spire | 1 | oui | custom | ✅ | oui | ✅ |
 | Slime Rancher 2 | 1 |  | — | — |  |  |
 | Spicy Meatball Overdrive | 1 | oui | custom | ✅ |  | ✅ |
@@ -95,7 +95,7 @@ Bilan : 40 identiques, 1 versions différentes, 55 jeux sans apworld ici.
 | TerraNil | 1 |  | — | — |  |  |
 | The Farmer Was Replaced | 1 |  | — | — |  |  |
 | The Wind Waker HD | 1 | oui | custom | ✅ |  | ✅ |
-| The Witness | 1 |  | core | ✅ |  |  |
+| The Witness | 1 |  | core | ✅ |  | ✅ |
 | Trackmania | 1 |  | — | — |  |  |
 | Trombone Champ | 1 |  | — | — |  |  |
 | TUNIC | 1 |  | core | ❌ autre version | oui |  |

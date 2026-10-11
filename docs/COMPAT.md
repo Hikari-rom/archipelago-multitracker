@@ -41,6 +41,24 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 | Mario Kart Wii | toent/Archipelago-MKWii v0.3.1 | ✅ | ✅ | ✅ | ✅ | ✅ (adaptateur) | ✅ 5/5 + e2e | Adaptateur : coupes/persos/véhicules de départ et options depuis `slot_data`. Logique activée |
 | The Legend of Zelda: Ocarina of Time | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ 0/5 | **Logique impossible sans spoiler** : les récompenses de donjon (pierres/médaillons, y compris celle de la Poche de Link) sont des événements sans adresse placés au hasard ; ni le `slot_data` ni le serveur ne les transmettent. La régénération les place autrement → écarts dès la sphère 0, même avec les options par défaut. Niveau 1 seulement |
 
+## Autres jeux de la room (M14, jeux core d'AP 0.6.7, joués par d'autres)
+
+Version identique à la room vérifiée par `scripts/room_inventory.py` (voir `docs/COMPAT-room.md`). Aucun de ces mondes
+ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logique demande le **yaml du joueur**
+(clé `yaml` du slot). Validation : 3 seeds aux options aléatoires (`campaign.sh 3`, runs 501–503) + lot `m14`.
+
+| Jeu | Validation | Logique | Notes |
+|---|---|---|---|
+| The Witness, Risk of Rain 2, Terraria, Undertale, A Short Hike, Inscryption, shapez, Raft, Civilization VI, Paint | ✅ 3/3 + e2e `m14` | activée (yaml) | |
+| VVVVVV | ⚠️ 2/3 | non | écart ponctuel (The Tower / Edge Games), à diagnostiquer |
+| Overcooked! 2 | ⚠️ 2/3 | non | « 3-1/3-2 Completed » en logique trop tôt sur 1 seed |
+| Hollow Knight | ⚠️ 1/3 | non | une location de trop (Salubra charmes, Seer) : compte de charmes/essence |
+| Subnautica | ⚠️ 1/3 | non | sous-estimation de scans de créatures dès la sphère 1 |
+| Stardew Valley | ❌ 0/3 | non | surestimation : « mois vécus » = pourcentage d'items de progression reçus, total différent à la régénération |
+| Factorio | ❌ 0/3 | non | forte sous-estimation dès la sphère 0 (arbre technologique) |
+| Satisfactory | ❌ 0/3 | non | le monde assouplit volontairement ses règles pour Universal Tracker (paliers 1–2 du Hub « toujours accessibles en jeu ») : non comparable à la génération |
+| TUNIC | — | non | la room utilise une version plus récente que le core 0.6.7 (checksum différent, D12) |
+
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
 Validation avec les vrais yamls de Romain : `validate_logic.py "<jeu>" --yaml config/players/romain/<fichier>`
 (ses options, tirages aléatoires compris, sur des seeds différentes).

@@ -181,3 +181,11 @@ async def test_bot_finishes_m13w_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m13w", 17, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m13w.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m14_batch_using_only_in_logic_locations(tmp_path):
+    """Core games of the room played by others: The Witness, Risk of Rain 2, Terraria, Undertale, A Short Hike,
+    Inscryption, shapez, Raft, Civilization VI, Paint (default options)."""
+    result = await play_until_done("m14", 17, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m14.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

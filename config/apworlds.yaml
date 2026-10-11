@@ -24,6 +24,18 @@ apworlds:
   jakanddaxter: {game: "Jak and Daxter: The Precursor Legacy", source: core, logic: true, needs_yaml: true}
   sm64ex: {game: "Super Mario 64", source: core, logic: true, needs_yaml: true}
   oot: {game: "Ocarina of Time", source: core, needs_yaml: true}
+  # M14: core games of the room played by others (validated 3/3 with random options + e2e batch m14). Their worlds
+  # cannot be rebuilt from slot_data alone: logic only for slots whose player's yaml is provided.
+  witness: {game: "The Witness", source: core, logic: true, needs_yaml: true}
+  ror2: {game: "Risk of Rain 2", source: core, logic: true, needs_yaml: true}
+  terraria: {game: "Terraria", source: core, logic: true, needs_yaml: true}
+  undertale: {game: "Undertale", source: core, logic: true, needs_yaml: true}
+  shorthike: {game: "A Short Hike", source: core, logic: true, needs_yaml: true}
+  inscryption: {game: "Inscryption", source: core, logic: true, needs_yaml: true}
+  shapez: {game: "shapez", source: core, logic: true, needs_yaml: true}
+  raft: {game: "Raft", source: core, logic: true, needs_yaml: true}
+  civ6: {game: "Civilization VI", source: core, logic: true, needs_yaml: true}
+  paint: {game: "Paint", source: core, logic: true, needs_yaml: true}
 
   twwhd:
     game: "The Wind Waker HD"
