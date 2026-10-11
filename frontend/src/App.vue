@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Monitor, Moon, Settings, Sun } from '@lucide/vue'
+import { Monitor, Moon, ScrollText, Settings, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ConfigView from './components/ConfigView.vue'
+import LogsView from './components/LogsView.vue'
 import SlotCard from './components/SlotCard.vue'
 import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
@@ -67,6 +68,8 @@ const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
 const summary = computed(() => summaryText(filterByOwner(tracker.slots, activeChip.value)))
 const showConfig = computed(() => tracker.view === 'config' || (tracker.loaded && !tracker.slots.length && !tracker.loadError))
+const showLogs = computed(() => tracker.view === 'logs' && !showConfig.value)
+const showDashboard = computed(() => !showConfig.value && !showLogs.value)
 const roomHref = computed(() => (/^https?:\/\//.test(tracker.roomUrl) ? tracker.roomUrl : ''))
 const sseLabel = computed(
   () => ({ open: 'En direct', connecting: 'Connexion…', reconnecting: 'Reconnexion…' })[tracker.sse],
@@ -97,11 +100,20 @@ const sseLabel = computed(
       >
         <Settings aria-hidden="true" /> Configuration
       </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        aria-label="Journal"
+        :aria-pressed="showLogs"
+        @click="setView(showLogs ? 'dashboard' : 'logs')"
+      >
+        <ScrollText aria-hidden="true" /> Journal
+      </Button>
       <Button variant="outline" size="sm" :aria-label="`Thème : ${themeLabel[theme]}. Changer de thème`" @click="theme = nextTheme(theme)">
         <component :is="themeIcon" aria-hidden="true" /> Thème : {{ themeLabel[theme] }}
       </Button>
     </div>
-    <div v-if="!showConfig && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
+    <div v-if="showDashboard && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
       <ToggleGroup
         type="single"
         variant="outline"
@@ -115,7 +127,7 @@ const sseLabel = computed(
         <ToggleGroupItem v-for="c in chips" :key="c.key" :value="c.key" class="px-3">{{ c.label }}</ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <div v-if="!showConfig" class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 pb-2.5">
+    <div v-if="showDashboard" class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 pb-2.5">
       <Badge variant="good" class="px-2.5 py-0.5 text-sm font-semibold">{{ summary }}</Badge>
       <div class="flex min-h-8 items-center gap-2">
         <Checkbox id="hide-done" v-model="hideDone" />
@@ -126,6 +138,7 @@ const sseLabel = computed(
 
   <main class="mx-auto max-w-[1400px] px-4 pt-3.5 pb-10">
     <ConfigView v-if="showConfig" />
+    <LogsView v-else-if="showLogs" />
     <template v-else>
       <Alert v-if="tracker.roomError" class="bg-warn text-warn-foreground mb-3 border-transparent" role="alert">
         <AlertDescription class="text-warn-foreground flex flex-wrap items-center gap-x-3 gap-y-2">

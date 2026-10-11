@@ -1,8 +1,8 @@
 # Progression
 
 ## État actuel (5 lignes)
-1. M0 à M13 faits (M11 : reste la vérification sur la vraie room éveillée) ; M14 (autres jeux de la room) en cours.
-2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (endormie tant que personne n'ouvre son lien).
+1. M0 à M16 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct).
+2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (elle s'endort quand personne ne joue ; l'app se reconnecte à son réveil).
 3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 21 jeux sur 22, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
@@ -92,9 +92,9 @@
   sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 ## À faire par Romain
-- **Vérifier l'app sur la room éveillée** (M11, je n'ai pas pu : la room dormait toute la nuit) : ouvrir la room,
-  puis sur l'app vérifier que les 22 slots passent « connecté », que la logique s'affiche pour les 21 jeux activés
-  (tous sauf OoT) et qu'il n'y a pas d'erreur dans `data/logs/app.log` (`scripts/app.sh logs`). Me dire ce qui cloche.
+- **Room vérifiée le 2026-10-11 vers 10 h 30** : 22 slots connectés, logique OK pour 21 jeux (OoT indisponible).
+  À confirmer en jeu : Kingdom Hearts Birth by Sleep affiche 0 check en logique avec 11 checks faits.
+- **Journal** : bouton « Journal » en haut de l'app (ou `http://<pi>:42753/#logs`) pour suivre les logs en direct.
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
   se connecte dès que quelqu'un l'ouvre (ou bouton « Réveiller maintenant »). Pour revenir au multiworld de test :
   Configuration → « Restaurer la configuration précédente » (et relancer le serveur de test,

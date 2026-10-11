@@ -84,3 +84,36 @@ def test_region_names_sent_to_the_app_are_plain_strings():
     assert name == "Overworld" and type(name) is str
     assert type(pickle.loads(pickle.dumps(name))) is str
     assert plain_name("Nether") == "Nether"
+
+
+def test_world_loading_noise_is_summarized():
+    """Tracebacks of core worlds that cannot load here and manifest warnings become one summary line."""
+    import logging
+    from multitracker.logic.ut_worker import world_loading_summary
+    root = logging.getLogger()
+    messages: list[str] = []
+
+    class Keep(logging.Handler):
+        def emit(self, record):
+            messages.append(record.getMessage())
+
+    keep, level = Keep(), root.level
+    root.addHandler(keep)
+    root.setLevel(logging.INFO)
+    try:
+        with world_loading_summary():
+            try:
+                raise ModuleNotFoundError("No module named 'zilliandomizer'")
+            except ModuleNotFoundError:
+                root.exception("Could not load world WorldSource(zillion, is_zip=False, relative=True):")
+            root.error("Invalid or missing manifest file for /x/custom_worlds/balatro.apworld. This apworld will "
+                       "stop working with Archipelago 0.7.0.")
+            root.error("compatible_version - This might be the incorrect world version for this file")
+            root.warning("something unexpected")
+    finally:
+        root.removeHandler(keep)
+        root.setLevel(level)
+    assert "something unexpected" in messages
+    summary = [m for m in messages if m.startswith("Archipelago worlds:")]
+    assert len(summary) == 1 and "zillion" in summary[0] and "balatro" in summary[0]
+    assert not any("Could not load world" in m or "compatible_version" in m for m in messages)

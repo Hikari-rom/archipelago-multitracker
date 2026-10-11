@@ -27,8 +27,12 @@ export const tracker = reactive({
   seenFreeze: false,
 })
 
-function viewFromHash(): 'dashboard' | 'config' {
-  return typeof location !== 'undefined' && /^#config(\?|$)/.test(location.hash) ? 'config' : 'dashboard'
+export type View = 'dashboard' | 'config' | 'logs'
+
+function viewFromHash(): View {
+  if (typeof location === 'undefined') return 'dashboard'
+  if (/^#config(\?|$)/.test(location.hash)) return 'config'
+  return location.hash === '#logs' ? 'logs' : 'dashboard'
 }
 if (typeof window !== 'undefined') {
   // "#config" typed in the address bar of an open page
@@ -57,10 +61,10 @@ function pruneDetails(snapshot: boolean): void {
   }
 }
 
-export function setView(v: 'dashboard' | 'config'): void {
+export function setView(v: View): void {
   tracker.view = v
   try {
-    if (v === 'config') location.hash = 'config'
+    if (v !== 'dashboard') location.hash = v
     else if (location.hash) history.replaceState(null, '', location.pathname + location.search)
   } catch {
     /* ignore */

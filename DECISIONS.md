@@ -122,3 +122,12 @@ le worker, avec tous les mondes du lot dans un même process, donnait aussi le b
 du test (message du serveur arrivé tard). `play_until_done` attend 2 s et refait un tour avant de déclarer le slot
 bloqué : une vraie sous-estimation reste bloquée au tour suivant et fait toujours échouer le test. Le nombre de
 tours rejoués est écrit dans le résultat (`retries`).
+
+## D16 — Journal en direct dans l'interface (2026-10-11, demandé par Romain)
+La page « Journal » lit le fichier `data/logs/app.log` plutôt qu'un handler de logging : il contient tout (app,
+worker de logique, sorties d'Archipelago et d'uvicorn), comme `scripts/app.sh logs`. Lecture seule, accessible comme
+le reste de l'app (réseau local / Tailscale) ; rien de secret n'y est écrit et le mot de passe de la room est masqué
+par sécurité. Le flux se ferme au bout de 30 min pour qu'aucune connexion ne survive à un arrêt de l'app.
+Les ≈ 430 lignes d'erreurs sans gravité écrites par Archipelago à chaque démarrage du worker (mondes core dont les
+dépendances ne sont pas installées, apworlds sans manifeste AP 0.7) sont résumées en une ligne : sinon le filtre
+« Erreurs » ne montrait que ça. Les autres messages passent tels quels.

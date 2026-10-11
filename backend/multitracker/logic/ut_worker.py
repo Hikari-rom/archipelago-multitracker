@@ -9,12 +9,13 @@ directly by the tests.
 """
 from __future__ import annotations
 
+import contextlib
 import gc
 import hashlib
 import json
 import logging
 import os
-
+import re
 import tempfile
 import time
 import traceback
@@ -35,8 +36,48 @@ def setup_ap() -> None:
         return
     apenv.setup()
     os.chdir(apenv.AP_DIR)  # AP resolves host.yaml, Players/ etc. relative to its own folder
-    import worlds  # noqa: F401  (registers every world, custom ones included)
+    with world_loading_summary():
+        import worlds  # noqa: F401  (registers every world, custom ones included)
     _ap_ready = True
+
+
+WORLD_NOT_LOADED = re.compile(r"Could not load world WorldSource\(([^,)]+)")
+NO_MANIFEST = re.compile(r"Invalid or missing manifest file for .*?([^/\\]+)\.apworld")
+MANIFEST_NOTES = ("compatible_version - This might be", "There is no item named 'archipelago.json'")
+
+
+@contextlib.contextmanager
+def world_loading_summary():
+    """Archipelago logs a traceback for every core world whose dependencies are not installed here and
+    warnings for apworlds without a manifest: hundreds of harmless lines at each worker start. Log one
+    summary line instead (with the names), and pass every other message through."""
+    root = logging.getLogger()
+    records: list[logging.LogRecord] = []
+
+    class Collect(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    saved = root.handlers[:]
+    root.handlers = [Collect()]
+    try:
+        yield
+    finally:
+        root.handlers = saved
+        not_loaded, no_manifest = [], []
+        for record in records:
+            message = record.getMessage()
+            if (m := WORLD_NOT_LOADED.search(message)):
+                not_loaded.append(m.group(1))
+            elif (m := NO_MANIFEST.search(message)):
+                no_manifest.append(m.group(1))
+            elif not message.startswith(MANIFEST_NOTES):
+                root.handle(record)
+        if not_loaded or no_manifest:
+            log.warning("Archipelago worlds: %d not loaded (missing dependencies): %s; "
+                        "%d apworlds without manifest (AP 0.7 warning, harmless on 0.6.7): %s",
+                        len(not_loaded), ", ".join(sorted(not_loaded)) or "-",
+                        len(no_manifest), ", ".join(sorted(no_manifest)) or "-")
 
 
 class LogicUnavailable(Exception):

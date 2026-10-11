@@ -92,6 +92,16 @@ Corps optionnel `{"count": N}` (par défaut : tout ce qui a été reçu). Répon
 
 Quand un `slot` arrive pour le slot affiché en détail, le front refait `GET /api/slots/{name}`.
 
+## `GET /api/logs/stream?lines=300` (Server-Sent Events) — page « Journal »
+Suit `data/logs/app.log` (écrit par `scripts/app.sh`) comme `tail -f`. Lecture seule ; le mot de passe de la room est
+remplacé par `•••`.
+- `event: init` — `data: {"lines": [...], "missing": false}` : les `lines` dernières lignes (max 2000) ; `missing` si
+  le fichier n'existe pas (app lancée autrement que par `scripts/app.sh`).
+- `event: lines` — `data: {"lines": [...]}` : lignes ajoutées (lecture toutes les 0,5 s).
+- `event: reset` — le fichier a été remplacé (rotation au démarrage) ; la lecture reprend au début.
+- `: keepalive` toutes les 20 s, `retry: 3000` ; le flux se ferme après 30 min (le navigateur se reconnecte et reçoit
+  un nouveau `init`).
+
 ## Configuration depuis l'interface
 Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en-tête `Origin` différent de l'hôte, sauf
 `MT_ALLOWED_ORIGINS`).

@@ -20,11 +20,15 @@ from .apenv import ROOT
 from . import players as player_yamls
 from .config import ConfigError, RoomConfig, SlotConfig, backup_path, restore_backup, safe_yaml_path
 from .config import save as save_config
+from .logtail import Follower, last_lines, mask
 from .service import Service
 
 log = logging.getLogger(__name__)
 FRONTEND_DIST = ROOT / "frontend" / "dist"
+LOG_FILE = ROOT / "data" / "logs" / "app.log"  # written by scripts/app.sh
 SSE_KEEPALIVE = 20.0
+LOG_POLL = 0.5
+LOG_STREAM_MAX = 1800.0  # a log stream ends after 30 min (EventSource reconnects): no stream outlives a stop
 
 
 class SeenBody(BaseModel):
@@ -73,7 +77,8 @@ def _rel(path: Path | None) -> str | None:
         return Path(path).name  # never expose the filesystem layout
 
 
-def create_app(service_factory: Callable[[], Service], frontend_dist: Path | None = FRONTEND_DIST) -> FastAPI:
+def create_app(service_factory: Callable[[], Service], frontend_dist: Path | None = FRONTEND_DIST,
+               log_file: Path | None = LOG_FILE) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         service = service_factory()
@@ -280,6 +285,40 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                     yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
             finally:
                 service.unsubscribe(queue)
+
+        return StreamingResponse(stream(), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+    @app.get("/api/logs/stream")
+    async def log_stream(request: Request, lines: int = 300) -> StreamingResponse:
+        """The app's log like `tail -f`: event `init` (last lines), then `lines` as they are written,
+        `reset` when the file was rotated. Read only; the room password is masked."""
+        lines = max(0, min(lines, 2000))
+        secrets = [get_service(request).config.password]
+
+        async def stream() -> AsyncIterator[str]:
+            yield "retry: 3000\n\n"
+            missing = log_file is None or not log_file.is_file()  # e.g. app not started by scripts/app.sh
+            first, offset, inode = ([], 0, 0) if log_file is None else \
+                await asyncio.to_thread(last_lines, log_file, lines)
+            yield f"event: init\ndata: {json.dumps({'lines': mask(first, secrets), 'missing': missing})}\n\n"
+            follower = None if log_file is None else Follower(log_file, offset, inode)
+            started = idle = time.monotonic()
+            while time.monotonic() - started < LOG_STREAM_MAX:
+                if await request.is_disconnected():
+                    break
+                await asyncio.sleep(LOG_POLL)
+                if follower is None:
+                    continue
+                reset, new = await asyncio.to_thread(follower.poll)
+                if reset:
+                    yield f"event: reset\ndata: {{}}\n\n"
+                if new:
+                    idle = time.monotonic()
+                    yield f"event: lines\ndata: {json.dumps({'lines': mask(new, secrets)})}\n\n"
+                elif time.monotonic() - idle > SSE_KEEPALIVE:
+                    idle = time.monotonic()
+                    yield ": keepalive\n\n"
 
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
