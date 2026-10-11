@@ -1,0 +1,3 @@
+name: lc
+game: "Lethal Company"
+"Lethal Company": {scrapsanity: true, modify_scrap_spawns: true, starting_moon: randomize}

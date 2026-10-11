@@ -12,7 +12,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
    puis commit + push sur `main` (le dépôt est celui de Romain).
 
 ## État au 2026-10-10 (fin de la session de nuit, interrompue par la limite d'usage)
-- Niveau 1 OK pour les 22 jeux. Logique validée et activée pour 17 jeux (21 au 2026-10-11) (`logic: true` dans `config/apworlds.yaml`).
+- Niveau 1 OK pour les 22 jeux de Romain. Logique validée et activée pour 17 d'entre eux (21 sur 22 au 2026-10-11,
+  tous sauf OoT) (`logic: true` dans `config/apworlds.yaml`).
 - Ouvert : Balatro, PokePark, Phantom Hourglass (adaptateurs partiels dans
   `backend/multitracker/logic/adapters_m7.py`, logique désactivée), Ori WotW (3/4 seeds, surestime des événements
   de combat, logique désactivée). OoT bloqué (`[!]`) : récompenses de donjon impossibles à connaître sans spoiler.
@@ -23,8 +24,9 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/players/romain/`, `config/room.real.yaml`, gitignorés) → M12 historique/tri → M13 PokePark/WotW → M14.
 - `validate_logic.py --yaml <yaml>` valide la logique avec les vraies options d'un joueur (test seulement).
-- M14/M15 : logique aussi pour 21 jeux de la room joués par d'autres (liste et limites dans `docs/COMPAT.md`), dont
-  Stardew Valley (crochet `RECEIVED_HOOKS` dans `adapters.py`). Factorio impossible (slot_data vide).
+- M14/M15 : logique aussi pour 22 autres jeux de la room (joués par les amis de Romain) (liste et limites dans `docs/COMPAT.md`), dont
+  Stardew Valley (crochet `RECEIVED_HOOKS` dans `adapters.py`) et Lethal Company (`START_ADAPTERS` : adaptateur qui
+  reçoit aussi l'inventaire de départ). Factorio impossible (slot_data vide).
 - `config/room.yaml` (gitignoré) pointe sur la **vraie room** de Romain depuis le 2026-10-11 (elle dort souvent :
   `curl localhost:42753/api/slots` → `room_sleeping`) ; ne jamais y connecter le bot ni les tests.
 

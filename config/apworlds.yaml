@@ -201,6 +201,7 @@ apworlds:
   lethal_company:
     game: "Lethal Company"
     needs_yaml: true
+    logic: true  # adapter: starting moon (start inventory) and scrap map (slot_data)
     source: github
     repo: T0r1nn/APLC
     tag: v0.7.13

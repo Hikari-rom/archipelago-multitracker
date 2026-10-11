@@ -61,6 +61,12 @@ Chaque choix non trivial, avec sa raison et les alternatives écartées.
 - **TWW HD** : entrées = `slot_data["entrances"]` ; donjons requis (mode required bosses) déduits de la liste des
   locations du slot (cochées + manquantes, envoyée par le serveur au Connect) : les locations des donjons bannis
   n'existent pas. Aucune donnée de spoiler.
+- **Inventaire de départ** (2026-10-11) : un adaptateur peut aussi recevoir les items reçus de la location −2
+  (`START_ADAPTERS`, ex. lune de départ de Lethal Company), connus de tout client du slot. La clé de cache du monde
+  régénéré les inclut pour ces jeux seulement.
+- **Items reçus** (2026-10-11) : un crochet par jeu (`RECEIVED_HOOKS`) corrige les items reçus, recréés depuis leur
+  nom, avant le sweep, quand le monde leur attache un état à la création (Stardew : compteur d'items de
+  progression selon la classification avant remplissage). En cas d'ambiguïté, la valeur la plus prudente.
 
 ## D8 — Options aléatoires dans les yamls du joueur (M5)
 - Une option `random`/pondérée serait re-tirée différemment par la régénération. Si le monde met l'option sous le

@@ -135,4 +135,10 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Hollow Knight : coûts (encoches, CostSanity) tirés au hasard et non rejoués → adaptateur, 5/5 + e2e (2026-10-11)
 - [x] Stardew Valley : items de progression comptés selon leur classification avant remplissage → crochet `RECEIVED_HOOKS` sur les items reçus, 6/8 (2 retards d'un point, jamais d'avance) + e2e (2026-10-11)
 - [x] Factorio : bloqué [!] — slot_data vide, coûts des technologies seulement dans le mod (2026-10-11)
-- [ ] Relecture M15 + commit/push + notif
+- [x] Lethal Company : lune de départ et carte des scraps tirées au hasard → adaptateur (inventaire de départ transmis aux adaptateurs `START_ADAPTERS`), 8/8 + e2e (2026-10-11)
+- [ ] e2e `m14b` instable (1 échec sur 4, le premier lancement, celui qui a généré la seed) : slot Stardew bloqué
+  alors que la logique recalculée hors app sur le même état donne bien « Coop Blueprint » et « Quest: Raising
+  Animals » (`scripts/testenv/diag_e2e_stuck.py m14b 17 sdv`, état sauvé dans
+  `test-output/e2e_stuck_m14b_flaky_sdv.json`). Pistes : course entre réception d'items et `logic_settled`, ou
+  interaction entre mondes dans le process worker partagé.
+- [x] Relecture M15 (sous-agent Sonnet : pas de bug ; doc et robustesse corrigées) + commit/push + notif

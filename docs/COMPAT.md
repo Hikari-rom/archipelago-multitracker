@@ -54,7 +54,7 @@ ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logi
 | Overcooked! 2 | ✅ 5/5 + e2e `m14b` | activée (yaml) | adaptateur : cuisines mélangées (`shuffle_level_order`), ordre rejoué depuis `slot_data["CustomLevelOrder"]` |
 | Hollow Knight | ✅ 5/5 + e2e `m14b` | activée (yaml) | adaptateur : coûts d'encoches des charmes et coûts des locations (CostSanity) tirés au hasard, rejoués depuis `slot_data` (`notch_costs`, `location_costs`) |
 | Subnautica | ✅ 4/4 + e2e `m14b` | activée (yaml) | adaptateur : créatures à scanner tirées au hasard, rejouées depuis `slot_data["creatures_to_scan"]`. `creature_scan_logic` n'est pas dans le `slot_data` : le yaml doit le fixer (pas `random`) |
-| Stardew Valley | ✅ 6/8 (2 sous-estimations d'un point) + e2e `m14b` | activée (yaml) | crochet sur les items reçus : Stardew ne compte dans « items de progression reçus » (mois vécus, % de progression) que les items progression *avant* le remplissage, alors qu'un item reçu est recréé depuis son nom. Chaque copie reçue prend la valeur d'une copie du pool régénéré, la plus basse d'abord. Limite : quand des copies d'un même nom diffèrent (saplings, dernier Trash Can, Qi Gems), le serveur ne dit pas laquelle a été reçue (`skip_balancing` n'est pas transmis) → retard possible d'un point de pourcentage, jamais d'avance |
+| Stardew Valley | ✅ 6/8 (2 retards d'un point) + e2e `m14b` | activée (yaml) | crochet sur les items reçus : Stardew ne compte dans « items de progression reçus » (mois vécus, % de progression) que les items progression *avant* le remplissage, alors qu'un item reçu est recréé depuis son nom. Chaque copie reçue prend la valeur d'une copie du pool régénéré, la plus basse d'abord. Limite : quand des copies d'un même nom diffèrent (saplings, dernier Trash Can, Qi Gems), le serveur ne dit pas laquelle a été reçue (`skip_balancing` n'est pas transmis) → retard possible d'un point de pourcentage, jamais d'avance (si la régénération reproduit le pool d'items de la génération) |
 | Factorio | [!] 0/3 | non | impossible sans spoiler : le monde n'a pas de `fill_slot_data` (slot_data vide) ; les ingrédients des technologies `AP-1-xxx` sont tirés au hasard à la génération et écrits seulement dans le mod du jeu |
 | Satisfactory | ❌ 0/3 | non | le monde assouplit volontairement ses règles pour Universal Tracker (paliers 1–2 du Hub « toujours accessibles en jeu ») : non comparable à la génération |
 | TUNIC | — | non | la room utilise une version plus récente que le core 0.6.7 (checksum différent, D12) |
@@ -72,7 +72,7 @@ les slots des autres joueurs.
 | Outer Wilds | Ixrec/OuterWildsArchipelagoRandomizer v1.3.0 | ✅ 3/3 + e2e sans yaml | activée, sans yaml |
 | Portal 2 | GlassToadstool/Portal2ArchipelagoMod 0.8.2 | ✅ 3/3 + e2e sans yaml | activée, sans yaml (dépendance `attrs` ajoutée à `bootstrap.sh`) |
 | Haste | WritingHusky/haste_apworld v0.5.1 | ✅ 2/2 (+1 génération impossible) + e2e | activée (yaml) |
-| Lethal Company | T0r1nn/APLC v0.7.13 | ❌ 0/3 (lunes / objets tirés au hasard) | non |
+| Lethal Company | T0r1nn/APLC v0.7.13 | ✅ 8/8 + e2e `m14b` | activée (yaml) ; adaptateur : lune de départ (option « randomize ») reprise de l'inventaire de départ reçu (location −2), carte scraps → lunes (`modify_scrap_spawns`) reprise de `slot_data["moon_to_scrap_map"]` |
 
 Non trouvés ou sans release `.apworld` correspondant au checksum de la room : PEAK, R.E.P.O, A Dance of Fire and Ice,
 ArchipelaCode, Bloons TD6, Burnout Paradise Remastered, Clair Obscur Expedition 33, Cookie Clicker, et les jeux à

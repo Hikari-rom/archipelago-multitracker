@@ -341,6 +341,55 @@ ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] 
 }
 
 
+@contextlib.contextmanager
+def _lethal_company(world_cls: type, slot_data: dict[str, Any], location_ids: set[int],
+                    start_items: list[str]):
+    """Lethal Company: with the "randomize" starting moon, the moon is drawn in generate_early and only
+    given to the player as start inventory; with modify_scrap_spawns, the scrap -> moons map is a random
+    shuffle sent in slot_data (`moon_to_scrap_map`). Replay both."""
+    regions = importlib.import_module(f"{world_cls.__module__}.regions")
+    moons = set(world_cls.item_name_groups.get("Moons", ()))
+    start_moons = [name for name in start_items if name in moons]
+    scrap_map = slot_data.get("moon_to_scrap_map")
+    if len(start_moons) != 1:
+        log.warning("Lethal Company: starting moon not found in the start inventory (%s)", start_moons)
+    original_early = world_cls.generate_early
+    original_alt = regions.generate_scrap_moons_alt
+
+    def generate_early(self) -> None:
+        if len(start_moons) != 1:
+            original_early(self)
+            return
+        self.options.starting_moon.value = start_moons[0]
+        # A single-player generation re-rolls some starting moons: the regeneration is always single-player,
+        # the moon it must keep is already known.
+        players = self.multiworld.players
+        self.multiworld.players = max(players, 2)
+        try:
+            original_early(self)
+        finally:
+            self.multiworld.players = players
+        if self.initial_world != start_moons[0]:
+            from .ut_worker import LogicUnavailable
+            raise LogicUnavailable(f"Lethal Company : lune de départ {start_moons[0]} non rejouée")
+
+    def generate_scrap_moons_alt(world):
+        if not isinstance(scrap_map, dict):
+            log.warning("Lethal Company: no moon_to_scrap_map in slot_data, scrap locations may be wrong")
+            return original_alt(world)
+        world.scrap_map = {scrap: list(moons) for scrap, moons in scrap_map.items()}
+        return world.scrap_map
+
+    with patch_attr(world_cls, "generate_early", generate_early), \
+            patch_attr(regions, "generate_scrap_moons_alt", generate_scrap_moons_alt):
+        yield
+
+
+START_ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int], list[str]], ContextManager]] = {
+    "Lethal Company": _lethal_company,
+}
+
+
 def _stardew_received(world: Any, items: list) -> None:
     """Stardew Valley counts "received progression items" (months lived, progression percent) only for the
     items that were progression *before* the fill: the last Progressive Trash Can is created useful and
@@ -350,8 +399,13 @@ def _stardew_received(world: Any, items: list) -> None:
     (filler, useful) count nothing anyway; copies beyond the pool (start inventory, which the regeneration
     does not keep) keep the world's default.
     """
-    event = importlib.import_module(f"{type(world).__module__}.strings.ap_names.event_names") \
-        .Event.received_progression_item
+    try:
+        event = importlib.import_module(f"{type(world).__module__}.strings.ap_names.event_names") \
+            .Event.received_progression_item
+    except (ImportError, AttributeError):
+        log.warning("Stardew Valley: event names not found, received progression items left as created")
+        return
+    # Computed once per regenerated world: its item pool does not change afterwards.
     counts = getattr(world, "_mt_prefill_progress", None)
     if counts is None:
         from BaseClasses import ItemClassification
@@ -396,8 +450,15 @@ from .adapters_m7 import ADAPTERS_M7  # noqa: E402
 ADAPTERS.update(ADAPTERS_M7)
 
 
+def needs_start_items(game: str) -> bool:
+    return game in START_ADAPTERS
+
+
 def regeneration_patch(game: str, world_cls: type, slot_data: dict[str, Any],
-                       location_ids: set[int]) -> ContextManager:
-    """location_ids: every location of the slot as known by the server (checked + missing)."""
+                       location_ids: set[int], start_items: list[str] = ()) -> ContextManager:
+    """location_ids: every location of the slot as known by the server (checked + missing);
+    start_items: names of the items received from the start inventory (location -2)."""
+    if game in START_ADAPTERS:
+        return START_ADAPTERS[game](world_cls, slot_data, location_ids, list(start_items))
     adapter = ADAPTERS.get(game)
     return adapter(world_cls, slot_data, location_ids) if adapter else contextlib.nullcontext()

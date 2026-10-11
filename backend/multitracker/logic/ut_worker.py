@@ -114,7 +114,7 @@ class SlotLogic:
 
     def __init__(self, slot_name: str, game: str, team: int, slot: int, slot_data: dict[str, Any],
                  yaml_path: Path | None, location_ids: set[int] | None = None,
-                 room_checksum: str | None = None) -> None:
+                 room_checksum: str | None = None, start_items: list[int] | None = None) -> None:
         setup_ap()
         import worlds
         from worlds.AutoWorld import AutoWorldRegister
@@ -140,7 +140,9 @@ class SlotLogic:
         core.set_slot_params(game, slot, slot_name, team)
         started = time.perf_counter()
         from .adapters import regeneration_patch
-        with regeneration_patch(game, world_cls, slot_data, set(location_ids or ())):
+        start_names = [world_cls.item_id_to_name[code] for code in start_items or ()
+                       if code in world_cls.item_id_to_name]
+        with regeneration_patch(game, world_cls, slot_data, set(location_ids or ()), start_names):
             self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path)
         if core.multiworld is None or core.player_id is None:
             tail = (core.gen_error or "").strip().splitlines()[-1:] or ["raison inconnue"]
@@ -257,8 +259,17 @@ def _deferred_disabled():
     return DeferredEntranceMode.disabled
 
 
+def start_items(req: dict[str, Any]) -> list[int]:
+    """The slot's start inventory (items received from location -2), for the adapters that need it."""
+    from .adapters import needs_start_items
+    if not needs_start_items(req["game"]):
+        return []
+    return sorted(int(net["item"]) for net in req.get("items", []) if int(net.get("location", 0)) == -2)
+
+
 def request_key(req: dict[str, Any]) -> str:
-    """What makes a regenerated world reusable: same slot, game, slot_data and yaml content."""
+    """What makes a regenerated world reusable: same slot, game, slot_data, yaml content (and start
+    inventory for the games whose adapter replays it)."""
     yaml_digest = ""
     if req.get("yaml"):
         try:
@@ -266,7 +277,7 @@ def request_key(req: dict[str, Any]) -> str:
         except OSError:
             yaml_digest = "missing"
     payload = json.dumps([req.get("seed_name"), req["game"], req["team"], req["slot"], req.get("slot_data"),
-                          yaml_digest, req.get("checksum")],
+                          yaml_digest, req.get("checksum"), start_items(req)],
                          sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -292,7 +303,8 @@ class Worker:
                 logic: SlotLogic | Exception = SlotLogic(
                     name, req["game"], req["team"], req["slot"], req.get("slot_data") or {},
                     Path(req["yaml"]) if req.get("yaml") else None,
-                    set(req.get("missing", [])) | set(req.get("checked", [])), req.get("checksum"))
+                    set(req.get("missing", [])) | set(req.get("checked", [])), req.get("checksum"),
+                    start_items(req))
             except LogicUnavailable as exc:
                 logic = LogicUnavailable(str(exc))  # no traceback: it would keep the half-built world alive
             except Exception as exc:
