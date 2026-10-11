@@ -24,9 +24,9 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Burnout Paradise Remastered | 2 |  | — | — |  |  |
 | Clair Obscur Expedition 33 | 2 |  | — | — |  |  |
 | Cookie Clicker | 2 |  | — | — |  |  |
-| Haste | 2 |  | custom | ✅ |  |  |
+| Haste | 2 |  | custom | ✅ |  | ✅ |
 | Lego Star Wars: The Complete Saga | 2 |  | custom | ✅ | oui | ✅ |
-| Lethal Company | 2 |  | custom | ✅ |  |  |
+| Lethal Company | 2 |  | custom | ✅ |  | ✅ |
 | Mario Kart Wii | 2 | oui | custom | ✅ | oui | ✅ |
 | Outer Wilds | 2 |  | custom | ✅ | oui | ✅ |
 | Pokemon Black and White | 2 | oui | custom | ✅ | oui | ✅ |
@@ -61,7 +61,7 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Geometry Dash | 1 |  | — | — |  |  |
 | Hades | 1 |  | — | — |  |  |
 | Hades2Rogue | 1 |  | — | — |  |  |
-| Hollow Knight | 1 |  | core | ✅ |  |  |
+| Hollow Knight | 1 |  | core | ✅ |  | ✅ |
 | Inscryption | 1 |  | core | ✅ |  | ✅ |
 | Jak 3 | 1 | oui | custom | ✅ |  | ✅ |
 | Jak and Daxter: The Precursor Legacy | 1 | oui | core | ✅ |  | ✅ |
@@ -72,7 +72,7 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Majora's Mask Recompiled | 1 |  | — | — |  |  |
 | Nodebuster | 1 |  | — | — |  |  |
 | Ocarina of Time | 1 | oui | core | ✅ |  |  |
-| Overcooked! 2 | 1 |  | core | ✅ |  |  |
+| Overcooked! 2 | 1 |  | core | ✅ |  | ✅ |
 | Peggle Deluxe | 1 |  | — | — |  |  |
 | Peggle Nights | 1 |  | — | — |  |  |
 | Pokemon Platinum | 1 | oui | custom | ✅ | oui | ✅ |
@@ -87,7 +87,7 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Slime Rancher 2 | 1 |  | — | — |  |  |
 | Spicy Meatball Overdrive | 1 | oui | custom | ✅ |  | ✅ |
 | Spirit Tracks | 1 |  | — | — |  |  |
-| Stardew Valley | 1 |  | core | ✅ |  |  |
+| Stardew Valley | 1 |  | core | ✅ |  | ✅ |
 | Stray | 1 |  | — | — |  |  |
 | Super Meat Boy | 1 |  | — | — |  |  |
 | TCG Card Shop Simulator | 1 |  | — | — |  |  |
@@ -100,5 +100,5 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Trombone Champ | 1 |  | — | — |  |  |
 | TUNIC | 1 |  | core | ❌ autre version | oui |  |
 | ULTRAKILL | 1 |  | — | — |  |  |
-| VVVVVV | 1 |  | core | ✅ |  |  |
+| VVVVVV | 1 |  | core | ✅ |  | ✅ |
 | Zuma Deluxe | 1 |  | — | — |  |  |
