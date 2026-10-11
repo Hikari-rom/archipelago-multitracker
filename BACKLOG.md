@@ -139,6 +139,7 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [ ] e2e `m14b` instable (1 échec sur 4, le premier lancement, celui qui a généré la seed) : slot Stardew bloqué
   alors que la logique recalculée hors app sur le même état donne bien « Coop Blueprint » et « Quest: Raising
   Animals » (`scripts/testenv/diag_e2e_stuck.py m14b 17 sdv`, état sauvé dans
-  `test-output/e2e_stuck_m14b_flaky_sdv.json`). Pistes : course entre réception d'items et `logic_settled`, ou
-  interaction entre mondes dans le process worker partagé.
+  `test-output/e2e_stuck_m14b_flaky_sdv.json`). Le worker, avec les 10 mondes du lot régénérés dans un
+  même process, donne aussi les 2 locations : interaction entre mondes écartée ; piste restante, une course
+  entre réception d'items et `logic_settled` (service ou boucle du test).
 - [x] Relecture M15 (sous-agent Sonnet : pas de bug ; doc et robustesse corrigées) + commit/push + notif
