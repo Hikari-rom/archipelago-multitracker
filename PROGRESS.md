@@ -92,6 +92,9 @@
   sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 ## À faire par Romain
+- **Vérifier l'app sur la room éveillée** (M11, je n'ai pas pu : la room dormait toute la nuit) : ouvrir la room,
+  puis sur l'app vérifier que les 22 slots passent « connecté », que la logique s'affiche pour les 21 jeux activés
+  (tous sauf OoT) et qu'il n'y a pas d'erreur dans `data/logs/app.log` (`scripts/app.sh logs`). Me dire ce qui cloche.
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
   se connecte dès que quelqu'un l'ouvre (ou bouton « Réveiller maintenant »). Pour revenir au multiworld de test :
   Configuration → « Restaurer la configuration précédente » (et relancer le serveur de test,
@@ -106,6 +109,6 @@
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
 et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
-Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : e2e `m14b` instable (BACKLOG), recherche
+Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : recherche
 d'autres apworlds (jeux à 1 slot).
 OoT est mis de côté à la demande de Romain.

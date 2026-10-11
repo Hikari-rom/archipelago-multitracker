@@ -110,3 +110,15 @@ exposées en variables shadcn (`--background`, `--primary`…) et reliées au th
 `data-theme="dark"`, ou le système quand le choix est « Auto » (`@custom-variant dark` dans `style.css`), donc pas de
 classe `.dark` à gérer en JS. Coût : JS 92 → 221 Ko (77 Ko gzip), acceptable sur le réseau local.
 Ajouter un composant : `cd frontend && npx shadcn-vue@2.8.2 add <nom>`.
+
+## D14 — Vérification de la vraie room laissée à Romain (2026-10-11)
+La room de Romain dort depuis le branchement (22 slots déconnectés, `room_sleeping`). La consigne interdit de la
+réveiller pour un test : les deux tâches M11 restantes (vérification sur la room éveillée, relecture finale) sont
+marquées `[!]` « à vérifier par Romain » ; la marche à suivre est dans PROGRESS.md (« À faire par Romain »).
+
+## D15 — e2e : un tour sans progrès est rejoué une fois (2026-10-11)
+Un lancement sur six de `m14b` a échoué alors que la logique recalculée hors app sur l'état bloqué était juste et que
+le worker, avec tous les mondes du lot dans un même process, donnait aussi le bon résultat : course dans la boucle
+du test (message du serveur arrivé tard). `play_until_done` attend 2 s et refait un tour avant de déclarer le slot
+bloqué : une vraie sous-estimation reste bloquée au tour suivant et fait toujours échouer le test. Le nombre de
+tours rejoués est écrit dans le résultat (`retries`).

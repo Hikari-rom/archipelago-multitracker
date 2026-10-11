@@ -87,6 +87,8 @@ async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: i
     task = asyncio.create_task(uv.serve())
     bots: dict[str, GameBot] = {}
     history = []
+    retries = 0  # rounds without progress replayed after a pause (a late server message must not fail the test)
+    retried = False
     try:
         while not uv.started:
             await asyncio.sleep(0.05)
@@ -121,7 +123,13 @@ async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: i
                         progress = True
                 history.append({s["name"]: (s["checks"]["done"], s["logic"]["count"], s["goal"]) for s in data})
                 if all(s["goal"] for s in data):
-                    return {"rounds": round_, "history": history}
+                    return {"rounds": round_, "retries": retries, "history": history}
+                if not progress and not retried:
+                    # Look again after a pause: an under-estimate stays stuck, a late message does not.
+                    retried, retries = True, retries + 1
+                    await asyncio.sleep(2)
+                    continue
+                retried = False
                 if not progress:
                     stuck = {s["name"]: {"missing": s["checks"]["remaining"], "items": s["items"]["received"],
                                          "reference_todo": reference_todo(multiworld, pid[s["name"]],

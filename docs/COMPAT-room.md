@@ -30,7 +30,7 @@ Bilan : 47 identiques, 1 versions différentes, 48 jeux sans apworld ici.
 | Mario Kart Wii | 2 | oui | custom | ✅ | oui | ✅ |
 | Outer Wilds | 2 |  | custom | ✅ | oui | ✅ |
 | Pokemon Black and White | 2 | oui | custom | ✅ | oui | ✅ |
-| Satisfactory | 2 |  | core | ✅ | oui |  |
+| Satisfactory | 2 |  | core | ✅ | oui | ✅ |
 | Slime Rancher | 2 |  | — | — |  |  |
 | Subnautica | 2 |  | core | ✅ |  | ✅ |
 | Super Mario 64 | 2 | oui | core | ✅ |  | ✅ |
