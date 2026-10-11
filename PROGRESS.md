@@ -87,8 +87,9 @@
   Civilization VI, Paint, et avec adaptateurs Subnautica, VVVVVV, Overcooked! 2) + 6 apworlds installés à la version de la room
   (Mario Kart Double Dash, Archipeladoku, Lego Star Wars TCS, Outer Wilds, Portal 2 — ces 5-là **sans yaml**, donc
   utilisables pour les slots de tes amis — et Haste). Les autres demandent le yaml du joueur (clé `yaml` du slot).
-  Hollow Knight ajouté ensuite (adaptateur des coûts). Non activés (écarts) : Stardew Valley, Factorio, Satisfactory, Lethal Company ;
-  TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
+  Hollow Knight ajouté ensuite (adaptateur des coûts), puis Stardew Valley (crochet sur les items reçus ; peut retarder
+  d'un point de pourcentage, jamais avancer). Non activés : Satisfactory, Lethal Company (écarts), Factorio (impossible
+  sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 ## À faire par Romain
 - **Vraie room branchée** (2026-10-11) : 22 slots, yamls de `config/players/romain/`. La room dormait : l'app
@@ -105,6 +106,6 @@
 ## Prochaines étapes
 Ordre de travail (BACKLOG.md, revu avec Romain le 2026-10-11) : M10 design shadcn-vue → M11 page Configuration
 et vraie room → M12 historique et tri → M13 PokePark puis Ori WotW → M14 autres jeux de la room.
-Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : diagnostic Hollow Knight / Stardew Valley /
-Factorio, recherche d'autres apworlds (jeux à 1 slot).
+Reste (2026-10-11) : vérification M11 sur la room éveillée ; pistes : Lethal Company, Satisfactory, recherche
+d'autres apworlds (jeux à 1 slot).
 OoT est mis de côté à la demande de Romain.

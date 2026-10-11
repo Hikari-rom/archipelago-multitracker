@@ -195,7 +195,7 @@ class SlotLogic:
         mw, pid = core.multiworld, core.player_id
         world = mw.worlds[pid]
         state = CollectionState(mw, core.enforce_deferred_connections != _deferred_disabled())
-        unknown, errors = [], []
+        unknown, errors, received = [], [], []
         own_locations = mw.regions.location_cache[pid]
         for net in items:
             code = int(net["item"])
@@ -222,9 +222,13 @@ class SlotLogic:
                 item.classification |= flags
             else:
                 item.classification = exact_classification(item.classification, flags, ItemClassification)
-            state.collect(item, True)
+            received.append(item)
         if unknown:
             raise RuntimeError(f"datapackage incohérent avec l'apworld installé ({len(unknown)} items inconnus)")
+        from .adapters import adjust_received
+        adjust_received(world.game, world, received)
+        for item in received:
+            state.collect(item, True)
         state.sweep_for_advancements(locations=[loc for loc in mw.get_locations(pid) if not loc.address])
         reachable_locations = [loc for loc in mw.get_reachable_locations(state, pid)
                                if isinstance(loc.address, int) and loc.address in missing]

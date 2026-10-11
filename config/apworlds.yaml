@@ -40,6 +40,7 @@ apworlds:
   v6: {game: "VVVVVV", source: core, logic: true, needs_yaml: true}  # adapter: area permutations
   overcooked2: {game: "Overcooked! 2", source: core, logic: true, needs_yaml: true}  # adapter: kitchen order
   hk: {game: "Hollow Knight", source: core, logic: true, needs_yaml: true}  # adapter: notch and location costs
+  stardew: {game: "Stardew Valley", source: core, logic: true, needs_yaml: true}  # hook: pre-fill progression count of received items
 
   twwhd:
     game: "The Wind Waker HD"

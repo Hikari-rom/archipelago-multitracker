@@ -37,10 +37,15 @@ print("OVER", sorted(names[a] for a in set(res["in_logic"]) - ref)[:10])
 from BaseClasses import ItemClassification
 from multitracker.logic.ut_worker import exact_classification
 tmw, pid = lg.core.multiworld, lg.core.player_id
+from multitracker.logic.adapters import adjust_received
 ts = CollectionState(tmw)
+received = []
 for net in snap.items:
     it = tmw.create_item(tmw.worlds[pid].item_id_to_name[net["item"]], pid)
     it.classification = exact_classification(it.classification, net["flags"], ItemClassification) if net["location"] >= 0 else it.classification | net["flags"]
+    received.append(it)
+adjust_received(tmw.game[pid], tmw.worlds[pid], received)
+for it in received:
     ts.collect(it, True)
 ts.sweep_for_advancements(locations=[l for l in tmw.get_locations(pid) if not l.address])
 a = collections.Counter(dict(st.prog_items[p])); b = collections.Counter(dict(ts.prog_items[pid]))

@@ -341,6 +341,56 @@ ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] 
 }
 
 
+def _stardew_received(world: Any, items: list) -> None:
+    """Stardew Valley counts "received progression items" (months lived, progression percent) only for the
+    items that were progression *before* the fill: the last Progressive Trash Can is created useful and
+    turned into progression after the fill. A received item is rebuilt from its name, so give each
+    received progression copy the count of a generated copy of that name that is progression after the
+    fill (regenerated item pool), lowest first when they differ: the logic never runs ahead. Other copies
+    (filler, useful) count nothing anyway; copies beyond the pool (start inventory, which the regeneration
+    does not keep) keep the world's default.
+    """
+    event = importlib.import_module(f"{type(world).__module__}.strings.ap_names.event_names") \
+        .Event.received_progression_item
+    counts = getattr(world, "_mt_prefill_progress", None)
+    if counts is None:
+        from BaseClasses import ItemClassification
+        post_fill = {id(item): classification for item, classification
+                     in getattr(world, "classifications_to_override_post_fill", ())}
+        counts = {}
+        for item in world.multiworld.itempool:
+            final = post_fill.get(id(item), item.classification)
+            if item.player == world.player and item.code is not None and final & ItemClassification.progression:
+                counts.setdefault(item.name, []).append(item.events_to_collect.get(event, 0))
+        for values in counts.values():
+            values.sort()
+        world._mt_prefill_progress = counts
+    seen: dict[str, int] = {}
+    for item in items:
+        if not item.advancement:
+            continue
+        index = seen[item.name] = seen.get(item.name, -1) + 1
+        values = counts.get(item.name, ())
+        if index >= len(values):
+            continue
+        if values[index]:
+            item.events_to_collect[event] = values[index]
+        else:
+            item.events_to_collect.pop(event, None)
+
+
+RECEIVED_HOOKS: dict[str, Callable[[Any, list], None]] = {
+    "Stardew Valley": _stardew_received,
+}
+
+
+def adjust_received(game: str, world: Any, items: list) -> None:
+    """Per-game fix of the received items (rebuilt from their names) before they are collected."""
+    hook = RECEIVED_HOOKS.get(game)
+    if hook:
+        hook(world, items)
+
+
 from .adapters_m7 import ADAPTERS_M7  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M7)

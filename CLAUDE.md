@@ -23,8 +23,10 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/players/romain/`, `config/room.real.yaml`, gitignorés) → M12 historique/tri → M13 PokePark/WotW → M14.
 - `validate_logic.py --yaml <yaml>` valide la logique avec les vraies options d'un joueur (test seulement).
-- `config/room.yaml` (gitignoré) pointe encore sur le multiworld de **test** ; la vraie room se branche via la page
-  Configuration de l'app (lien archipelago.gg) ou en éditant ce fichier.
+- M14/M15 : logique aussi pour 21 jeux de la room joués par d'autres (liste et limites dans `docs/COMPAT.md`), dont
+  Stardew Valley (crochet `RECEIVED_HOOKS` dans `adapters.py`). Factorio impossible (slot_data vide).
+- `config/room.yaml` (gitignoré) pointe sur la **vraie room** de Romain depuis le 2026-10-11 (elle dort souvent :
+  `curl localhost:42753/api/slots` → `room_sleeping`) ; ne jamais y connecter le bot ni les tests.
 
 ## Règles du projet (non négociables)
 - **Zéro spoiler** : le code de l'app (`backend/`, `frontend/`) n'utilise que items reçus, checks, hints, yamls du
@@ -58,7 +60,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 3. Causes déjà rencontrées : tirage aléatoire à la génération non rejoué depuis `slot_data` (→ adaptateur dans
    `backend/multitracker/logic/adapters.py` / `adapters_m7.py`, avec `patch_attr` pour restaurer proprement) ;
    hooks UT bogués dans l'apworld (WotW) ; inventaire de départ envoyé avec `flags = 0` ; génération non
-   reproductible (runs « NC », sans effet sur la logique).
+   reproductible (runs « NC », sans effet sur la logique) ; état attaché aux items par le monde à leur création
+   (Stardew : compteur d'items de progression → `RECEIVED_HOOKS`, appliqué aux items reçus avant le sweep).
 4. Bout en bout : ajouter un lot dans `tests/fixtures/` et un test dans `tests/test_logic_e2e.py`
    (`play_until_done`), puis `logic: true` dans `config/apworlds.yaml` et mise à jour de `docs/COMPAT.md`.
 

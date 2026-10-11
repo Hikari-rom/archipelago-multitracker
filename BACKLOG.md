@@ -133,6 +133,6 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 
 ## M15 — Écarts restants sur les jeux de la room (en attendant que la room se réveille)
 - [x] Hollow Knight : coûts (encoches, CostSanity) tirés au hasard et non rejoués → adaptateur, 5/5 + e2e (2026-10-11)
-- [ ] Stardew Valley (0/3 : « mois vécus » trop tôt) : diagnostic du total d'items de progression
-- [ ] Factorio (0/3 : forte sous-estimation dès la sphère 0) : diagnostic
+- [x] Stardew Valley : items de progression comptés selon leur classification avant remplissage → crochet `RECEIVED_HOOKS` sur les items reçus, 6/8 (2 retards d'un point, jamais d'avance) + e2e (2026-10-11)
+- [x] Factorio : bloqué [!] — slot_data vide, coûts des technologies seulement dans le mod (2026-10-11)
 - [ ] Relecture M15 + commit/push + notif
