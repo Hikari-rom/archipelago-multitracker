@@ -299,6 +299,36 @@ def _overcooked2(world_cls: type, slot_data: dict[str, Any], location_ids: set[i
         yield
 
 
+@contextlib.contextmanager
+def _hollow_knight(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Hollow Knight: charm notch costs (generate_early) and, with CostSanity, shop/location costs (create_items)
+    are drawn at random; slot_data["notch_costs"] / ["location_costs"] hold them but are never read back."""
+    notch_costs = slot_data.get("notch_costs")
+    location_costs = slot_data.get("location_costs")
+    if not isinstance(notch_costs, list) or not isinstance(location_costs, dict):
+        log.warning("Hollow Knight: no notch_costs/location_costs in slot_data, costs may be wrong")
+        yield
+        return
+    original_early, original_items = world_cls.generate_early, world_cls.create_items
+
+    def generate_early(self) -> None:
+        original_early(self)
+        self.charm_costs = [int(c) for c in notch_costs]
+
+    def create_items(self) -> None:
+        original_items(self)
+        for region in self.multiworld.get_regions(self.player):
+            for location in region.locations:
+                costs = location_costs.get(location.name)
+                if isinstance(costs, dict) and getattr(location, "costs", None) is not None:
+                    location.costs = {str(term): int(value) for term, value in costs.items()}
+                    location.sort_costs()
+
+    with patch_attr(world_cls, "generate_early", generate_early), \
+            patch_attr(world_cls, "create_items", create_items):
+        yield
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "The Wind Waker HD": _twwhd,
     "Super Mario 64": _sm64ex,
@@ -307,6 +337,7 @@ ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] 
     "Subnautica": _subnautica,
     "VVVVVV": _v6,
     "Overcooked! 2": _overcooked2,
+    "Hollow Knight": _hollow_knight,
 }
 
 

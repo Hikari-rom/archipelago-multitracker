@@ -39,6 +39,7 @@ apworlds:
   subnautica: {game: "Subnautica", source: core, logic: true, needs_yaml: true}  # adapter: creatures to scan
   v6: {game: "VVVVVV", source: core, logic: true, needs_yaml: true}  # adapter: area permutations
   overcooked2: {game: "Overcooked! 2", source: core, logic: true, needs_yaml: true}  # adapter: kitchen order
+  hk: {game: "Hollow Knight", source: core, logic: true, needs_yaml: true}  # adapter: notch and location costs
 
   twwhd:
     game: "The Wind Waker HD"

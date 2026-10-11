@@ -130,3 +130,9 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] (2026-10-11 : 10 activés avec yaml, 7 non — détail dans COMPAT) Jeux core d'AP 0.6.7 présents dans la room (Factorio, Terraria, Subnautica, Stardew Valley, TUNIC, The Witness, Risk of Rain 2, Hollow Knight, Undertale, VVVVVV, A Short Hike, Overcooked! 2, Raft, Inscryption, shapez…) : yaml de test depuis le template, validation de référence, activation si OK ; résultats dans COMPAT
 - [x] (2026-10-11 : 7 installés, 6 activés dont 5 sans yaml — détail dans COMPAT) Apworlds non core au checksum identique, par nombre de slots décroissant (Portal 2, Mario Kart Double Dash, R.E.P.O, PEAK…) : idem ; au plus 15 jeux dans cette session, le reste listé dans PROGRESS
 - [x] Relecture M14 + commit/push + notif (fixture Subnautica réaliste, `door_cost` VVVVVV plus tôt, avertissements)
+
+## M15 — Écarts restants sur les jeux de la room (en attendant que la room se réveille)
+- [x] Hollow Knight : coûts (encoches, CostSanity) tirés au hasard et non rejoués → adaptateur, 5/5 + e2e (2026-10-11)
+- [ ] Stardew Valley (0/3 : « mois vécus » trop tôt) : diagnostic du total d'items de progression
+- [ ] Factorio (0/3 : forte sous-estimation dès la sphère 0) : diagnostic
+- [ ] Relecture M15 + commit/push + notif

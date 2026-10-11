@@ -87,7 +87,7 @@
   Civilization VI, Paint, et avec adaptateurs Subnautica, VVVVVV, Overcooked! 2) + 6 apworlds installés à la version de la room
   (Mario Kart Double Dash, Archipeladoku, Lego Star Wars TCS, Outer Wilds, Portal 2 — ces 5-là **sans yaml**, donc
   utilisables pour les slots de tes amis — et Haste). Les autres demandent le yaml du joueur (clé `yaml` du slot).
-  Non activés (écarts) : Hollow Knight, Stardew Valley, Factorio, Satisfactory, Lethal Company ;
+  Hollow Knight ajouté ensuite (adaptateur des coûts). Non activés (écarts) : Stardew Valley, Factorio, Satisfactory, Lethal Company ;
   TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 ## À faire par Romain
