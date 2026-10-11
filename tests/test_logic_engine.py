@@ -69,3 +69,18 @@ def test_other_apworld_version_in_the_room():
 
 
 _ = pytest
+
+
+def test_region_names_sent_to_the_app_are_plain_strings():
+    """AEMinecraft names its regions with a str Enum: pickled as is, the app process cannot load them."""
+    import pickle
+    from enum import Enum
+    from multitracker.logic.ut_worker import plain_name
+
+    class Region(str, Enum):
+        OVERWORLD = "Overworld"
+
+    name = plain_name(Region.OVERWORLD)
+    assert name == "Overworld" and type(name) is str
+    assert type(pickle.loads(pickle.dumps(name))) is str
+    assert plain_name("Nether") == "Nether"

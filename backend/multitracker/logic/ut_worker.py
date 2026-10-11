@@ -240,9 +240,16 @@ class SlotLogic:
         reachable_locations = [loc for loc in mw.get_reachable_locations(state, pid)
                                if isinstance(loc.address, int) and loc.address in missing]
         reachable = sorted({loc.address for loc in reachable_locations})
-        regions = {loc.address: loc.parent_region.name for loc in reachable_locations
+        regions = {int(loc.address): plain_name(loc.parent_region.name) for loc in reachable_locations
                    if loc.parent_region is not None}
         return {"in_logic": reachable, "regions": regions, "errors": errors[:5]}
+
+
+def plain_name(name: Any) -> str:
+    """A region name as a plain str: some worlds use str enums (AEMinecraft's MCRegion), which the app
+    process could not unpickle (it does not import `worlds`)."""
+    from enum import Enum
+    return str(name.value) if isinstance(name, Enum) else str(name)
 
 
 NETWORK_FLAGS = 0b111  # progression | useful | trap: what NetworkItem.flags carries
