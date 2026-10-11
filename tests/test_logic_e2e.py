@@ -50,7 +50,9 @@ def reference_todo(multiworld, player: int, items: list[dict], missing: set[int]
                   if l.address is not None and l.address in missing)
 
 
-async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: int = 300, spoiler: int = 3) -> dict:
+async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: int = 300, spoiler: int = 3,
+                          no_yaml: frozenset[str] = frozenset()) -> dict:
+    """no_yaml: games whose slots get no yaml (logic from slot_data only, like another player's slot)."""
     import logic_reference as lr
     from bot import GameBot
     from multitracker import config
@@ -68,7 +70,8 @@ async def play_until_done(fixture: str, seed: int, tmp_path: Path, max_rounds: i
         players[doc["name"]] = (doc["game"], path)
     room = tmp_path / "room.yaml"
     room.write_text(json.dumps({"server": f"ws://127.0.0.1:{PORT}", "password": "test",
-                                "slots": [{"name": n, "game": g, "yaml": str(p)} for n, (g, p) in players.items()]}))
+                                "slots": [{"name": n, "game": g, "yaml": None if g in no_yaml else str(p)}
+                                          for n, (g, p) in players.items()]}))
     engine = UTLogicEngine({g: True for g, _ in players.values()})
     service_box = {}
 
@@ -188,4 +191,17 @@ async def test_bot_finishes_m14_batch_using_only_in_logic_locations(tmp_path):
     Inscryption, shapez, Raft, Civilization VI, Paint (default options)."""
     result = await play_until_done("m14", 17, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m14.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1
+
+
+M14B_NO_YAML = frozenset({"Mario Kart Double Dash", "Archipeladoku", "Lego Star Wars: The Complete Saga",
+                          "Outer Wilds", "Portal 2"})
+
+
+async def test_bot_finishes_m14b_batch_using_only_in_logic_locations(tmp_path):
+    """Other apworlds of the room, at the room's version; the ones Universal Tracker can rebuild from slot_data
+    alone get no yaml (the case of another player's slot). Subnautica and VVVVVV (areas shuffled) need their
+    adapters; Haste needs its yaml."""
+    result = await play_until_done("m14b", 17, tmp_path, spoiler=1, no_yaml=M14B_NO_YAML)
+    (ROOT / "test-output" / "e2e_m14b.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1

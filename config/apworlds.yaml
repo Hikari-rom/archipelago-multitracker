@@ -36,6 +36,8 @@ apworlds:
   raft: {game: "Raft", source: core, logic: true, needs_yaml: true}
   civ6: {game: "Civilization VI", source: core, logic: true, needs_yaml: true}
   paint: {game: "Paint", source: core, logic: true, needs_yaml: true}
+  subnautica: {game: "Subnautica", source: core, logic: true, needs_yaml: true}  # adapter: creatures to scan
+  v6: {game: "VVVVVV", source: core, logic: true, needs_yaml: true}  # adapter: area permutations
 
   twwhd:
     game: "The Wind Waker HD"
@@ -169,27 +171,32 @@ apworlds:
 
 
   # M14: other games of the room, at the newest release whose datapackage checksum equals the room's (D12;
-  # several releases share it, the exact one used by the room is unknown). Logic only after validation.
+  # several releases share it, the exact one used by the room is unknown). Logic only after validation
+  # (3/3 random seeds + e2e batch m14b); these five rebuild from slot_data alone: no yaml needed.
   mkdd:
     game: "Mario Kart Double Dash"
     source: github
     repo: aXu-AP/archipelago-double-dash
     tag: v1.0.1
     asset: "*.apworld"
+    logic: true
   archipeladoku:
     game: "Archipeladoku"
     source: github
     repo: galdiuz/archipeladoku
     tag: v2026.09.26
     asset: "*.apworld"
+    logic: true
   lego_tcs:
     game: "Lego Star Wars: The Complete Saga"
     source: github
     repo: Mysteryem/Archipelago-TCS
     tag: v1.4.4
     asset: "*.apworld"
+    logic: true
   lethal_company:
     game: "Lethal Company"
+    needs_yaml: true
     source: github
     repo: T0r1nn/APLC
     tag: v0.7.13
@@ -200,18 +207,22 @@ apworlds:
     repo: Ixrec/OuterWildsArchipelagoRandomizer
     tag: v1.3.0
     asset: "*.apworld"
+    logic: true
   portal2:
     game: "Portal 2"
     source: github
     repo: GlassToadstool/Portal2ArchipelagoMod
     tag: "0.8.2"
     asset: "*.apworld"
+    logic: true
   haste:
     game: "Haste"
+    needs_yaml: true
     source: github
     repo: WritingHusky/haste_apworld
     tag: v0.5.1
     asset: "*.apworld"
+    logic: true
 
 # Not a game: Universal Tracker, used headless as the logic engine.
 # Tracker_v0.3.0 is the newest release whose core is Archipelago 0.6.7 (v0.3.1+ target 0.6.8).

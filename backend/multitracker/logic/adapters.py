@@ -210,11 +210,71 @@ def _mkwii(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         yield
 
 
+@contextlib.contextmanager
+def _subnautica(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Subnautica: the creatures to scan are a random sample drawn in generate_early, sent in slot_data but
+    never read back (no interpret_slot_data). Replay them, and the options slot_data carries."""
+    if not isinstance(slot_data.get("creatures_to_scan"), list):
+        yield
+        return
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        apply_options(self, slot_data, ["goal", "swim_rule", "free_samples", "empty_tanks"])
+        original(self)
+        self.creatures_to_scan = [str(c) for c in slot_data["creatures_to_scan"]]
+        self.options.creature_scans.value = len(self.creatures_to_scan)
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
+@contextlib.contextmanager
+def _v6(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """VVVVVV: set_rules shuffles the area connections then the area costs with multiworld.random (each only if
+    its option is on), and slot_data["AreaRando"/"AreaCostRando"] holds the result, never read back. Replay both
+    permutations: shuffle() returns them in that order (the options are forced on so both calls happen)."""
+    try:
+        conn = {int(k): int(v) for k, v in slot_data["AreaRando"].items()}
+        cost = {int(k): int(v) for k, v in slot_data["AreaCostRando"].items()}
+    except (KeyError, AttributeError, TypeError, ValueError):
+        yield
+        return
+    original = world_cls.set_rules
+    n = len(conn) - 1  # key 0 is the menu
+
+    class _Replay:
+        def __init__(self, real) -> None:
+            self.real, self.orders = real, [[conn[i + 1] - 1 for i in range(n)], [cost[i + 1] - 1 for i in range(n)]]
+
+        def shuffle(self, items: list) -> None:
+            items[:] = self.orders.pop(0)
+
+        def __getattr__(self, name: str):
+            return getattr(self.real, name)
+
+    def set_rules(self) -> None:
+        apply_options(self, {"door_cost": slot_data.get("DoorCost")}, ["door_cost"])
+        options = self.options
+        saved = (options.area_rando.value, options.area_cost.value, self.multiworld.random)
+        options.area_rando.value = options.area_cost.value = 1
+        self.multiworld.random = _Replay(saved[2])
+        try:
+            original(self)
+        finally:
+            options.area_rando.value, options.area_cost.value, self.multiworld.random = saved
+
+    with patch_attr(world_cls, "set_rules", set_rules):
+        yield
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "The Wind Waker HD": _twwhd,
     "Super Mario 64": _sm64ex,
     "Ori and the Will of the Wisps": _ori_wotw,
     "Mario Kart Wii": _mkwii,
+    "Subnautica": _subnautica,
+    "VVVVVV": _v6,
 }
 
 

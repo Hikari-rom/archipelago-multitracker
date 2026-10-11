@@ -50,14 +50,33 @@ ne sait se reconstruire depuis le seul `slot_data` (sauf Satisfactory) : la logi
 | Jeu | Validation | Logique | Notes |
 |---|---|---|---|
 | The Witness, Risk of Rain 2, Terraria, Undertale, A Short Hike, Inscryption, shapez, Raft, Civilization VI, Paint | ✅ 3/3 + e2e `m14` | activée (yaml) | |
-| VVVVVV | ⚠️ 2/3 | non | écart ponctuel (The Tower / Edge Games), à diagnostiquer |
-| Overcooked! 2 | ⚠️ 2/3 | non | « 3-1/3-2 Completed » en logique trop tôt sur 1 seed |
+| VVVVVV | ✅ 5/5 + e2e `m14b` | activée (yaml) | adaptateur : zones et coûts mélangés avec `multiworld.random`, rejoués depuis `slot_data` (`AreaRando`, `AreaCostRando`) |
+| Overcooked! 2 | ⚠️ 2/3 | non | cuisines mélangées (`shuffle_level_order`, `level_shuffle_factory`) non rejouées depuis le `slot_data` : adaptateur à écrire |
 | Hollow Knight | ⚠️ 1/3 | non | une location de trop (Salubra charmes, Seer) : compte de charmes/essence |
-| Subnautica | ⚠️ 1/3 | non | sous-estimation de scans de créatures dès la sphère 1 |
+| Subnautica | ✅ 4/4 + e2e `m14b` | activée (yaml) | adaptateur : créatures à scanner tirées au hasard, rejouées depuis `slot_data["creatures_to_scan"]` |
 | Stardew Valley | ❌ 0/3 | non | surestimation : « mois vécus » = pourcentage d'items de progression reçus, total différent à la régénération |
 | Factorio | ❌ 0/3 | non | forte sous-estimation dès la sphère 0 (arbre technologique) |
 | Satisfactory | ❌ 0/3 | non | le monde assouplit volontairement ses règles pour Universal Tracker (paliers 1–2 du Hub « toujours accessibles en jeu ») : non comparable à la génération |
 | TUNIC | — | non | la room utilise une version plus récente que le core 0.6.7 (checksum différent, D12) |
+
+Apworlds non core de la room, installés à une release dont le checksum est celui de la room (plusieurs releases
+partagent souvent le même datapackage : la plus récente est prise, la version exacte de la room reste inconnue).
+« Sans yaml » : Universal Tracker reconstruit le monde depuis le `slot_data` seul, la logique marche donc aussi pour
+les slots des autres joueurs.
+
+| Jeu | Source | Validation | Logique |
+|---|---|---|---|
+| Mario Kart Double Dash | aXu-AP/archipelago-double-dash v1.0.1 | ✅ 3/3 + e2e `m14b` sans yaml | activée, sans yaml |
+| Archipeladoku | galdiuz/archipeladoku v2026.09.26 | ✅ 3/3 + e2e sans yaml | activée, sans yaml |
+| Lego Star Wars: The Complete Saga | Mysteryem/Archipelago-TCS v1.4.4 | ✅ 3/3 + e2e sans yaml | activée, sans yaml |
+| Outer Wilds | Ixrec/OuterWildsArchipelagoRandomizer v1.3.0 | ✅ 3/3 + e2e sans yaml | activée, sans yaml |
+| Portal 2 | GlassToadstool/Portal2ArchipelagoMod 0.8.2 | ✅ 3/3 + e2e sans yaml | activée, sans yaml (dépendance `attrs` ajoutée à `bootstrap.sh`) |
+| Haste | WritingHusky/haste_apworld v0.5.1 | ✅ 2/2 (+1 génération impossible) + e2e | activée (yaml) |
+| Lethal Company | T0r1nn/APLC v0.7.13 | ❌ 0/3 (lunes / objets tirés au hasard) | non |
+
+Non trouvés ou sans release `.apworld` correspondant au checksum de la room : PEAK, R.E.P.O, A Dance of Fire and Ice,
+ArchipelaCode, Bloons TD6, Burnout Paradise Remastered, Clair Obscur Expedition 33, Cookie Clicker, et les jeux à
+1 slot (non cherchés).
 
 Les versions effectivement téléchargées (avec sha256) sont dans `config/apworlds.lock.yaml`.
 Validation avec les vrais yamls de Romain : `validate_logic.py "<jeu>" --yaml config/players/romain/<fichier>`
