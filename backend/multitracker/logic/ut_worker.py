@@ -113,8 +113,10 @@ class SlotLogic:
     """One slot's regenerated world, kept between updates."""
 
     def __init__(self, slot_name: str, game: str, team: int, slot: int, slot_data: dict[str, Any],
-                 yaml_path: Path | None, location_ids: set[int] | None = None) -> None:
+                 yaml_path: Path | None, location_ids: set[int] | None = None,
+                 room_checksum: str | None = None) -> None:
         setup_ap()
+        import worlds
         from worlds.AutoWorld import AutoWorldRegister
         from worlds.tracker.TrackerCore import TrackerCore
 
@@ -125,6 +127,10 @@ class SlotLogic:
             raise LogicUnavailable(f"apworld non installé pour « {game} »")
         if getattr(world_cls, "disable_ut", False):
             raise LogicUnavailable("l'auteur de l'apworld a désactivé Universal Tracker pour ce jeu")
+        local_checksum = worlds.network_data_package["games"].get(game, {}).get("checksum")
+        if room_checksum and local_checksum and room_checksum != local_checksum:  # D12
+            raise LogicUnavailable("la room utilise une autre version de l'apworld que celle installée ici : "
+                                   "logique désactivée pour ne pas se tromper")
 
         core = TrackerCore(logging.getLogger(f"ut.{slot_name}"), False, False)
         # TrackerCore caches multiworlds per slot_data at class level: keep the cache per slot.
@@ -255,7 +261,7 @@ def request_key(req: dict[str, Any]) -> str:
         except OSError:
             yaml_digest = "missing"
     payload = json.dumps([req.get("seed_name"), req["game"], req["team"], req["slot"], req.get("slot_data"),
-                          yaml_digest],
+                          yaml_digest, req.get("checksum")],
                          sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -281,7 +287,7 @@ class Worker:
                 logic: SlotLogic | Exception = SlotLogic(
                     name, req["game"], req["team"], req["slot"], req.get("slot_data") or {},
                     Path(req["yaml"]) if req.get("yaml") else None,
-                    set(req.get("missing", [])) | set(req.get("checked", [])))
+                    set(req.get("missing", [])) | set(req.get("checked", [])), req.get("checksum"))
             except LogicUnavailable as exc:
                 logic = LogicUnavailable(str(exc))  # no traceback: it would keep the half-built world alive
             except Exception as exc:

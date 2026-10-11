@@ -174,3 +174,10 @@ async def test_bot_finishes_m13_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m13", 17, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m13.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m13w_batch_using_only_in_logic_locations(tmp_path):
+    """Ori and the Will of the Wisps with the options of Romain's yaml (random options: 3/4, see COMPAT)."""
+    result = await play_until_done("m13w", 17, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m13w.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

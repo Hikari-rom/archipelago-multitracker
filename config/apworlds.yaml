@@ -11,6 +11,8 @@
 #   asset             glob matching the .apworld asset of the release
 #   allow_prerelease  accept prereleases when tag is "latest" (default false)
 #   filename          optional: name to save the asset as in custom_worlds/
+#   commit            instead of tag/asset: the repository itself at this full commit sha (apworld used from a
+#                     branch, not a release); `filename` is then required and names the module
 #   logic             true = show "checks en logique" for this game (only once validated, see docs/COMPAT.md);
 #                     false/absent = "Logique indisponible" (level 1 tracking only)
 #   needs_yaml        true = the logic needs the player's yaml (the world cannot be rebuilt from slot_data alone);
@@ -28,8 +30,9 @@ apworlds:
     needs_yaml: true
     source: github
     repo: Teotia444/twwhd-apworld
-    tag: latest
-    asset: "*.apworld"
+    # The room was generated with main (Wii U + 1.1.0 support), not with release v1.0.2-beta (D12).
+    commit: c21882644711807ee2e61a096280f5385186e5de
+    filename: twwhd-apworld-main.apworld
     logic: true
   smo:
     game: "Spicy Meatball Overdrive"  # SMO apworld registers under this name
@@ -54,6 +57,7 @@ apworlds:
     repo: Satisha10/APwotw_release
     tag: latest
     asset: "*.apworld"
+    logic: true
   balatro:
     game: "Balatro"
     needs_yaml: true
@@ -133,7 +137,7 @@ apworlds:
     needs_yaml: true
     source: github
     repo: KuroLynx/AEMinecraft
-    tag: v0.6.2
+    tag: v0.7.0-rc.2  # version of the room (D12); rc.1 has the same datapackage and rules
     asset: "*.apworld"
     logic: true
   tboir:

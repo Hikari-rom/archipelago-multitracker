@@ -118,14 +118,14 @@ joueurs) et dort souvent (timeout 2 h) : surveiller la taille du datapackage, la
 
 ## M13 — Logique : jeux restants de Romain
 - [x] PokéPark Wii: Pikachu's Adventure — 5/5 aléatoires + 6/6 avec le yaml de Romain, lot `m13` bout en bout, logique activée (2026-10-11). Était : compléter (seeds aléatoires si elles génèrent, sinon `--default-options`), lot bout en bout, activation, COMPAT
-- [ ] Ori and the Will of the Wisps — 3/4 seeds, surestimation sur des événements de combat ; tester aussi avec le yaml de Romain
+- [x] Ori and the Will of the Wisps — 5/5 avec le yaml de Romain + lot `m13w` bout en bout : logique activée (2026-10-11). Options aléatoires : 3/4, et les écarts sont des **sous-estimations** (quelques locations atteignables non montrées, jamais l'inverse)
 - [ ] Relecture M13 + commit/push + notif
 
 ## M14 — Autres jeux de la room (seulement quand tout le reste est fini ou bloqué)
 Le niveau 1 marche déjà pour n'importe quel jeu (noms via le datapackage du serveur) : ce jalon ne concerne que la logique.
 La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, on n'a pas leurs yamls : seuls les jeux
 `ut_can_gen_without_yaml` (ou dont le yaml serait fourni) auront une logique. Règle D12 : version identique obligatoire.
-- [ ] Inventaire `docs/COMPAT-room.md` : pour chaque jeu de la room, apworld core 0.6.7 ou repo trouvé, version, et **checksum du datapackage identique à celui de la room** (sinon logique interdite pour ce jeu), `ut_can_gen_without_yaml`, nombre de slots
+- [x] Inventaire `docs/COMPAT-room.md` (`scripts/room_inventory.py`, sans réveiller la room) — a révélé que la room utilise TWW HD `main` et AEMinecraft 0.7.0-rc : apworlds alignés (2026-10-11). Était : pour chaque jeu de la room, apworld core 0.6.7 ou repo trouvé, version, et **checksum du datapackage identique à celui de la room** (sinon logique interdite pour ce jeu), `ut_can_gen_without_yaml`, nombre de slots
 - [ ] Mesurer le coût de chaque apworld en plus (RAM et démarrage du worker, tous les mondes sont importés) ; si besoin, ne charger que les mondes des slots configurés
 - [ ] Jeux core d'AP 0.6.7 présents dans la room (Factorio, Terraria, Subnautica, Stardew Valley, TUNIC, The Witness, Risk of Rain 2, Hollow Knight, Undertale, VVVVVV, A Short Hike, Overcooked! 2, Raft, Inscryption, shapez…) : yaml de test depuis le template, validation de référence, activation si OK ; résultats dans COMPAT
 - [ ] Apworlds non core au checksum identique, par nombre de slots décroissant (Portal 2, Mario Kart Double Dash, R.E.P.O, PEAK…) : idem ; au plus 15 jeux dans cette session, le reste listé dans PROGRESS

@@ -53,4 +53,17 @@ def test_missing_yaml_for_a_yaml_world():
     assert res["state"] == "unavailable" and "yaml" in res["message"]
 
 
+
+def test_other_apworld_version_in_the_room():
+    """D12: the room was generated with another version of the apworld (other datapackage checksum)."""
+    from multitracker.logic.ut_worker import Worker
+    req = {"op": "update", "slot_name": "KH2", "game": "Kingdom Hearts 2", "team": 0, "slot": 1,
+           "slot_data": {}, "yaml": None, "items": [], "missing": [1], "checked": [], "checksum": "0" * 40}
+    res = Worker().handle(req)
+    assert res["state"] == "unavailable" and "autre version" in res["message"]
+    import worlds
+    req["checksum"] = worlds.network_data_package["games"]["Kingdom Hearts 2"]["checksum"]
+    assert "yaml" in Worker().handle(req)["message"]  # same version: goes on (and needs the yaml)
+
+
 _ = pytest

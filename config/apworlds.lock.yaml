@@ -17,15 +17,12 @@ apworlds:
     game: Ocarina of Time
   twwhd:
     repo: Teotia444/twwhd-apworld
-    tag: v1.0.2-beta
-    published: '2026-08-14T21:10:36Z'
-    asset_pattern: '*.apworld'
-    asset: twwhd-apworld-main.apworld
-    url: https://github.com/Teotia444/twwhd-apworld/releases/download/v1.0.2-beta/twwhd-apworld-main.apworld
-    size: 218701
+    commit: c21882644711807ee2e61a096280f5385186e5de
+    url: https://codeload.github.com/Teotia444/twwhd-apworld/zip/c21882644711807ee2e61a096280f5385186e5de
     file: twwhd-apworld-main.apworld
-    sha256: a4c68202ee5fbc51a42bbd91d981e3a6f30d7d3e0fc807782612676f18905a1c
-    downloaded_at: '2026-10-10T00:21:18+00:00'
+    archive: true
+    sha256: d93f7770bf5b39647bfa9b2c70d9993df64bd69ab5460b927067c106dbed5e14
+    downloaded_at: '2026-10-11T00:25:18+00:00'
     source: github
     game: The Wind Waker HD
   smo:
@@ -199,15 +196,15 @@ apworlds:
     game: Ratchet and Clank 3
   aeminecraft:
     repo: KuroLynx/AEMinecraft
-    tag: v0.6.2
-    published: '2026-09-14T02:27:36Z'
+    tag: v0.7.0-rc.2
+    published: '2026-10-10T13:18:28Z'
     asset_pattern: '*.apworld'
     asset: minecraft_aem.apworld
-    url: https://github.com/KuroLynx/AEMinecraft/releases/download/v0.6.2/minecraft_aem.apworld
-    size: 485550
+    url: https://github.com/KuroLynx/AEMinecraft/releases/download/v0.7.0-rc.2/minecraft_aem.apworld
+    size: 1228705
     file: minecraft_aem.apworld
-    sha256: 86dbd6dac8aec9a709df7eee90bdc06b219473010e3c04d7b208aaa5bee9d092
-    downloaded_at: '2026-10-10T00:21:34+00:00'
+    sha256: 8fac061041cde5fcf37f081ea08495b38e4d4962e85cd90fd81d0c705a14312c
+    downloaded_at: '2026-10-11T00:25:19+00:00'
     source: github
     game: AEMinecraft
   tboir:

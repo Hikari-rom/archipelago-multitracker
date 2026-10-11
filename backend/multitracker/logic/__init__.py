@@ -19,6 +19,7 @@ class LogicRequest:
     missing: set[int]
     checked: set[int]
     seed_name: str | None = None
+    checksum: str | None = None  # datapackage checksum of the game in the room (RoomInfo)
 
 
 @dataclass

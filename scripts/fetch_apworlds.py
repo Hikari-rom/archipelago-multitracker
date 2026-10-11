@@ -5,6 +5,9 @@
 - `source: github` entries are resolved to a GitHub release (`tag: latest` or a pinned tag),
   the asset matching `asset` (a glob) is downloaded, and the resolved version is written
   to config/apworlds.lock.yaml.
+- `source: github` entries with `commit: <sha>` (and `filename: <module>.apworld`) take the repository itself at
+  that commit, for apworlds used from a branch rather than a release: the archive's top folder is renamed to
+  the module name (the apworld file name without `.apworld`).
 
 Idempotent: an asset already present with the sha256 recorded in the lock is not re-downloaded.
 Use `--update` to re-resolve `latest` tags instead of reusing the locked tag.
@@ -25,6 +28,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import yaml
@@ -98,6 +102,26 @@ class GitHub:
         return h.hexdigest()
 
 
+def repack_archive(archive: Path, dest: Path) -> None:
+    """Repository archive -> apworld: rename its single top folder to the module name (atomic write)."""
+    module = dest.name[: -len(".apworld")]
+    tmp = dest.with_name(dest.name + ".part")
+    try:
+        with zipfile.ZipFile(archive) as src, zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as out:
+            tops = {info.filename.split("/", 1)[0] for info in src.infolist()}
+            if len(tops) != 1:
+                raise RuntimeError(f"expected one top folder in the repository archive, found {sorted(tops)}")
+            top = tops.pop()
+            for info in src.infolist():
+                rest = info.filename.split("/", 1)[1] if "/" in info.filename else ""
+                new = zipfile.ZipInfo(f"{module}/{rest}" if rest else f"{module}/", info.date_time)
+                new.external_attr, new.compress_type = info.external_attr, zipfile.ZIP_DEFLATED
+                out.writestr(new, b"" if info.is_dir() else src.read(info))
+        tmp.replace(dest)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as fh:
@@ -122,6 +146,14 @@ def safe_filename(name: str) -> str:
 
 def resolve_entry(gh: GitHub, key: str, entry: dict, locked: dict | None, update: bool) -> dict:
     repo = entry["repo"]
+    if entry.get("commit"):
+        commit = str(entry["commit"])
+        if len(commit) != 40 or any(c not in "0123456789abcdef" for c in commit):
+            raise RuntimeError(f"{key}: commit must be a full 40-character sha, got {commit!r}")
+        if not entry.get("filename"):
+            raise RuntimeError(f"{key}: an entry with `commit` needs `filename` (<module>.apworld)")
+        return {"repo": repo, "commit": commit, "url": f"https://codeload.github.com/{repo}/zip/{commit}",
+                "file": safe_filename(entry["filename"]), "archive": True}
     tag = str(entry.get("tag", "latest"))
     pattern = entry.get("asset", "*.apworld")
     if locked and not update and locked.get("repo") == repo and (tag == "latest" or locked.get("tag") == tag) \
@@ -178,9 +210,18 @@ def main() -> int:
             if same_version and dest.exists() and sha256(dest) == locked["sha256"]:
                 resolved["sha256"] = locked["sha256"]
                 resolved["downloaded_at"] = locked.get("downloaded_at")
-                print(f"= {key}: {resolved['repo']}@{resolved['tag']} ({resolved['file']}) already present")
+                print(f"= {key}: {resolved['repo']}@{resolved.get('tag') or resolved.get('commit')} ({resolved['file']}) already present")
             else:
-                digest = gh.download(resolved["url"], dest, resolved.get("size"))
+                if resolved.get("archive"):
+                    archive = dest.with_name(dest.name + ".zip")
+                    try:
+                        gh.download(resolved["url"], archive, None)
+                        repack_archive(archive, dest)
+                    finally:
+                        archive.unlink(missing_ok=True)
+                    digest = sha256(dest)
+                else:
+                    digest = gh.download(resolved["url"], dest, resolved.get("size"))
                 if same_version and digest != locked["sha256"] and not args.update:
                     dest.unlink(missing_ok=True)
                     raise RuntimeError(f"sha256 mismatch for {resolved['url']} (asset replaced upstream?); "
@@ -190,7 +231,7 @@ def main() -> int:
                     (DEST / safe_filename(locked["file"])).unlink(missing_ok=True)
                 resolved["sha256"] = digest
                 resolved["downloaded_at"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-                print(f"+ {key}: {resolved['repo']}@{resolved['tag']} -> {resolved['file']}")
+                print(f"+ {key}: {resolved['repo']}@{resolved.get('tag') or resolved.get('commit')} -> {resolved['file']}")
             resolved["source"] = "github"
             resolved["game"] = entry.get("game")
             new_lock[key] = resolved

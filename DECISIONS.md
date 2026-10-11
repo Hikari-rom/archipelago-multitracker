@@ -90,6 +90,11 @@ serveur : le navigateur corrige son horloge avec `now` de `/api/slots`.
 Pour un apworld non core, la logique n'est activée que si le checksum du datapackage du jeu dans la room est
 identique à celui de l'apworld installé : sinon la logique pourrait venir d'une autre version que celle de la
 génération et mentir.
+Appliqué partout depuis le 2026-10-11 (pas seulement aux autres jeux) : le worker de logique compare le checksum du
+jeu envoyé par la room (RoomInfo) à celui de l'apworld installé et répond « logique indisponible » s'ils diffèrent.
+L'inventaire `scripts/room_inventory.py` (→ `docs/COMPAT-room.md`) a montré que la room de Romain utilisait TWW HD
+`main` (commit c2188264, pas la release v1.0.2-beta) et AEMinecraft 0.7.0-rc : `config/apworlds.yaml` les épingle
+(`commit:` pour une branche, nouvelle source de `scripts/fetch_apworlds.py`).
 
 ## D13 — shadcn-vue + Tailwind CSS 4 pour l'interface (2026-10-11, demandé par Romain)
 Composants shadcn-vue (style new-york) copiés dans `frontend/src/components/ui/` (modifiables : variantes de badge

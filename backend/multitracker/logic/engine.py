@@ -104,7 +104,8 @@ class UTLogicEngine(LogicEngine):
                "slot": request.slot, "slot_data": request.slot_data,
                "yaml": str(request.yaml) if request.yaml else None,
                "items": request.items, "missing": sorted(request.missing),
-               "checked": sorted(request.checked), "seed_name": request.seed_name}
+               "checked": sorted(request.checked), "seed_name": request.seed_name,
+               "checksum": request.checksum}
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)

@@ -194,7 +194,7 @@ class Service:
             request = LogicRequest(slot_name=name, game=st.game, team=st.team, slot=st.slot,
                                    slot_data=st.slot_data, yaml=self.slot_configs[name].yaml,
                                    items=list(st.items), missing=set(st.missing), checked=set(st.checked),
-                                   seed_name=st.seed_name)
+                                   seed_name=st.seed_name, checksum=st.datapackage_checksums.get(st.game))
             started = time.perf_counter()
             try:
                 result = await self.logic_engine.compute(request)
