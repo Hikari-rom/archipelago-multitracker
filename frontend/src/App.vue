@@ -16,10 +16,10 @@ import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
 import { stableOrder } from './lib/order'
 import { summaryText } from './lib/logic'
-import { SORT_LABELS, loadSortMode, percent, saveSortMode, sortBy, totals, type SortMode } from './lib/dashboard'
+import { SORT_LABELS, loadSortMode, percent, saveSortMode, sortBy, splitFeatured, totals, type SortMode } from './lib/dashboard'
 import { applyTheme, loadTheme, nextTheme, saveTheme, themeLabel } from './lib/theme'
 import { wakeRoom } from './lib/api'
-import { refreshMeta, setView, tracker } from './stores/tracker'
+import { refreshMeta, setFeatured, setView, tracker } from './stores/tracker'
 
 const theme = ref(loadTheme())
 const hideDone = ref(false)
@@ -75,6 +75,12 @@ async function onWake() {
 const themeIcon = computed(() => ({ auto: Monitor, light: Sun, dark: Moon })[theme.value])
 const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
+const split = computed(() => splitFeatured(visible.value, tracker.nowMs, tracker.activeMinutes))
+watch(
+  () => split.value.featured.map((s) => s.name).join('\n'),
+  (names) => setFeatured(names ? names.split('\n') : []),
+  { immediate: true },
+)
 const selected = computed(() => filterByOwner(tracker.slots, activeChip.value))
 const summary = computed(() => summaryText(selected.value))
 const sums = computed(() => totals(selected.value))
@@ -195,7 +201,8 @@ const sseLabel = computed(
       <p v-else-if="!tracker.loaded" class="text-muted-foreground">Chargement…</p>
       <p v-else-if="!visible.length" class="text-muted-foreground">Tous les jeux sont terminés 🎉</p>
       <div v-else class="grid grid-cols-1 items-start gap-3 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-3">
-        <SlotCard v-for="s in visible" :key="s.name" :summary="s" />
+        <SlotCard v-for="s in split.featured" :key="s.name" :summary="s" featured />
+        <SlotCard v-for="s in split.rest" :key="s.name" :summary="s" />
       </div>
     </template>
   </main>

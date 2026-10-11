@@ -1,5 +1,5 @@
 // Dashboard: totals of the selected slots, sort modes, two-colour progress bars, feed of received items.
-import { sortSlots } from './logic'
+import { isActive, sortSlots } from './logic'
 import type { RecentItem, SlotSummary } from './types'
 
 export interface Totals {
@@ -80,7 +80,19 @@ export function saveSortMode(v: SortMode): void {
   }
 }
 
+/** Active games (a location checked in the last minutes) go first, in full-width cards, the most recent first;
+ * the other games keep the chosen order. */
+export function splitFeatured(slots: SlotSummary[], nowMs: number, activeMinutes?: number) {
+  const featured = slots
+    .filter((s) => isActive(s, nowMs, activeMinutes))
+    .sort((a, b) => (b.last_check_at ?? 0) - (a.last_check_at ?? 0))
+  const names = new Set(featured.map((s) => s.name))
+  return { featured, rest: slots.filter((s) => !names.has(s.name)) }
+}
+
 export const FEED_SHORT = 5
+/** on a phone (< 700 px) the short feed shows fewer items, so the active game stays near the top */
+export const FEED_PHONE = 3
 export const FEED_LONG = 30
 
 /** Feed of the selected slots (already newest first from the server). */

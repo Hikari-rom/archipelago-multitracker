@@ -21,7 +21,10 @@ export const tracker = reactive({
   /** a slot is "active" when it checked a location in the last N minutes (setting of this device) */
   activeMinutes: loadActiveMinutes(),
   details: {} as Record<string, SlotDetail>,
+  /** details shown or hidden by the user (overrides the default: hidden, except for featured slots) */
   open: {} as Record<string, boolean>,
+  /** active slots shown first in a full-width card, details shown by default (set by the dashboard) */
+  featured: {} as Record<string, boolean>,
   detailError: {} as Record<string, string>,
   /** true during the short window after "Marquer comme vu" (dashboard order frozen) */
   seenFreeze: false,
@@ -51,12 +54,24 @@ let freezeTimer: ReturnType<typeof setTimeout> | undefined
 export const SEEN_FREEZE_MS = 1500
 
 /** Drop cached details that belong to another seed (or whose card is closed on a snapshot). */
+/** Details shown: the user's choice, or shown by default for a featured (active) slot. */
+export function isOpen(name: string): boolean {
+  return tracker.open[name] ?? !!tracker.featured[name]
+}
+
+/** Dashboard: the slots shown in the featured area; their details are loaded when they become featured. */
+export function setFeatured(names: string[]): void {
+  const before = tracker.featured
+  tracker.featured = Object.fromEntries(names.map((n) => [n, true]))
+  for (const n of names) if (!before[n] && isOpen(n) && !tracker.details[n]) void loadDetail(n)
+}
+
 function pruneDetails(snapshot: boolean): void {
   for (const n of Object.keys(tracker.details)) {
     const s = tracker.slots.find((x) => x.name === n)
     const d = tracker.details[n]
     const stale = !s || (s.seed_name != null && d.seed_name != null && s.seed_name !== d.seed_name)
-    if (stale || (snapshot && !tracker.open[n])) {
+    if (stale || (snapshot && !isOpen(n))) {
       delete tracker.details[n]
       detailSeq.set(n, (detailSeq.get(n) ?? 0) + 1) // invalidate in-flight requests
     }
@@ -93,9 +108,9 @@ export function dispatch(ev: TrackerEvent): void {
   if (ev.type === 'snapshot' || !before || before.items.received !== ev.slot.items.received || before.items.new !== ev.slot.items.new)
     scheduleRecent()
   pruneDetails(ev.type === 'snapshot')
-  if (ev.type === 'slot' && tracker.open[ev.slot.name]) scheduleDetail(ev.slot.name)
+  if (ev.type === 'slot' && isOpen(ev.slot.name)) scheduleDetail(ev.slot.name)
   if (ev.type === 'snapshot') {
-    for (const n of Object.keys(tracker.open)) if (tracker.open[n]) scheduleDetail(n)
+    for (const s of tracker.slots) if (isOpen(s.name)) scheduleDetail(s.name)
   }
 }
 
@@ -139,7 +154,7 @@ export async function loadDetail(name: string): Promise<void> {
 }
 
 export function toggleOpen(name: string): void {
-  const v = !tracker.open[name]
+  const v = !isOpen(name)
   tracker.open[name] = v
   if (v) {
     delete tracker.detailError[name]
@@ -169,7 +184,7 @@ export async function markSeen(name: string): Promise<void> {
   }
   clearTimeout(freezeTimer)
   freezeTimer = setTimeout(() => (tracker.seenFreeze = false), SEEN_FREEZE_MS)
-  if (tracker.open[name]) void loadDetail(name)
+  if (isOpen(name)) void loadDetail(name)
 }
 
 let es: EventSource | null = null

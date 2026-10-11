@@ -158,4 +158,4 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Tri au choix : « Conseillé » (ordre d'avant), « En logique » (nombre), « % en logique » (part du total du jeu) ; mémorisé sur l'appareil
 - [x] Barre de progression de chaque jeu : vert = checks faits, bleu = checks en logique
 - [x] Tests (backend `test_history.py`, front `dashboard.test.ts`), captures clair/sombre, mobile/bureau
-
+- [x] Jeu actif (location cochée dans les dernières minutes) en premier, dans un grand panneau sur toute la ligne, détails ouverts par défaut (masquables) ; plusieurs jeux actifs : le plus récent d'abord, quel que soit le tri ; fil réduit à 3 items sur téléphone

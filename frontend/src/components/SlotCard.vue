@@ -9,12 +9,12 @@ import { percent } from '../lib/dashboard'
 import { formatWhen } from '../lib/history'
 import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
-import { loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
+import { isOpen, loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
 import ProgressSplit from './ProgressSplit.vue'
 import SlotDetailPanel from './SlotDetailPanel.vue'
 import StatusDot from './StatusDot.vue'
 
-const props = defineProps<{ summary: SlotSummary }>()
+const props = defineProps<{ summary: SlotSummary; featured?: boolean }>()
 
 const badge = computed(() => logicBadge(props.summary))
 const active = computed(() => isActive(props.summary, tracker.nowMs, tracker.activeMinutes))
@@ -22,7 +22,7 @@ const badgeVariant = computed(() =>
   badge.value.variant === 'good' ? 'good' : badge.value.variant === 'muted' ? 'muted' : 'secondary',
 )
 const unavailable = computed(() => logicUnavailable(props.summary))
-const open = computed(() => !!tracker.open[props.summary.name])
+const open = computed(() => isOpen(props.summary.name))
 const detail = computed(() => tracker.details[props.summary.name])
 const logicCount = computed(() => (props.summary.logic.state === 'ok' && !props.summary.goal ? props.summary.logic.count : 0))
 const barLabel = computed(() => {
@@ -53,12 +53,12 @@ async function onSeen() {
 <template>
   <Card
     as="article"
-    :class="cn('min-w-0 gap-3 px-4 py-4', open && 'col-span-full', summary.goal && 'opacity-70')"
+    :class="cn('min-w-0 gap-3 px-4 py-4', (open || featured) && 'col-span-full', featured && 'featured border-good-border border-2 sm:px-6 sm:py-5', summary.goal && 'opacity-70')"
     :data-slot-name="summary.name"
   >
     <header class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <h2 class="text-lg leading-tight font-semibold break-words">{{ summary.game }}</h2>
+        <h2 :class="cn('leading-tight font-semibold break-words', featured ? 'text-2xl' : 'text-lg')">{{ summary.game }}</h2>
         <p class="text-muted-foreground text-sm break-words">
           {{ summary.name }}<span v-if="summary.owner" class="italic"> · {{ summary.owner }}</span>
         </p>

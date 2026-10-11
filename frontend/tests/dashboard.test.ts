@@ -56,3 +56,34 @@ describe('dashboard', () => {
     expect(w.text()).toContain('Aucun item reçu')
   })
 })
+
+describe('featured (active) games', () => {
+  it('go first, most recent first, the others keep their order', async () => {
+    const { splitFeatured } = await import('../src/lib/dashboard')
+    const now = Date.now()
+    const ago = (min: number) => now / 1000 - min * 60
+    const slots = [
+      mk({ name: 'a' }),
+      mk({ name: 'b', last_check_at: ago(20) }),
+      mk({ name: 'c', last_check_at: ago(90) }),
+      mk({ name: 'd', last_check_at: ago(2) }),
+      mk({ name: 'e', last_check_at: ago(1), goal: true }),
+    ]
+    const r = splitFeatured(slots, now, 30)
+    expect(r.featured.map((s) => s.name)).toEqual(['d', 'b'])
+    expect(r.rest.map((s) => s.name)).toEqual(['a', 'c', 'e'])
+  })
+
+  it('a featured game shows its details until the user hides them', async () => {
+    const { isOpen, setFeatured, toggleOpen } = await import('../src/stores/tracker')
+    tracker.open = {}
+    setFeatured(['x'])
+    expect(isOpen('x')).toBe(true)
+    expect(isOpen('y')).toBe(false)
+    toggleOpen('x')
+    expect(isOpen('x')).toBe(false)
+    setFeatured([])
+    tracker.open = {}
+    expect(isOpen('x')).toBe(false)
+  })
+})

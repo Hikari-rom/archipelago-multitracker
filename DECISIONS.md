@@ -143,4 +143,8 @@ Romain. Dans les tris « En logique » et « % en logique », les jeux sans logi
 et les égalités gardent l'ordre « Conseillé ». Les jeux terminés ne comptent pas dans le total « en logique ».
 Sur mobile (< 700 px), l'en-tête n'est plus collé en haut : avec les totaux et le tri, il prenait près de la moitié
 de l'écran.
+Jeu actif en grand panneau (demande de Romain) : tout jeu « actif » (réglage « Actif » de la page Configuration,
+30 min par défaut) passe en tête dans une carte pleine largeur, détails affichés d'emploi (locations en logique,
+nouveaux items, hints) et rafraîchis en direct. « Masquer les détails » reste respecté. Le fil des items reçus reste
+au-dessus (bandeau du haut demandé avant), réduit à 3 items sur téléphone pour garder le jeu actif visible.
 

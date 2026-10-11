@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { Inbox } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { FEED_LONG, FEED_SHORT, feedItems } from '../lib/dashboard'
+import { FEED_LONG, FEED_PHONE, FEED_SHORT, feedItems } from '../lib/dashboard'
 import { formatReceived, itemKind, receivedTitle } from '../lib/history'
 import type { SlotSummary } from '../lib/types'
 import { tracker } from '../stores/tracker'
@@ -24,7 +24,11 @@ const from = (sender: string, origin?: string) => (origin === 'server' ? 'donné
     </h2>
     <p v-if="!all.length" class="text-muted-foreground text-sm">Aucun item reçu depuis que l’app suit ces slots.</p>
     <ul v-else class="divide-y">
-      <li v-for="i in shown" :key="`${i.slot}:${i.index}`" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
+      <li
+        v-for="(i, k) in shown"
+        :key="`${i.slot}:${i.index}`"
+        :class="cn('flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm', !long && k >= FEED_PHONE && 'max-[699px]:hidden')"
+      >
         <span :class="cn('break-words', i.progression && 'font-bold', i.new && 'text-primary')">
           <span v-if="itemKind(i)" :class="cn('inline-block w-5 text-center', itemKind(i)!.cls)" :title="itemKind(i)!.label" :aria-label="itemKind(i)!.label">{{ itemKind(i)!.sym }}</span>
           {{ i.name }}
