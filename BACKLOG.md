@@ -152,3 +152,10 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
   entre réception d'items et `logic_settled` (service ou boucle du test).
 - [x] Satisfactory : options de placement absentes du slot_data et paliers 1–2 du Hub assouplis pour UT → yaml + slot_data obligatoire (`YAML_REQUIRED`) et adaptateur, 8/8 + e2e (2026-10-11)
 - [x] Relecture M15 (sous-agent Sonnet : pas de bug ; doc et robustesse corrigées) + commit/push + notif
+
+## M17 — Tableau de bord : totaux, fil des items reçus, tri, barres en deux couleurs (demandé par Romain le 2026-10-11)
+- [x] Bandeau en haut : totaux des slots du filtre joueur (checks faits / total, en logique, nouveaux items) avec une barre globale, et fil « Derniers items reçus » (5, ou les 30 derniers) tous jeux confondus (`GET /api/items/recent`)
+- [x] Tri au choix : « Conseillé » (ordre d'avant), « En logique » (nombre), « % en logique » (part du total du jeu) ; mémorisé sur l'appareil
+- [x] Barre de progression de chaque jeu : vert = checks faits, bleu = checks en logique
+- [x] Tests (backend `test_history.py`, front `dashboard.test.ts`), captures clair/sombre, mobile/bureau
+

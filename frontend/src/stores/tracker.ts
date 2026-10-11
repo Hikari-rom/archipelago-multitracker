@@ -4,7 +4,7 @@ import { roomFromLocation } from '../lib/config'
 import { clockOffset, loadActiveMinutes } from '../lib/history'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
-import type { SlotDetail, SseState } from '../lib/types'
+import type { RecentItem, SlotDetail, SseState } from '../lib/types'
 
 export const tracker = reactive({
   ...initialState(),
@@ -25,6 +25,8 @@ export const tracker = reactive({
   detailError: {} as Record<string, string>,
   /** true during the short window after "Marquer comme vu" (dashboard order frozen) */
   seenFreeze: false,
+  /** latest items received by the slots (dashboard feed), newest first */
+  recent: [] as RecentItem[],
 })
 
 export type View = 'dashboard' | 'config' | 'logs'
@@ -86,11 +88,31 @@ export async function refreshMeta(): Promise<void> {
 }
 
 export function dispatch(ev: TrackerEvent): void {
+  const before = ev.type === 'slot' ? tracker.slots.find((s) => s.name === ev.slot.name) : undefined
   Object.assign(tracker, reduce(tracker, ev))
+  if (ev.type === 'snapshot' || !before || before.items.received !== ev.slot.items.received || before.items.new !== ev.slot.items.new)
+    scheduleRecent()
   pruneDetails(ev.type === 'snapshot')
   if (ev.type === 'slot' && tracker.open[ev.slot.name]) scheduleDetail(ev.slot.name)
   if (ev.type === 'snapshot') {
     for (const n of Object.keys(tracker.open)) if (tracker.open[n]) scheduleDetail(n)
+  }
+}
+
+let recentTimer: ReturnType<typeof setTimeout> | undefined
+let recentSeq = 0
+/** Reload the feed of received items (grouped: items often arrive in bursts). */
+export function scheduleRecent(delay = 1000): void {
+  clearTimeout(recentTimer)
+  recentTimer = setTimeout(() => void loadRecent(), delay)
+}
+export async function loadRecent(): Promise<void> {
+  const seq = ++recentSeq
+  try {
+    const r = await api.getRecentItems()
+    if (seq === recentSeq && Array.isArray(r.items)) tracker.recent = r.items
+  } catch {
+    /* the feed keeps its last content; the next change retries */
   }
 }
 
@@ -139,6 +161,7 @@ export async function markSeen(name: string): Promise<void> {
   detailSeq.set(name, (detailSeq.get(name) ?? 0) + 1)
   const s = tracker.slots.find((x) => x.name === name)
   if (s) s.items.new = 0
+  tracker.recent.forEach((i) => i.slot === name && (i.new = false))
   const d = tracker.details[name]
   if (d) {
     d.items.new = 0
@@ -229,6 +252,7 @@ export async function start(): Promise<void> {
 export function stop(): void {
   clearTimeout(retryTimer)
   clearInterval(clock)
+  clearTimeout(recentTimer)
   backoff = 3000
   es?.close()
   es = null

@@ -93,5 +93,13 @@ async def test_live_history_and_activity(server, tmp_path):
             assert index >= before[name]  # items present at the first sync stay "before tracking"
         for name in SLOTS:
             assert all(i["received_at"] is None for i in service.detail(name)["items_list"][:before[name]])
+        # dashboard feed: the timed items sent by someone else, newest first, with their slot
+        recent = service.recent_items()
+        sent = {(n, i["index"]) for n in SLOTS for i in service.detail(n)["items_list"]
+                if i["received_at"] and i["origin"] not in ("own", "start")}
+        assert {(i["slot"], i["index"]) for i in recent} == sent
+        assert [i["received_at"] for i in recent] == sorted((i["received_at"] for i in recent), reverse=True)
+        assert all(i["game"] == service.summary(i["slot"])["game"] for i in recent)
+        assert len(service.recent_items(per_slot=1)) <= len(SLOTS)
     finally:
         await service.stop()

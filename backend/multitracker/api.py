@@ -244,6 +244,10 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 
+    @app.get("/api/items/recent")
+    async def recent_items(request: Request) -> dict[str, Any]:
+        return {"items": get_service(request).recent_items()}
+
     @app.get("/api/slots/{name:path}")
     async def slot_detail(name: str, request: Request) -> dict[str, Any]:
         service = get_service(request)

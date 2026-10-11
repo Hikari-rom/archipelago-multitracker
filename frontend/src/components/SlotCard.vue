@@ -4,12 +4,13 @@ import { Activity, ChevronRight, Star, TriangleAlert, Trophy } from '@lucide/vue
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { percent } from '../lib/dashboard'
 import { formatWhen } from '../lib/history'
 import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
+import ProgressSplit from './ProgressSplit.vue'
 import SlotDetailPanel from './SlotDetailPanel.vue'
 import StatusDot from './StatusDot.vue'
 
@@ -23,9 +24,11 @@ const badgeVariant = computed(() =>
 const unavailable = computed(() => logicUnavailable(props.summary))
 const open = computed(() => !!tracker.open[props.summary.name])
 const detail = computed(() => tracker.details[props.summary.name])
-const pct = computed(() => {
+const logicCount = computed(() => (props.summary.logic.state === 'ok' && !props.summary.goal ? props.summary.logic.count : 0))
+const barLabel = computed(() => {
   const c = props.summary.checks
-  return c.total > 0 ? Math.round((c.done / c.total) * 100) : 0
+  const done = `${c.done} checks faits sur ${c.total} (${percent(c.done, c.total)} %)`
+  return props.summary.logic.state === 'ok' ? `${done}, ${logicCount.value} en logique (${percent(logicCount.value, c.total)} %)` : done
 })
 const busy = ref(false)
 const seenError = ref('')
@@ -76,7 +79,7 @@ async function onSeen() {
         <span><strong>{{ summary.checks.done }}</strong> / {{ summary.checks.total }} checks</span>
         <span class="text-muted-foreground">{{ pluralize(summary.checks.remaining, 'restant', 'restants') }}</span>
       </div>
-      <Progress :model-value="pct" class="h-1.5" :aria-label="`Progression des checks : ${pct} %`" />
+      <ProgressSplit :done="summary.checks.done" :logic="logicCount" :total="summary.checks.total" :label="barLabel" />
     </div>
 
     <div class="flex flex-col items-start gap-2">

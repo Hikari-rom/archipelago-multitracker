@@ -1,5 +1,5 @@
 import type { ConfigResponse, DiscoverResponse } from '../lib/config'
-import type { Hint, SlotDetail, SlotSummary } from '../lib/types'
+import type { Hint, RecentItem, SlotDetail, SlotSummary } from '../lib/types'
 
 function slot(p: Partial<SlotSummary> & { name: string; game: string }): SlotSummary {
   const total = p.checks?.total ?? 100
@@ -83,6 +83,20 @@ export function mockDetail(name: string): SlotDetail {
       : [],
     players: {},
   }
+}
+
+export function mockRecent(): RecentItem[] {
+  const now = Date.now() / 1000
+  const names = ['Hookshot', 'Dash Refill', 'Bomb Trap', 'Fire', 'Progressive Sword', 'Rupee (50)', 'Heart Container']
+  return Array.from({ length: 12 }, (_, i) => {
+    const s = mockSlots[i % 4]
+    return {
+      index: 40 - i, name: names[i % names.length], sender: ['Alice_OoT', 'Bob_SM64', 'Carol_Hades'][i % 3],
+      own: false, origin: 'other' as const, location: 'Some Location ' + i, progression: i % 3 === 0,
+      useful: i % 7 === 6, trap: i % 7 === 2, new: i < 2, received_at: now - 40 - i * i * 400, received_after: null,
+      slot: s.name, game: s.game, owner: s.owner,
+    }
+  })
 }
 
 export const mockConfig: ConfigResponse = {

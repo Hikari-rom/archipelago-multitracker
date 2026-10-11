@@ -131,3 +131,16 @@ par sécurité. Le flux se ferme au bout de 30 min pour qu'aucune connexion ne s
 Les ≈ 430 lignes d'erreurs sans gravité écrites par Archipelago à chaque démarrage du worker (mondes core dont les
 dépendances ne sont pas installées, apworlds sans manifeste AP 0.7) sont résumées en une ligne : sinon le filtre
 « Erreurs » ne montrait que ça. Les autres messages passent tels quels.
+
+## D17 — Tableau de bord : fil des items reçus et tri au choix (2026-10-11, demandé par Romain)
+Le fil « Derniers items reçus » ne montre que les items envoyés par un autre joueur (ou le serveur) dont l'heure de
+réception est connue : ni les items trouvés dans son propre monde (on vient de les ramasser soi-même), ni
+l'inventaire de départ, ni les items reçus avant que l'app suive le slot. Le serveur garde les 20 derniers par slot
+(`/api/items/recent`), pour qu'un filtre sur un joueur ait toujours sa part ; le front filtre et en montre 5 (ou 30).
+Il est rechargé (regroupé sur 1 s) quand le nombre d'items reçus ou de nouveaux items d'un slot change.
+Tri « % en logique » : checks en logique / total du jeu (le même rapport que la partie bleue de la barre), choix de
+Romain. Dans les tris « En logique » et « % en logique », les jeux sans logique puis les jeux terminés vont à la fin
+et les égalités gardent l'ordre « Conseillé ». Les jeux terminés ne comptent pas dans le total « en logique ».
+Sur mobile (< 700 px), l'en-tête n'est plus collé en haut : avec les totaux et le tri, il prenait près de la moitié
+de l'écran.
+

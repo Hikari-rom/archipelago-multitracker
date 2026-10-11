@@ -46,6 +46,9 @@
   --pending: #d99a1c;
   --idle: #8a93a1;
   --prog: #b07800;
+  /* progress bars: checks done / checks in logic */
+  --bar-done: #2e9e5e;
+  --bar-logic: #2f6fd6;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -76,6 +79,8 @@
     --info: #1f3358;
     --info-foreground: #c4d8ff;
     --prog: #f0b93a;
+    --bar-done: #3fbf74;
+    --bar-logic: #6c9eff;
   }
 }
 :root[data-theme='dark'] {
@@ -106,6 +111,8 @@
   --info: #1f3358;
   --info-foreground: #c4d8ff;
   --prog: #f0b93a;
+  --bar-done: #3fbf74;
+  --bar-logic: #6c9eff;
 }
 
 @theme inline {
@@ -133,6 +140,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-good: var(--good);
+  --color-bar-done: var(--bar-done);
+  --color-bar-logic: var(--bar-logic);
   --color-good-foreground: var(--good-foreground);
   --color-good-border: var(--good-border);
   --color-warn: var(--warn);

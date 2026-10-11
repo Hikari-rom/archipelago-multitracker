@@ -92,6 +92,12 @@ Corps optionnel `{"count": N}` (par défaut : tout ce qui a été reçu). Répon
 
 Quand un `slot` arrive pour le slot affiché en détail, le front refait `GET /api/slots/{name}`.
 
+## `GET /api/items/recent` — fil « Derniers items reçus »
+`{"items": [...]}` : les derniers items reçus par les slots, du plus récent au plus ancien, au plus 20 par slot.
+Mêmes champs que `items_list` de `GET /api/slots/{name}`, plus `slot`, `game` et `owner`. Seulement les items
+envoyés par un autre joueur ou le serveur (`origin` `other` ou `server`) dont l'heure de réception est connue
+(`received_at` jamais nul). Le front le recharge quand `items.received` ou `items.new` d'un slot change.
+
 ## `GET /api/logs/stream?lines=300` (Server-Sent Events) — page « Journal »
 Suit `data/logs/app.log` (écrit par `scripts/app.sh`) comme `tail -f`. Lecture seule ; le mot de passe de la room est
 remplacé par `•••`.

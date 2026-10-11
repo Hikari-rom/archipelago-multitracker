@@ -5,7 +5,7 @@ import type { Hint, ItemEntry, SlotDetail } from '../lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { HISTORY_PAGE, formatReceived, historyItems, receivedTitle, type HistoryFilter } from '../lib/history'
+import { HISTORY_PAGE, formatReceived, historyItems, itemKind, receivedTitle, type HistoryFilter } from '../lib/history'
 import { tracker } from '../stores/tracker'
 import { cn } from '@/lib/utils'
 import Section from './Section.vue'
@@ -35,12 +35,7 @@ const mine = computed(() => sortFound(props.detail.hints_mine_elsewhere))
 const world = computed(() => sortFound(props.detail.hints_in_my_world))
 const groups = computed(() => groupLocations(props.detail.in_logic_locations))
 
-function kind(i: { progression: boolean; useful: boolean; trap: boolean }) {
-  if (i.trap) return { sym: '⚠', label: 'piège', cls: 'text-destructive' }
-  if (i.progression) return { sym: '★', label: 'progression', cls: 'text-prog' }
-  if (i.useful) return { sym: '◆', label: 'utile', cls: 'text-primary' }
-  return null
-}
+const kind = itemKind
 const from = (i: ItemEntry) =>
   i.origin === 'start'
     ? 'inventaire de départ'

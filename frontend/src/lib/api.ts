@@ -1,5 +1,5 @@
 import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
-import type { SlotDetail, SlotSummary } from './types'
+import type { RecentItem, SlotDetail, SlotSummary } from './types'
 
 export interface SlotsResponse {
   server: string
@@ -38,6 +38,7 @@ async function json<T>(r: Response): Promise<T> {
 export interface MockApi {
   getSlot(name: string): Promise<SlotDetail>
   markSeen(name: string): Promise<{ seen: number }>
+  recentItems?(): Promise<{ items: RecentItem[] }>
   getConfig?(): Promise<ConfigResponse>
   discover?(url: string, wake?: boolean): Promise<DiscoverResponse>
   putConfig?(b: PutConfigBody): Promise<unknown>
@@ -58,6 +59,9 @@ export const markSeen = (name: string) =>
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
   }).then((r) => json<{ seen: number }>(r))
+
+export const getRecentItems = () =>
+  mock?.recentItems ? mock.recentItems() : fetch('/api/items/recent').then((r) => json<{ items: RecentItem[] }>(r))
 
 const jsonInit = (method: string, body: unknown): RequestInit => ({
   method,

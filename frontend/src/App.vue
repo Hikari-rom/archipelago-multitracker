@@ -9,11 +9,14 @@ import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ConfigView from './components/ConfigView.vue'
 import LogsView from './components/LogsView.vue'
+import ProgressSplit from './components/ProgressSplit.vue'
+import RecentFeed from './components/RecentFeed.vue'
 import SlotCard from './components/SlotCard.vue'
 import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
 import { stableOrder } from './lib/order'
-import { sortSlots, summaryText } from './lib/logic'
+import { summaryText } from './lib/logic'
+import { SORT_LABELS, loadSortMode, percent, saveSortMode, sortBy, totals, type SortMode } from './lib/dashboard'
 import { applyTheme, loadTheme, nextTheme, saveTheme, themeLabel } from './lib/theme'
 import { wakeRoom } from './lib/api'
 import { refreshMeta, setView, tracker } from './stores/tracker'
@@ -26,7 +29,13 @@ watch(theme, (t) => {
   saveTheme(t)
 })
 
-const sorted = computed(() => sortSlots(tracker.slots, tracker.nowMs, tracker.activeMinutes))
+const sortMode = ref<SortMode>(loadSortMode())
+function pickSort(v: unknown) {
+  if (v !== 'auto' && v !== 'count' && v !== 'percent') return // clicking the active one again keeps it
+  sortMode.value = v
+  saveSortMode(v)
+}
+const sorted = computed(() => sortBy(sortMode.value, tracker.slots, tracker.nowMs, tracker.activeMinutes))
 let lastOrder: string[] = []
 const anyOpen = computed(() => Object.values(tracker.open).some(Boolean))
 const ordered = computed(() => {
@@ -66,7 +75,12 @@ async function onWake() {
 const themeIcon = computed(() => ({ auto: Monitor, light: Sun, dark: Moon })[theme.value])
 const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
-const summary = computed(() => summaryText(filterByOwner(tracker.slots, activeChip.value)))
+const selected = computed(() => filterByOwner(tracker.slots, activeChip.value))
+const summary = computed(() => summaryText(selected.value))
+const sums = computed(() => totals(selected.value))
+const sumsLabel = computed(
+  () => `${sums.value.done} checks faits sur ${sums.value.total} (${percent(sums.value.done, sums.value.total)} %), ${sums.value.inLogic} en logique`,
+)
 const showConfig = computed(() => tracker.view === 'config' || (tracker.loaded && !tracker.slots.length && !tracker.loadError))
 const showLogs = computed(() => tracker.view === 'logs' && !showConfig.value)
 const showDashboard = computed(() => !showConfig.value && !showLogs.value)
@@ -77,7 +91,7 @@ const sseLabel = computed(
 </script>
 
 <template>
-  <header class="bg-card/95 supports-[backdrop-filter]:bg-card/85 sticky top-0 z-10 border-b backdrop-blur">
+  <header class="bg-card/95 supports-[backdrop-filter]:bg-card/85 top-0 z-10 border-b backdrop-blur min-[700px]:sticky">
     <div class="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
       <div class="min-w-0 flex-[1_1_220px]">
         <h1 class="text-lg font-semibold">Archipelago Multitracker</h1>
@@ -127,11 +141,36 @@ const sseLabel = computed(
         <ToggleGroupItem v-for="c in chips" :key="c.key" :value="c.key" class="px-3">{{ c.label }}</ToggleGroupItem>
       </ToggleGroup>
     </div>
-    <div v-if="showDashboard" class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 pb-2.5">
+    <div v-if="showDashboard" class="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 pb-2.5">
       <Badge variant="good" class="px-2.5 py-0.5 text-sm font-semibold">{{ summary }}</Badge>
-      <div class="flex min-h-8 items-center gap-2">
-        <Checkbox id="hide-done" v-model="hideDone" />
-        <Label for="hide-done" class="font-normal">Masquer les jeux terminés</Label>
+      <div v-if="sums.total" class="totals flex min-w-0 flex-[1_1_260px] flex-col gap-1">
+        <p class="text-sm">
+          <strong class="tabular-nums">{{ sums.done }}</strong> / {{ sums.total }} checks
+          <span class="text-muted-foreground">({{ percent(sums.done, sums.total) }} %)</span>
+          · <strong class="text-bar-logic tabular-nums">{{ sums.inLogic }}</strong> en logique
+          <template v-if="sums.newItems">· <strong class="tabular-nums">{{ sums.newItems }}</strong> {{ sums.newItems === 1 ? 'nouvel item' : 'nouveaux items' }}</template>
+        </p>
+        <ProgressSplit :done="sums.done" :logic="sums.inLogic" :total="sums.total" :label="sumsLabel" class="max-w-md" />
+      </div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="flex items-center gap-2">
+          <span id="sort-label" class="text-muted-foreground text-sm">Tri</span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            :spacing="1"
+            :model-value="sortMode"
+            aria-labelledby="sort-label"
+            @update:model-value="pickSort"
+          >
+            <ToggleGroupItem v-for="(label, key) in SORT_LABELS" :key="key" :value="key" class="px-3">{{ label }}</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div class="flex min-h-8 items-center gap-2">
+          <Checkbox id="hide-done" v-model="hideDone" />
+          <Label for="hide-done" class="font-normal">Masquer les jeux terminés</Label>
+        </div>
       </div>
     </div>
   </header>
@@ -149,6 +188,7 @@ const sseLabel = computed(
           <span v-if="wakeError" class="text-destructive">{{ wakeError }}</span>
         </AlertDescription>
       </Alert>
+      <RecentFeed v-if="tracker.loaded && tracker.slots.length" :slots="selected" />
       <Alert v-if="tracker.loadError && !tracker.slots.length" variant="destructive" role="alert">
         <AlertDescription>Impossible de joindre le serveur : {{ tracker.loadError }}</AlertDescription>
       </Alert>

@@ -19,6 +19,7 @@ ITEM_FLAG_PROGRESSION, ITEM_FLAG_USEFUL, ITEM_FLAG_TRAP = 1, 2, 4
 HINT_STATUS = {0: "unspecified", 10: "no_priority", 20: "avoid", 30: "priority", 40: "found"}
 # Changes that can modify which locations are in logic.
 LOGIC_KINDS = {"items", "checks", "status", "synced"}
+RECENT_PER_SLOT = 20  # dashboard feed of received items: latest items kept per slot
 
 
 class Service:
@@ -350,34 +351,62 @@ class Service:
             "updated_at": st.updated_at,
         }
 
+    def _item_view(self, st, index: int, item: dict, time: tuple, seen: int) -> dict[str, Any]:
+        received_at, received_after = time
+        sender = item.get("player", 0)
+        flags = item.get("flags", 0) or 0
+        location = item.get("location")
+        location = -1 if location is None else location
+        origin = ("start" if location == -2 else "server" if location < 0 or sender == 0
+                  else "own" if sender == st.slot else "other")
+        return {
+            "index": index,
+            "name": self.datapackage.item_name(st.game, item.get("item")),
+            "sender": self.player_name(st, sender),
+            "own": sender == st.slot,
+            "origin": origin,  # start (inventaire de départ) | server | own | other
+            "location": self.datapackage.location_name(self.player_game(st, sender), item.get("location"))
+            if location >= 0 else None,
+            "progression": bool(flags & ITEM_FLAG_PROGRESSION),
+            "useful": bool(flags & ITEM_FLAG_USEFUL),
+            "trap": bool(flags & ITEM_FLAG_TRAP),
+            "new": index >= seen,
+            "received_at": received_at,  # null: before the app tracked this slot
+            "received_after": received_after,  # set: received between received_after and received_at
+        }
+
+    def recent_items(self, per_slot: int = RECENT_PER_SLOT) -> list[dict[str, Any]]:
+        """Latest items sent to the slots by other players (or the server), newest first, for the dashboard feed.
+
+        Only items with a known reception time; items found in the slot's own world and the start inventory are
+        left out. At most `per_slot` per slot, so a filter on one player still gets its share.
+        """
+        out = []
+        for name, tracker in self.trackers.items():
+            st = tracker.state
+            if not st.seed_name:
+                continue
+            times = self.history.times(st.seed_name, name)
+            seen = self.seen_count(name)
+            cfg = self.slot_configs[name]
+            kept = 0
+            for index in range(min(len(st.items), len(times)) - 1, -1, -1):
+                if kept >= per_slot or times[index][0] is None:
+                    break
+                view = self._item_view(st, index, st.items[index], times[index], seen)
+                if view["origin"] in ("own", "start"):
+                    continue
+                out.append({**view, "slot": name, "game": st.game or cfg.game, "owner": cfg.owner})
+                kept += 1
+        out.sort(key=lambda i: (-i["received_at"], i["slot"], -i["index"]))
+        return out
+
     def detail(self, name: str) -> dict[str, Any]:
         st = self.trackers[name].state
         seen = self.seen_count(name)
         times = self.history.times(st.seed_name, name) if st.seed_name else []
-        items = []
-        for index, item in enumerate(st.items):
-            received_at, received_after = times[index] if index < len(times) else (None, None)
-            sender = item.get("player", 0)
-            flags = item.get("flags", 0) or 0
-            location = item.get("location")
-            location = -1 if location is None else location
-            origin = ("start" if location == -2 else "server" if location < 0 or sender == 0
-                      else "own" if sender == st.slot else "other")
-            items.append({
-                "index": index,
-                "name": self.datapackage.item_name(st.game, item.get("item")),
-                "sender": self.player_name(st, sender),
-                "own": sender == st.slot,
-                "origin": origin,  # start (inventaire de départ) | server | own | other
-                "location": self.datapackage.location_name(self.player_game(st, sender), item.get("location"))
-                if location >= 0 else None,
-                "progression": bool(flags & ITEM_FLAG_PROGRESSION),
-                "useful": bool(flags & ITEM_FLAG_USEFUL),
-                "trap": bool(flags & ITEM_FLAG_TRAP),
-                "new": index >= seen,
-                "received_at": received_at,  # null: before the app tracked this slot
-                "received_after": received_after,  # set: received between received_after and received_at
-            })
+        items = [self._item_view(st, index, item, times[index] if index < len(times) else (None, None), seen)
+                 for index, item in enumerate(st.items)]
         mine_elsewhere, in_my_world = self._hints(name)
         hinted = {h["location_id"]: h for h in in_my_world if not h["found"]}
         logic = self.logic.get(name, LogicResult("pending"))

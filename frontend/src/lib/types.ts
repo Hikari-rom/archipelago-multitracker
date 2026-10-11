@@ -41,6 +41,14 @@ export interface ItemEntry {
   received_after?: number | null
 }
 
+/** Item of the dashboard feed (/api/items/recent): an item of a slot, with that slot. */
+export interface RecentItem extends ItemEntry {
+  slot: string
+  game: string
+  owner?: string | null
+  received_at: number
+}
+
 export interface Hint {
   item: string
   item_id?: number

@@ -1,5 +1,13 @@
 import type { ItemEntry } from './types'
 
+/** Symbol shown before an item name: trap, progression or useful. */
+export function itemKind(i: { progression: boolean; useful: boolean; trap: boolean }) {
+  if (i.trap) return { sym: '⚠', label: 'piège', cls: 'text-destructive' }
+  if (i.progression) return { sym: '★', label: 'progression', cls: 'text-prog' }
+  if (i.useful) return { sym: '◆', label: 'utile', cls: 'text-primary' }
+  return null
+}
+
 export type HistoryFilter = 'all' | 'progression' | 'useful'
 export const HISTORY_PAGE = 50
 
