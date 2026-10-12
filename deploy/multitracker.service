@@ -1,9 +1,10 @@
 # systemd *user* unit for Archipelago Multitracker.
-# Install (as romain, no root):
-#   mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/
+# Install (no root), from the repository root; the sed puts this checkout's path instead of the Pi's one:
+#   mkdir -p ~/.config/systemd/user
+#   sed "s#/home/romain/archipelago-multitracker#$PWD#g" deploy/multitracker.service > ~/.config/systemd/user/multitracker.service
 #   systemctl --user daemon-reload && systemctl --user enable --now multitracker
 # To keep it running after logout and start it at boot (needs root once):
-#   sudo loginctl enable-linger romain
+#   sudo loginctl enable-linger "$USER"
 # Do not run it together with scripts/app.sh (same port): `scripts/app.sh stop` first.
 # Logs: journalctl --user -u multitracker -f
 [Unit]

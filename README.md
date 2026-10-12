@@ -10,23 +10,185 @@ Pour chaque slot :
   mises en avant. La logique vient d'[Universal Tracker](https://github.com/FarisTheAncient/Archipelago/tree/tracker)
   piloté en headless. Jeux validés : voir [`docs/COMPAT.md`](docs/COMPAT.md).
 
+Et aussi : fil des derniers items reçus, tri des jeux (conseillé, nombre ou % de checks en logique), jeu en cours mis
+en avant, page **Objectifs** (le but de chaque jeu et où tu en es), page **Configuration** (room, yamls, slots) et
+page **Journal** (logs en direct).
+
 **Zéro spoiler** : l'app ne sait que ce que sait un tracker classique (items reçus, checks, hints, `slot_data`,
 datapackage et tes yamls). Elle se connecte en **lecture seule** (tag `Tracker`) : elle n'envoie jamais de check,
 de message ni de demande de hint.
 
-## Installation (Raspberry Pi / Linux, sans root)
+## Installation en local, pas à pas
 
-Prérequis : Python 3.11 à 3.13 avec `venv`, Node 20+, git.
+L'installation ne demande pas les droits root (une fois les prérequis présents) et n'écrit rien hors du dossier du
+projet : Archipelago, l'environnement Python, les apworlds et les modules Node restent dedans. Pour tout
+désinstaller, il suffit de supprimer le dossier (voir [Désinstaller](#désinstaller)).
+
+### 1. Prérequis
+
+| | |
+|---|---|
+| **Système** | Linux. Testé sur un Raspberry Pi 5 (8 Go) sous Raspberry Pi OS / Debian 13, 64 bits. Une autre distribution Linux (x86_64 ou ARM 64 bits) devrait marcher. macOS et Windows (via WSL 2) ne sont pas testés. |
+| **Python** | 3.11, 3.12 ou 3.13, avec le module `venv`. Pas 3.14 : le script d'installation le refuse (non testé avec Archipelago 0.6.7). |
+| **Node.js** | 20 ou plus récent, avec `npm` (pour construire l'interface). |
+| **Outils** | `git`, `curl`, `ss` (paquet `iproute2`) et `flock` (paquet `util-linux`), présents d'office sur Debian. |
+| **Disque** | ~400 Mo une fois installé (dont 200 Mo de modules Node), plus les données de l'app (quelques Mo). |
+| **Mémoire** | 2 Go libres conseillés : le moteur de logique régénère les mondes des jeux dans un process à part. |
+| **Réseau** | Accès à GitHub (Archipelago, apworlds), PyPI et npm pendant l'installation ; à la room ensuite. |
+
+Vérifier ce qui est déjà là :
 
 ```bash
-git clone https://github.com/Hikari-rom/archipelago-multitracker.git
-cd archipelago-multitracker
-bash scripts/bootstrap.sh
+python3 --version          # 3.11 à 3.13
+python3 -m venv --help > /dev/null && echo "venv OK"
+node --version             # v20 ou plus
+git --version
 ```
 
-`bootstrap.sh` est idempotent : il clone Archipelago 0.6.7 dans `vendor/`, crée `.venv/`, installe les dépendances
-(sans l'interface graphique kivy), télécharge les apworlds et Universal Tracker, puis construit le front.
-Rien n'est installé hors du dossier du projet.
+Installer ce qui manque, sur Debian / Ubuntu / Raspberry Pi OS :
+
+```bash
+sudo apt install git curl python3 python3-venv
+```
+
+Pour Node, la version des dépôts Debian est parfois trop ancienne. Sans root, [nvm](https://github.com/nvm-sh/nvm)
+l'installe dans ton dossier personnel (c'est ce qui est utilisé sur le Pi) :
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+# ferme et rouvre le terminal, puis :
+nvm install 24
+```
+
+Si ta distribution n'a qu'un Python 3.14 ou plus récent, installe un 3.13 à côté (par exemple avec
+[uv](https://docs.astral.sh/uv/) : `uv python install 3.13`) et indique-le au script d'installation avec
+`PYTHON=/chemin/vers/python3.13` (étape 3).
+
+### 2. Récupérer le code
+
+Le dépôt GitHub est privé : il faut un compte GitHub qui y a accès (celui de Romain, ou un compte invité comme
+collaborateur), avec une clé SSH ajoutée à ce compte (ou `gh auth login` puis `gh repo clone Hikari-rom/archipelago-multitracker`).
+
+```bash
+git clone git@github.com:Hikari-rom/archipelago-multitracker.git
+cd archipelago-multitracker
+```
+
+### 3. Installer
+
+```bash
+bash scripts/bootstrap.sh
+# ou, pour choisir l'interpréteur : PYTHON=/usr/bin/python3.13 bash scripts/bootstrap.sh
+```
+
+Compter 1 à 2 minutes sur un Pi 5 avec une bonne connexion (surtout des téléchargements), plus si pip et npm
+n'ont encore rien en cache. Le script peut être relancé sans risque : il ne refait
+que ce qui manque. Il :
+1. clone Archipelago 0.6.7 dans `vendor/Archipelago` ;
+2. crée l'environnement Python `.venv/` et y installe les dépendances d'Archipelago (sans l'interface graphique kivy)
+   et celles de l'app ;
+3. télécharge les apworlds des jeux et Universal Tracker dans `vendor/Archipelago/custom_worlds/`, aux versions
+   notées dans `config/apworlds.lock.yaml` (vérifiées par sha256) ;
+4. installe les modules Node de `frontend/` et construit l'interface (`frontend/dist/`).
+
+Il se termine par `== Terminé`. Pour vérifier que tous les apworlds se chargent :
+
+```bash
+.venv/bin/python scripts/check_apworlds.py   # ~6 min sur un Pi 5 : il charge chaque monde
+```
+
+Chaque ligne doit commencer par `OK`.
+
+Les téléchargements d'apworlds passent par l'API GitHub, limitée à 60 requêtes par heure sans compte : c'est assez
+pour une installation. Si tu relances souvent, exporte un jeton (`GITHUB_TOKEN=…`) ou connecte `gh`, que le script
+utilise tout seul.
+
+### 4. Créer le fichier de configuration
+
+L'app a besoin d'un fichier `config/room.yaml` pour démarrer. Il n'est jamais commité, puisqu'il contiendra le mot de
+passe de la room. Pars de l'exemple :
+
+```bash
+cp config/room.example.yaml config/room.yaml
+```
+
+Tu peux le laisser tel quel : le lien de la room et le mot de passe se règlent dans l'interface (étape 6). Ou bien
+remplis tout de suite `room_url` (la page `https://archipelago.gg/room/…`) et `password`. Pour un serveur hors
+archipelago.gg, remplace `room_url` par `server: "hôte:port"`.
+
+### 5. Lancer
+
+```bash
+scripts/app.sh start
+```
+
+L'app tourne en arrière-plan et répond sur `http://<ip-de-la-machine>:42753` (`http://localhost:42753` depuis la
+machine elle-même). Les autres commandes :
+
+```bash
+scripts/app.sh status    # lancée ou pas
+scripts/app.sh logs      # suivre le log (data/logs/app.log), Ctrl+C pour sortir
+scripts/app.sh restart
+scripts/app.sh stop
+```
+
+Variables utiles : `MT_PORT=8080 scripts/app.sh start` pour un autre port, `MT_HOST=127.0.0.1` pour n'accepter que
+la machine elle-même (voir [Sécurité](#accès-depuis-un-autre-appareil-et-sécurité)).
+
+### 6. Choisir les slots
+
+Ouvre l'app : tant qu'aucun slot n'est suivi, elle affiche directement la page **Configuration** (détails dans
+[Configurer la room](#configurer-la-room)). Avec le fichier d'exemple, elle signale « room introuvable » : c'est
+normal.
+1. colle le lien de la room, « Découvrir les slots », mets le mot de passe et « Tester la connexion » ;
+2. importe tes yamls (« Importer des yamls ») puis « Associer automatiquement » : certains jeux en ont besoin pour
+   calculer la logique ;
+3. coche tes slots et « Enregistrer ».
+
+Le tableau de bord se remplit dès que l'app est connectée. Si la room dort, il affiche « Room endormie » : l'app se
+reconnecte toute seule quand quelqu'un la réveille, ou tout de suite avec le bouton « Réveiller maintenant ».
+
+### Mettre à jour l'app
+
+```bash
+scripts/app.sh stop
+git pull
+bash scripts/bootstrap.sh     # nouvelles dépendances, apworlds du lock, interface reconstruite
+scripts/app.sh start
+```
+
+Ta configuration (`config/room.yaml`, `config/players/`) et tes données (`data/` : dernière visite, historique) sont
+gardées.
+
+### Désinstaller
+
+```bash
+scripts/app.sh stop
+systemctl --user disable --now multitracker   # seulement si tu as installé le service (plus bas)
+rm ~/.config/systemd/user/multitracker.service  # idem
+cd .. && rm -rf archipelago-multitracker
+```
+
+Node installé avec nvm reste dans `~/.nvm` ; Python et ses paquets étaient dans le dossier supprimé.
+
+### En cas de problème
+
+| Symptôme | Cause et solution |
+|---|---|
+| `Python 3.11 à 3.13 requis` | Mauvaise version de Python : relance avec `PYTHON=/chemin/vers/python3.13 bash scripts/bootstrap.sh`. |
+| `No module named venv` / `ensurepip is not available` | Il manque `python3-venv` (`sudo apt install python3-venv`). Supprime ensuite le dossier `.venv/` à moitié créé avant de relancer. |
+| `npm: command not found` | Node n'est pas installé, ou nvm n'est pas chargé dans ce terminal (rouvre-le). |
+| `vendor/Archipelago est sur '…', attendu 0.6.7` | Le dossier `vendor/Archipelago` vient d'ailleurs : supprime-le et relance le bootstrap. |
+| Erreur `403` / `rate limit` pendant les apworlds | Limite de l'API GitHub atteinte : attends une heure, ou exporte `GITHUB_TOKEN`. |
+| `✗ config/room.yaml manquant` | Étape 4 pas faite. |
+| `✗ le port 42753 est déjà utilisé` | Une autre instance tourne (le service systemd ?), ou choisis un autre port avec `MT_PORT`. |
+| `✗ l'app s'est arrêtée` | Les 20 dernières lignes du log sont affichées ; le log complet est dans `data/logs/app.log`. |
+| Avertissements `_speedups not available` et `7 not loaded (missing dependencies)` dans le log | Sans effet : ce sont des jeux d'Archipelago que l'app n'utilise pas, et une optimisation facultative. |
+| La page ne s'ouvre pas depuis un autre appareil | Pare-feu de la machine, ou app lancée avec `MT_HOST=127.0.0.1`. |
+| « Room endormie » en permanence | Personne n'a ouvert la room depuis plus de 2 h : bouton « Réveiller maintenant », ou ouvre la page de la room. |
+| Un jeu sans « en logique » | Logique pas validée pour ce jeu, ou yaml manquant : le diagnostic est sous le slot dans Configuration, et la liste des jeux dans [`docs/COMPAT.md`](docs/COMPAT.md). |
+
+Le log est aussi consultable dans l'app, page **Journal**.
 
 ## Configurer la room
 
@@ -67,27 +229,27 @@ slots:
 - Si ton yaml contient des options aléatoires (`random`, poids), l'app reprend la valeur réellement tirée quand
   le jeu la met dans son `slot_data`, sinon la carte prévient que la logique peut être approximative.
 
-## Lancer
+## Démarrage automatique
+
+Pour que l'app démarre avec la machine, un service systemd *utilisateur* est fourni (`deploy/multitracker.service`).
+Il contient le chemin du projet sur le Pi de Romain ; la commande `sed` ci-dessous le remplace par le tien :
 
 ```bash
-scripts/app.sh start     # en arrière-plan, sur http://<ip-du-pi>:42753
-scripts/app.sh status
-scripts/app.sh logs
-scripts/app.sh stop
-```
-
-Démarrage automatique (service utilisateur systemd, voir `deploy/multitracker.service`) :
-
-```bash
-mkdir -p ~/.config/systemd/user && cp deploy/multitracker.service ~/.config/systemd/user/
+scripts/app.sh stop        # le service et scripts/app.sh utilisent le même port : jamais les deux à la fois
+mkdir -p ~/.config/systemd/user
+sed "s#/home/romain/archipelago-multitracker#$PWD#g" deploy/multitracker.service > ~/.config/systemd/user/multitracker.service
 systemctl --user daemon-reload && systemctl --user enable --now multitracker
-sudo loginctl enable-linger romain   # une fois : garder le service actif sans session ouverte
-journalctl --user -u multitracker -f # logs du service
+sudo loginctl enable-linger "$USER"   # une seule fois (root) : garder le service actif sans session ouverte
+journalctl --user -u multitracker -f  # logs du service
 ```
 
-N'utilise pas `scripts/app.sh` et le service en même temps (même port) : `scripts/app.sh stop` avant d'activer le service.
+Le service écoute sur le port 42753 de toutes les interfaces. Pour le désactiver :
+`systemctl --user disable --now multitracker`.
 
-Depuis le téléphone : `http://<ip-tailscale-du-pi>:42753` (l'app écoute sur toutes les interfaces).
+## Accès depuis un autre appareil et sécurité
+
+Depuis un téléphone ou un autre ordinateur du réseau : `http://<ip-de-la-machine>:42753` (avec Tailscale :
+`http://<ip-tailscale-de-la-machine>:42753`). L'app écoute sur toutes les interfaces.
 
 Derrière un reverse proxy (ex. `tailscale serve`) qui change l'en-tête `Host`, autorise son origine pour les
 actions d'écriture : `MT_ALLOWED_ORIGINS=https://pi.ton-tailnet.ts.net scripts/app.sh restart`.

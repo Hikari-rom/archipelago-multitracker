@@ -92,6 +92,10 @@
   d'un point de pourcentage, jamais avancer). Lethal Company et Satisfactory aussi (adaptateurs). Non activés : Factorio (impossible
   sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
+- 2026-10-13 : README réécrit avec la procédure d'installation complète (prérequis, bootstrap, config, lancement,
+  mise à jour, désinstallation, dépannage). Procédure rejouée sur un clone neuf : bootstrap 1 min 10, ~400 Mo,
+  `check_apworlds.py` tout OK, app lancée avec le `room.example.yaml` (ouvre la page Configuration).
+
 ## À faire par Romain
 - **Room vérifiée le 2026-10-11 vers 10 h 30** : 22 slots connectés, logique OK pour 21 jeux (OoT indisponible).
   À confirmer en jeu : Kingdom Hearts Birth by Sleep affiche 0 check en logique avec 11 checks faits.

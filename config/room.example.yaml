@@ -1,7 +1,10 @@
-# Copier ce fichier en config/room.yaml (gitignoré) et le remplir.
-server: "archipelago.gg:38281"
+# Copier ce fichier en config/room.yaml (gitignoré : il contient le mot de passe) et le remplir.
+# Le minimum pour démarrer est room_url (ou server) ; les slots se choisissent ensuite dans la page Configuration.
+room_url: "https://archipelago.gg/room/XXXXXXXXXXXXXXXXXXXXXX"
+# server: "mon-serveur.example:38281"   # à la place de room_url, pour un serveur hors archipelago.gg
 password: ""
-slots:
-  - name: "Romain_Celeste"
-    game: "Celeste (Open World)"
-    yaml: "config/players/celeste.yaml"   # optionnel, utile pour la logique
+wake_room: false
+slots: []
+#  - name: "Romain_Celeste"                # nom exact du slot
+#    game: "Celeste (Open World)"          # optionnel (le serveur le donne)
+#    yaml: "config/players/celeste.yaml"   # optionnel, utile pour la logique de certains jeux
