@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import { Activity, ChevronRight, Star, TriangleAlert, Trophy } from '@lucide/vue'
+import { Activity, ChevronRight, Flag, Star, TriangleAlert, Trophy } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { percent } from '../lib/dashboard'
+import { counterText, mainCounter } from '../lib/goals'
 import { formatWhen } from '../lib/history'
 import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
@@ -24,6 +25,7 @@ const badgeVariant = computed(() =>
 const unavailable = computed(() => logicUnavailable(props.summary))
 const open = computed(() => isOpen(props.summary.name))
 const detail = computed(() => tracker.details[props.summary.name])
+const goalCounter = computed(() => mainCounter(props.summary.objective))
 const logicCount = computed(() => (props.summary.logic.state === 'ok' && !props.summary.goal ? props.summary.logic.count : 0))
 const barLabel = computed(() => {
   const c = props.summary.checks
@@ -81,6 +83,16 @@ async function onSeen() {
       </div>
       <ProgressSplit :done="summary.checks.done" :logic="logicCount" :total="summary.checks.total" :label="barLabel" />
     </div>
+
+    <p v-if="summary.objective && !summary.goal" class="goal-line flex items-start gap-1.5 text-sm">
+      <Flag class="text-muted-foreground mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+      <span class="min-w-0 break-words">
+        <span class="text-muted-foreground">But :</span> {{ summary.objective.summary }}
+        <template v-if="goalCounter">
+          · <span class="text-muted-foreground">{{ goalCounter.label }}</span> <strong class="tabular-nums">{{ counterText(goalCounter) }}</strong>
+        </template>
+      </span>
+    </p>
 
     <div class="flex flex-col items-start gap-2">
       <Badge :variant="badgeVariant" :class="cn('rounded-lg px-3 py-1.5 text-sm whitespace-normal', badge.variant === 'good' && 'font-semibold')" :title="badge.secondary">

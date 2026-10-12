@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import ProgressSplit from '../src/components/ProgressSplit.vue'
 import RecentFeed from '../src/components/RecentFeed.vue'
 import { barParts, feedItems, sortBy, totals } from '../src/lib/dashboard'
@@ -76,6 +76,7 @@ describe('featured (active) games', () => {
 
   it('a featured game shows its details until the user hides them', async () => {
     const { isOpen, setFeatured, toggleOpen } = await import('../src/stores/tracker')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
     tracker.open = {}
     setFeatured(['x'])
     expect(isOpen('x')).toBe(true)
@@ -85,5 +86,6 @@ describe('featured (active) games', () => {
     setFeatured([])
     tracker.open = {}
     expect(isOpen('x')).toBe(false)
+    vi.unstubAllGlobals()
   })
 })

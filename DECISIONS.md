@@ -148,3 +148,13 @@ Jeu actif en grand panneau (demande de Romain) : tout jeu « actif » (réglage 
 nouveaux items, hints) et rafraîchis en direct. « Masquer les détails » reste respecté. Le fil des items reçus reste
 au-dessus (bandeau du haut demandé avant), réduit à 3 items sur téléphone pour garder le jeu actif visible.
 
+## D18 — Objectifs : un descripteur par jeu, slot_data d'abord (2026-10-12, demandé par Romain)
+Les options d'objectif viennent du slot_data quand le monde les y met (c'est ce que le générateur a vraiment utilisé :
+sur la vraie room, Jak and Daxter a 20/45/72 cellules et KH2 35 Lucky Emblems, alors que les yamls du dossier disent
+25/50/80 et 40), sinon du yaml du joueur (valeurs aléatoires ignorées). L'avancement ne vient que de ce qu'un tracker
+voit : items reçus (Lucky Emblems, Power Stars, badges…), locations cochées (boss de donjon, arbres d'Ori, decks
+gagnés à Balatro…). Les étapes qui sont des événements du jeu sans location (boss final de SM64, récompenses de
+donjon d'OoT, victoires de Slay the Spire) sont marquées « invisibles » ; la dernière étape, le but lui-même, vient
+du statut envoyé par le serveur. Le % de la page est une estimation (moyenne des compteurs et des étapes visibles).
+Un jeu sans descripteur affiche seulement « But atteint » ou non.
+

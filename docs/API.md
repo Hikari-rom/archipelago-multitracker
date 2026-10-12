@@ -34,6 +34,13 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
     "computed_at": 1791593223.0,
     "seconds": 0.42
   },
+  "objective": {                        // objectif du slot (backend/multitracker/goals.py), null si jeu non décrit
+    "summary": "40 fraises, puis The Summit A",
+    "counters": [{"label": "Strawberry", "current": 12, "target": 40}],  // + "detail" optionnel
+    "steps": [{"label": "Finir The Summit A (The Summit A - Level Clear)", "done": false}],  // done null : invisible pour un tracker
+    "note": null,                       // explication optionnelle
+    "source": "slot_data"               // slot_data | yaml | slot_data + yaml
+  },
   "updated_at": 1791593222.5,
   "last_check_at": 1791593100.0         // dernier check de ce slot vu par l'app (epoch), null avant le premier
 }

@@ -4,11 +4,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections import Counter
 from typing import Any
 
 from .ap.tracker import SlotTracker
 from .config import RoomConfig, SlotConfig
 from .datapackage import DataPackageCache
+from .goals import GoalContext, describe as describe_goal, yaml_options
 from .history import History
 from .logic import LogicEngine, LogicRequest, LogicResult, NullLogicEngine
 from .store import Store
@@ -348,8 +350,29 @@ class Service:
             "goal": st.goal_reached,
             "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
             "logic": logic.to_json(),
+            "objective": self.objective(name),
             "updated_at": st.updated_at,
         }
+
+    def objective(self, name: str) -> dict[str, Any] | None:
+        """Goal of the slot and how far it is (see goals.py), or None when its game has no description yet."""
+        st = self.trackers[name].state
+        cfg = self.slot_configs[name]
+        game = st.game or cfg.game
+        if not game or not st.synced:
+            return None
+        names = self.datapackage.location_name
+        ctx = GoalContext(
+            game=game, slot_data=st.slot_data or {}, yaml=yaml_options(cfg.yaml, game),
+            received=Counter(self.datapackage.item_name(game, i.get("item")) for i in st.items),
+            checked={names(game, loc) for loc in st.checked},
+            locations={names(game, loc) for loc in st.checked | st.missing},
+            goal=st.goal_reached, checked_ids=set(st.checked))
+        try:
+            return describe_goal(ctx)
+        except Exception:  # noqa: BLE001  a describer must never break the slot's summary
+            log.exception("goal description failed for %s (%s)", name, game)
+            return None
 
     def _item_view(self, st, index: int, item: dict, time: tuple, seen: int) -> dict[str, Any]:
         received_at, received_after = time

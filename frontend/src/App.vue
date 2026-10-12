@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Monitor, Moon, ScrollText, Settings, Sun } from '@lucide/vue'
+import { Flag, Monitor, Moon, ScrollText, Settings, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import ConfigView from './components/ConfigView.vue'
+import GoalsView from './components/GoalsView.vue'
 import LogsView from './components/LogsView.vue'
 import ProgressSplit from './components/ProgressSplit.vue'
 import RecentFeed from './components/RecentFeed.vue'
@@ -89,7 +90,8 @@ const sumsLabel = computed(
 )
 const showConfig = computed(() => tracker.view === 'config' || (tracker.loaded && !tracker.slots.length && !tracker.loadError))
 const showLogs = computed(() => tracker.view === 'logs' && !showConfig.value)
-const showDashboard = computed(() => !showConfig.value && !showLogs.value)
+const showGoals = computed(() => tracker.view === 'goals' && !showConfig.value)
+const showDashboard = computed(() => !showConfig.value && !showLogs.value && !showGoals.value)
 const roomHref = computed(() => (/^https?:\/\//.test(tracker.roomUrl) ? tracker.roomUrl : ''))
 const sseLabel = computed(
   () => ({ open: 'En direct', connecting: 'Connexion…', reconnecting: 'Reconnexion…' })[tracker.sse],
@@ -123,6 +125,15 @@ const sseLabel = computed(
       <Button
         variant="outline"
         size="sm"
+        aria-label="Objectifs"
+        :aria-pressed="showGoals"
+        @click="setView(showGoals ? 'dashboard' : 'goals')"
+      >
+        <Flag aria-hidden="true" /> Objectifs
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         aria-label="Journal"
         :aria-pressed="showLogs"
         @click="setView(showLogs ? 'dashboard' : 'logs')"
@@ -133,7 +144,7 @@ const sseLabel = computed(
         <component :is="themeIcon" aria-hidden="true" /> Thème : {{ themeLabel[theme] }}
       </Button>
     </div>
-    <div v-if="showDashboard && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
+    <div v-if="(showDashboard || showGoals) && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
       <ToggleGroup
         type="single"
         variant="outline"
@@ -184,6 +195,7 @@ const sseLabel = computed(
   <main class="mx-auto max-w-[1400px] px-4 pt-3.5 pb-10">
     <ConfigView v-if="showConfig" />
     <LogsView v-else-if="showLogs" />
+    <GoalsView v-else-if="showGoals" :slots="selected" />
     <template v-else>
       <Alert v-if="tracker.roomError" class="bg-warn text-warn-foreground mb-3 border-transparent" role="alert">
         <AlertDescription class="text-warn-foreground flex flex-wrap items-center gap-x-3 gap-y-2">

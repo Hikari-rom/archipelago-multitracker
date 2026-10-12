@@ -1,8 +1,8 @@
 # Progression
 
 ## État actuel (5 lignes)
-1. M0 à M17 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
-   M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu).
+1. M0 à M18 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
+   M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs »).
 2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (elle s'endort quand personne ne joue ; l'app se reconnecte à son réveil).
 3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 21 jeux sur 22, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.

@@ -1,6 +1,31 @@
 export type SlotStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'
 export type LogicState = 'ok' | 'unavailable' | 'pending' | 'error'
 
+export interface GoalCounter {
+  label: string
+  current: number
+  target: number
+  /** what is counted, when the label is short */
+  detail?: string
+}
+
+export interface GoalStep {
+  label: string
+  /** null: not visible to a tracker (an event of the game) */
+  done: boolean | null
+}
+
+/** Goal of the slot and how far it is (backend goals.py); null when the game has no description yet. */
+export interface Objective {
+  summary: string
+  counters: GoalCounter[]
+  steps: GoalStep[]
+  /** explanation shown once under the summary */
+  note?: string
+  /** where the options came from: "slot_data", "yaml" or "slot_data + yaml" */
+  source: string | null
+}
+
 export interface SlotSummary {
   name: string
   game: string
@@ -21,6 +46,7 @@ export interface SlotSummary {
     computed_at?: number | null
     seconds?: number | null
   }
+  objective?: Objective | null
   updated_at?: number
 }
 

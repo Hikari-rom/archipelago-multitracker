@@ -159,3 +159,10 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Barre de progression de chaque jeu : vert = checks faits, bleu = checks en logique
 - [x] Tests (backend `test_history.py`, front `dashboard.test.ts`), captures clair/sombre, mobile/bureau
 - [x] Jeu actif (location cochée dans les dernières minutes) en premier, dans un grand panneau sur toute la ligne, détails ouverts par défaut (masquables) ; plusieurs jeux actifs : le plus récent d'abord, quel que soit le tri ; fil réduit à 3 items sur téléphone
+
+## M18 — Objectifs (demandé par Romain le 2026-10-12)
+- [x] Objectif de chaque slot lu dans le slot_data (sinon le yaml du joueur) et avancement mesuré sans spoiler (items reçus, checks faits) : `backend/multitracker/goals.py`, un descripteur par jeu écrit d'après les règles de victoire de l'apworld, pour les 22 jeux de Romain
+- [x] Ligne « But » sur chaque carte du tableau de bord (avec le premier compteur pas encore atteint) et page « Objectifs » (`#goals`) : compteurs avec barres, étapes (faite / à faire / invisible pour un tracker), tri par avancement
+- [x] Tests : `tests/test_goals.py` (les 22 jeux sur la seed all22 : compteurs à 0 au départ, pleins avec tout le pool), `frontend/tests/goals.test.ts`
+- Plus tard, si Romain suit d'autres slots : descripteurs pour les autres jeux de la room (Stardew, Hollow Knight, Subnautica…)
+

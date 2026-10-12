@@ -32,11 +32,12 @@ export const tracker = reactive({
   recent: [] as RecentItem[],
 })
 
-export type View = 'dashboard' | 'config' | 'logs'
+export type View = 'dashboard' | 'config' | 'logs' | 'goals'
 
 function viewFromHash(): View {
   if (typeof location === 'undefined') return 'dashboard'
   if (/^#config(\?|$)/.test(location.hash)) return 'config'
+  if (location.hash === '#goals') return 'goals'
   return location.hash === '#logs' ? 'logs' : 'dashboard'
 }
 if (typeof window !== 'undefined') {
