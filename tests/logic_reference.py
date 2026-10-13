@@ -163,6 +163,11 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
                 report["ok"] = False
                 return report
             report["mode"] = res.get("mode")
+            foreign = [e for e in res.get("errors") or [] if "manquent au monde recalculé" in e]
+            if foreign:  # the regenerated world lacks locations of the slot: not the same options
+                report["error"] = foreign[0]
+                report["ok"] = False
+                return report
             got = set(res["in_logic"])
             report["snapshots"].append({
                 "sphere": snap.sphere, "items": len(snap.items), "reference": len(ref), "tool": len(got),

@@ -329,7 +329,44 @@ def _hollow_knight(world_cls: type, slot_data: dict[str, Any], location_ids: set
         yield
 
 
+CELESTE_SLOT_DATA_OPTIONS = ["lock_goal_area", "checkpointsanity", "binosanity", "keysanity", "gemsanity",
+                             "carsanity", "roomsanity", "include_goldens", "include_core", "include_farewell",
+                             "include_b_sides", "include_c_sides", "require_cassettes"]
+
+
+@contextlib.contextmanager
+def _celeste(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Celeste (Open World) is regenerated from the player's yaml, but its slot_data holds the options that shape
+    the logic (fill_slot_data copies `self.options.<name>.value`): apply them, so a yaml that is not exactly the
+    one of the room (e.g. the yaml of a previous room) still gives the right world. The goal area is sent by level
+    ("9a") and the strawberry requirement as a count, computed in create_items from total_strawberries (absent
+    from slot_data) and the percentage: replay both."""
+    if "roomsanity" not in slot_data:
+        yield
+        return
+    levels = importlib.import_module(f"{world_cls.__module__}.Levels")
+    goal_option = {name: value for value, name in levels.goal_area_option_to_name.items()}.get(slot_data.get("goal_area"))
+    required = slot_data.get("strawberries_required")
+    original_early, original_items = world_cls.generate_early, world_cls.create_items
+
+    def generate_early(self) -> None:
+        apply_options(self, slot_data, CELESTE_SLOT_DATA_OPTIONS)
+        if goal_option is not None:
+            self.options.goal_area = type(self.options.goal_area)(goal_option)
+        original_early(self)
+
+    def create_items(self) -> None:
+        original_items(self)
+        if isinstance(required, int):
+            self.strawberries_required = required  # the access rules read it when evaluated
+
+    with patch_attr(world_cls, "generate_early", generate_early), \
+            patch_attr(world_cls, "create_items", create_items):
+        yield
+
+
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
+    "Celeste (Open World)": _celeste,
     "The Wind Waker HD": _twwhd,
     "Super Mario 64": _sm64ex,
     "Ori and the Will of the Wisps": _ori_wotw,

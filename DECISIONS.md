@@ -158,3 +158,15 @@ donjon d'OoT, victoires de Slay the Spire) sont marquées « invisibles » ; la 
 du statut envoyé par le serveur. Le % de la page est une estimation (moyenne des compteurs et des étapes visibles).
 Un jeu sans descripteur affiche seulement « But atteint » ou non.
 
+## D19 — Yaml d'une autre room : Celeste suit le slot_data, et l'app le signale pour les autres jeux (2026-10-13)
+Romain a changé de room sans changer ses yamls (`config/players/romain/`). Les jeux régénérés depuis le yaml prenaient
+donc les options de l'ancienne room ; pour Celeste (roomsanity activé dans la nouvelle), les ~680 locations de salles
+manquaient au monde recalculé et la logique affichait 2 checks. Deux changements :
+- **Celeste** : un adaptateur applique les options de logique que `fill_slot_data` copie telles quelles, la zone du
+  but (envoyée par niveau, « 9a ») et le nombre de fraises requises (calculé dans `create_items`). Validé 9/9 avec
+  l'ancien yaml contre des seeds aux bonnes options, et 6/6 sans régression avec le yaml de la seed.
+- **Tous les jeux** : si le serveur annonce des locations du slot que le monde recalculé n'a pas, la carte le dit
+  (« N locations du slot manquent au monde recalculé… »). Aucune fausse alerte sur les 66 slots des seeds de test.
+  Sur la vraie room au 2026-10-13 : SM64, Odyssey, Ori WotW, TWW HD et AEMinecraft ont des yamls d'une autre room.
+Pas de « slot_data prioritaire » générique : un nom d'option peut avoir un autre sens dans le slot_data (Ori WotW,
+`bonus`, différent du yaml sur une seed pourtant cohérente). La vraie solution reste d'importer les yamls de la room.

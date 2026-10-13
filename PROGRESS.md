@@ -96,7 +96,14 @@
   mise à jour, désinstallation, dépannage). Procédure rejouée sur un clone neuf : bootstrap 1 min 10, ~400 Mo,
   `check_apworlds.py` tout OK, app lancée avec le `room.example.yaml` (ouvre la page Configuration).
 
+- 2026-10-13 : logique Celeste fausse sur la nouvelle room (yaml de l'ancienne : pas de roomsanity) → adaptateur
+  `_celeste` (options du slot_data) et avertissement générique quand le monde recalculé n'a pas toutes les locations
+  du slot (D19). `validate_logic.py --tool-yaml` valide la logique avec un autre yaml que celui de la seed.
+
 ## À faire par Romain
+- **Yamls de la nouvelle room** (2026-10-13) : ceux de `config/players/romain/` sont ceux de l'ancienne room. Importer
+  les bons (Configuration → « Importer des yamls », puis « Associer automatiquement »), surtout pour SM64, Odyssey,
+  Ori WotW, TWW HD et AEMinecraft, dont la carte signale des locations qui manquent au monde recalculé.
 - **Room vérifiée le 2026-10-11 vers 10 h 30** : 22 slots connectés, logique OK pour 21 jeux (OoT indisponible).
   À confirmer en jeu : Kingdom Hearts Birth by Sleep affiche 0 check en logique avec 11 checks faits.
 - **Journal** : bouton « Journal » en haut de l'app (ou `http://<pi>:42753/#logs`) pour suivre les logs en direct.

@@ -192,6 +192,13 @@ class SlotLogic:
             raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
         self.core = core
         self.init_seconds = round(time.perf_counter() - started, 2)
+        # Locations the server lists for the slot but the regenerated world does not have: the world was built
+        # with other options than the room's (typically the yaml of another generation). Its logic misses them.
+        own = {loc.address for loc in core.multiworld.get_locations(core.player_id) if isinstance(loc.address, int)}
+        self.foreign_locations = len(set(location_ids or ()) - own)
+        if self.foreign_locations:
+            log.warning("%s: %d locations of the slot are not in the regenerated world (mode %s)",
+                        slot_name, self.foreign_locations, self.mode)
 
     def _regenerate(self, core, world_cls, slot_name: str, game: str, slot_data: dict[str, Any],
                     yaml_path: Path | None) -> None:
@@ -378,6 +385,9 @@ class Worker:
         except Exception as exc:
             log.warning("logic update failed for %s: %s", name, traceback.format_exc())
             return {"state": "error", "message": f"{type(exc).__name__}: {exc}"[:400]}
+        if logic.foreign_locations:
+            result["errors"] = [f"{logic.foreign_locations} locations du slot manquent au monde recalculé : le yaml ne "
+                                f"correspond sans doute pas à cette room, logique sous-estimée"] + result.get("errors", [])
         if logic.random_options:
             result["errors"] = [f"options aléatoires dans le yaml, logique peut-être approximative : "
                                 f"{', '.join(logic.random_options[:5])}"] + result.get("errors", [])

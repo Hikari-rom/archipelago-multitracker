@@ -18,7 +18,7 @@ Légende : ✅ oui · ❌ non · ⚠️ partiel · ⏳ pas encore testé · — 
 
 | Jeu | Version apworld | Se charge sur 0.6.7 | Génère en headless | Niveau 1 OK | UT sans yaml | UT avec yaml | Validé par test | Notes |
 |---|---|---|---|---|---|---|---|---|
-| Celeste (Open World) | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 10/10 seeds + e2e | Yaml nécessaire. Logique activée |
+| Celeste (Open World) | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 10/10 seeds + e2e | Yaml nécessaire. Logique activée. Les options de logique (roomsanity, zone du but, fraises requises…) viennent du slot_data : un yaml d'une autre room marche aussi (validé 9/9, adaptateur `_celeste`) ; seule `goal_area_checkpointsanity` vient encore du yaml |
 | Kingdom Hearts 2 | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 + e2e | Yaml nécessaire. Logique activée |
 | Jak and Daxter: The Precursor Legacy | core 0.6.7 | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ 5/5 + e2e | Yaml nécessaire. Logique activée |
 | The Wind Waker HD | Teotia444/twwhd-apworld `main` @ c2188264 (version de la room) | ✅ | ✅ | ✅ | ❌ | ✅ (adaptateur) | ✅ 7/7 + e2e (v1.0.2) ; 4/4 yaml de Romain + 4/4 aléatoires (`main`) | Adaptateur : entrées depuis `slot_data`, donjons requis déduits des locations. Releases « beta » uniquement, pas de manifeste ; la room a été générée avec `main` (Auction 100 Rupee, Dampa Pig Minigame). Distinct de « The Wind Waker » (core) |

@@ -1,0 +1,10 @@
+# Celeste with options like Romain's second room (roomsanity, Core A goal); the tests give the logic engine
+# the yaml of his first room instead (tests/test_logic_celeste.py).
+name: Celeste
+game: "Celeste (Open World)"
+"Celeste (Open World)":
+  goal_area: core_a
+  include_core: true
+  roomsanity: true
+  total_strawberries: 150
+  strawberries_required_percentage: 80
