@@ -101,9 +101,10 @@
   du slot (D19). `validate_logic.py --tool-yaml` valide la logique avec un autre yaml que celui de la seed.
 
 ## À faire par Romain
-- **Yamls de la nouvelle room** (2026-10-13) : ceux de `config/players/romain/` sont ceux de l'ancienne room. Importer
-  les bons (Configuration → « Importer des yamls », puis « Associer automatiquement »), surtout pour SM64, Odyssey,
-  Ori WotW, TWW HD et AEMinecraft, dont la carte signale des locations qui manquent au monde recalculé.
+- **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de
+  l'app actuelle dans `test-output/design/captures-app-actuelle.zip`.
+- **Yamls de la nouvelle room** : faits le 2026-10-14 (copiés de `~/romaing/Validés`, anciens gardés dans
+  `config/players/romain-ancienne-room/`) ; plus aucun jeu ne signale de locations manquantes.
 - **Room vérifiée le 2026-10-11 vers 10 h 30** : 22 slots connectés, logique OK pour 21 jeux (OoT indisponible).
   À confirmer en jeu : Kingdom Hearts Birth by Sleep affiche 0 check en logique avec 11 checks faits.
 - **Journal** : bouton « Journal » en haut de l'app (ou `http://<pi>:42753/#logs`) pour suivre les logs en direct.
