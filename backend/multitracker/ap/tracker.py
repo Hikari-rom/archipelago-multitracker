@@ -2,8 +2,8 @@
 
 The connection uses the `Tracker` tag (the server then refuses location checks and goal
 updates from it anyway) and an explicit allow-list of outgoing commands: it can only read
-(GetDataPackage, Connect, Sync, Get, SetNotify). It never sends LocationChecks, StatusUpdate,
-Say, hint requests or data storage writes.
+(GetDataPackage, Connect, Sync, Get, SetNotify, and LocationScouts on locations the slot has already checked,
+without creating hints). It never sends LocationChecks, StatusUpdate, Say, hint requests or data storage writes.
 """
 from __future__ import annotations
 
@@ -18,8 +18,11 @@ from . import net
 
 log = logging.getLogger(__name__)
 
-# The only commands this client is allowed to send. Everything here is a read.
-ALLOWED_COMMANDS = frozenset({"GetDataPackage", "Connect", "Sync", "Get", "SetNotify"})
+# The only commands this client is allowed to send. Everything here is a read. LocationScouts is further
+# restricted (see SlotTracker._send): already checked locations of the slot only, never as hints, so it tells
+# nothing a spoiler would (what a done check held), and only when the "scout_checked" option is on.
+ALLOWED_COMMANDS = frozenset({"GetDataPackage", "Connect", "Sync", "Get", "SetNotify", "LocationScouts"})
+SCOUT_BATCH = 500  # locations per LocationScouts packet
 
 CLIENT_GOAL = 30
 ITEMS_HANDLING_ALL = 0b111  # receive items from other worlds, own world and starting inventory
@@ -54,6 +57,8 @@ class SlotState:
     datapackage_checksums: dict[str, str] = field(default_factory=dict)
     connected_at: float | None = None
     synced: bool = False  # item list complete for this session
+    contents: dict[int, tuple[int, int, int]] = field(default_factory=dict)  # checked location -> (item, receiver, flags)
+    new_contents: list[tuple[int, int, int, int]] = field(default_factory=list)  # last LocationInfo batch
     new_checks: int = 0  # locations newly checked by the last RoomUpdate
     updated_at: float = field(default_factory=time.time)
 
@@ -71,11 +76,13 @@ class SlotTracker:
     def __init__(self, server: str | Callable[[], str], password: str, name: str, game: str,
                  datapackage: "DataPackageProvider", on_change: ChangeCallback | None = None,
                  min_delay: float = 2.0, max_delay: float = 60.0,
-                 on_connect_error: Callable[["SlotTracker"], None] | None = None) -> None:
+                 on_connect_error: Callable[["SlotTracker"], None] | None = None, scout_checked: bool = False) -> None:
         self.server = server  # address, or a callable returning the current address (room port changes)
         self.on_connect_error = on_connect_error
         self.password = password or None
         self.state = SlotState(name=name, game=game)
+        self.scout_checked = scout_checked  # ask the server what the checked locations held (LocationScouts)
+        self._scouting: set[int] = set()  # asked, answer pending
         self.datapackage = datapackage
         self.on_change = on_change
         self.min_delay, self.max_delay = min_delay, max_delay
@@ -164,7 +171,22 @@ class SlotTracker:
         for msg in msgs:
             if msg.get("cmd") not in ALLOWED_COMMANDS:
                 raise ForbiddenCommand(f"read-only tracker may not send {msg.get('cmd')!r}")
+            if msg["cmd"] == "LocationScouts":
+                locations = set(msg.get("locations") or ())
+                if not self.scout_checked or msg.get("create_as_hint") != 0 or not locations <= self.state.checked:
+                    raise ForbiddenCommand("LocationScouts only on checked locations, without hints, when enabled")
         await self._sock.send(net.encode(list(msgs)))
+
+    async def _scout_checked(self) -> None:
+        """Ask what the slot's checked locations held (not known yet): already found, so no spoiler."""
+        st = self.state
+        if not self.scout_checked or not st.synced:
+            return
+        wanted = sorted(st.checked - st.contents.keys() - self._scouting)
+        for start in range(0, len(wanted), SCOUT_BATCH):
+            batch = wanted[start:start + SCOUT_BATCH]
+            self._scouting.update(batch)
+            await self._send({"cmd": "LocationScouts", "locations": batch, "create_as_hint": 0})
 
     async def _session(self) -> None:
         async for data in self._sock:
@@ -213,6 +235,7 @@ class SlotTracker:
             st.items = []
             st.hints = []
             st.synced = False
+            self._scouting = set()
             st.connected_at = time.time()
             self._had_session = True
             st.status, st.error = "connected", None
@@ -246,6 +269,8 @@ class SlotTracker:
                 kinds.add("players")
             if kinds:
                 self._changed(kinds)
+            if "checks" in kinds:
+                await self._scout_checked()
         elif cmd in ("Retrieved", "SetReply"):
             values = msg.get("keys", {}) if cmd == "Retrieved" else {msg.get("key"): msg.get("value")}
             kinds = set()
@@ -261,6 +286,21 @@ class SlotTracker:
                 kinds.add("synced")
             if kinds:
                 self._changed(kinds)
+            if "synced" in kinds:
+                await self._scout_checked()
+        elif cmd == "LocationInfo":
+            batch = []
+            for net_item in msg.get("locations") or []:
+                loc = int(net_item.get("location", 0))
+                if loc in st.checked:  # only answers to our scouts of checked locations are kept
+                    content = (int(net_item.get("item", 0)), int(net_item.get("player", 0)),
+                               int(net_item.get("flags", 0) or 0))
+                    st.contents[loc] = content
+                    batch.append((loc, *content))
+                self._scouting.discard(loc)
+            if batch:
+                st.new_contents = batch
+                self._changed({"contents"})
         elif cmd == "InvalidPacket":
             log.warning("tracker %s: server reported invalid packet: %s", st.name, msg)
 
@@ -276,6 +316,7 @@ class SlotTracker:
         st = self.state
         st.items, st.hints, st.checked, st.missing = [], [], set(), set()
         st.players, st.client_status, st.slot_data, st.synced = {}, 0, {}, False
+        st.contents, st.new_contents = {}, []
         st.team = st.slot = None
         self._changed({"connected", "items", "checks", "hints", "goal"})
 
@@ -317,7 +358,7 @@ async def probe(address: str, password: str | None, name: str, timeout: float = 
     """One-shot connection test (room reachable, password and slot name accepted), then disconnect.
     Same read-only rules as SlotTracker: only allow-listed commands, `Tracker` tag."""
     async def send(sock, msg: dict[str, Any]) -> None:
-        if msg.get("cmd") not in ALLOWED_COMMANDS:
+        if msg.get("cmd") not in ALLOWED_COMMANDS or msg.get("cmd") == "LocationScouts":
             raise ForbiddenCommand(f"read-only tracker may not send {msg.get('cmd')!r}")
         await sock.send(net.encode([msg]))
 

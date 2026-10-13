@@ -1,5 +1,5 @@
 // Dashboard: totals of the selected slots, sort modes, two-colour progress bars, feed of received items.
-import { isActive, sortSlots } from './logic'
+import { isActive, NO_OVERRIDES, sortSlots, type ActivityOverrides } from './logic'
 import type { RecentItem, SlotSummary } from './types'
 
 export interface Totals {
@@ -50,8 +50,14 @@ export function logicShare(s: SlotSummary): number | null {
 
 /** "auto": the recommended order (see sortSlots). "count" / "percent": most checks in logic first, as a number
  * or as a share of the game; games without logic, then finished games, at the end; ties keep the "auto" order. */
-export function sortBy(mode: SortMode, slots: SlotSummary[], nowMs = Date.now(), activeMinutes?: number): SlotSummary[] {
-  const auto = sortSlots(slots, nowMs, activeMinutes)
+export function sortBy(
+  mode: SortMode,
+  slots: SlotSummary[],
+  nowMs = Date.now(),
+  activeMinutes?: number,
+  ov: ActivityOverrides = NO_OVERRIDES,
+): SlotSummary[] {
+  const auto = sortSlots(slots, nowMs, activeMinutes, ov)
   if (mode === 'auto') return auto
   const value = (s: SlotSummary): number => {
     if (s.goal) return -2
@@ -80,12 +86,18 @@ export function saveSortMode(v: SortMode): void {
   }
 }
 
-/** Active games (a location checked in the last minutes) go first, in full-width cards, the most recent first;
- * the other games keep the chosen order. */
-export function splitFeatured(slots: SlotSummary[], nowMs: number, activeMinutes?: number) {
+/** Active games (a location checked in the last minutes, or chosen by hand) go first, in full-width cards: the
+ * game chosen by hand, then the most recent first; the other games keep the chosen order. */
+export function splitFeatured(
+  slots: SlotSummary[],
+  nowMs: number,
+  activeMinutes?: number,
+  ov: ActivityOverrides = NO_OVERRIDES,
+) {
+  const pinnedFirst = (s: SlotSummary) => (ov.pinned?.name === s.name ? 0 : 1)
   const featured = slots
-    .filter((s) => isActive(s, nowMs, activeMinutes))
-    .sort((a, b) => (b.last_check_at ?? 0) - (a.last_check_at ?? 0))
+    .filter((s) => isActive(s, nowMs, activeMinutes, ov))
+    .sort((a, b) => pinnedFirst(a) - pinnedFirst(b) || (b.last_check_at ?? 0) - (a.last_check_at ?? 0))
   const names = new Set(featured.map((s) => s.name))
   return { featured, rest: slots.filter((s) => !names.has(s.name)) }
 }
@@ -98,4 +110,34 @@ export const FEED_LONG = 30
 /** Feed of the selected slots (already newest first from the server). */
 export function feedItems(items: RecentItem[], slotNames: Set<string>, limit: number): RecentItem[] {
   return items.filter((i) => slotNames.has(i.slot)).slice(0, limit)
+}
+
+export type Layout = 'cards' | 'compact'
+export const LAYOUT_LABELS: Record<Layout, string> = { cards: 'Cartes', compact: 'Compact' }
+const LAYOUT_KEY = 'amt-layout'
+export function loadLayout(): Layout {
+  try {
+    if (localStorage.getItem(LAYOUT_KEY) === 'compact') return 'compact'
+  } catch {
+    /* ignore */
+  }
+  return 'cards'
+}
+export function saveLayout(v: Layout): void {
+  try {
+    localStorage.setItem(LAYOUT_KEY, v)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Compact layout: the one game shown in full. The game chosen by hand, else the active game with the most recent
+ * check, else the first game of the list (already sorted). */
+export function compactMain(
+  slots: SlotSummary[],
+  nowMs: number,
+  activeMinutes?: number,
+  ov: ActivityOverrides = NO_OVERRIDES,
+): SlotSummary | null {
+  return splitFeatured(slots, nowMs, activeMinutes, ov).featured[0] ?? slots[0] ?? null
 }

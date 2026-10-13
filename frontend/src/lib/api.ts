@@ -1,5 +1,5 @@
 import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
-import type { RecentItem, SlotDetail, SlotSummary } from './types'
+import type { HistoryPage, ReceivedEntry, RecentItem, SentCheck, SlotDetail, SlotSummary } from './types'
 
 export interface SlotsResponse {
   server: string
@@ -39,6 +39,7 @@ export interface MockApi {
   getSlot(name: string): Promise<SlotDetail>
   markSeen(name: string): Promise<{ seen: number }>
   recentItems?(): Promise<{ items: RecentItem[] }>
+  history?(kind: 'sent' | 'received', slots: string[], limit: number, offset: number): Promise<HistoryPage<any>>
   getConfig?(): Promise<ConfigResponse>
   discover?(url: string, wake?: boolean): Promise<DiscoverResponse>
   putConfig?(b: PutConfigBody): Promise<unknown>
@@ -59,6 +60,14 @@ export const markSeen = (name: string) =>
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
   }).then((r) => json<{ seen: number }>(r))
+
+export function getHistory(kind: 'sent', slots: string[], limit: number, offset: number): Promise<HistoryPage<SentCheck>>
+export function getHistory(kind: 'received', slots: string[], limit: number, offset: number): Promise<HistoryPage<ReceivedEntry>>
+export function getHistory(kind: 'sent' | 'received', slots: string[], limit = 200, offset = 0) {
+  const q = new URLSearchParams({ kind, limit: String(limit), offset: String(offset) })
+  for (const s of slots) q.append('slot', s)
+  return mock?.history ? mock.history(kind, slots, limit, offset) : fetch(`/api/history?${q}`).then((r) => json<HistoryPage<SentCheck | ReceivedEntry>>(r))
+}
 
 export const getRecentItems = () =>
   mock?.recentItems ? mock.recentItems() : fetch('/api/items/recent').then((r) => json<{ items: RecentItem[] }>(r))

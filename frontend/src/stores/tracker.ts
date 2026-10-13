@@ -4,6 +4,7 @@ import { roomFromLocation } from '../lib/config'
 import { clockOffset, loadActiveMinutes } from '../lib/history'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
+import type { ActivityOverrides } from '../lib/logic'
 import type { RecentItem, SlotDetail, SseState } from '../lib/types'
 
 export const tracker = reactive({
@@ -30,14 +31,57 @@ export const tracker = reactive({
   seenFreeze: false,
   /** latest items received by the slots (dashboard feed), newest first */
   recent: [] as RecentItem[],
+  /** active game chosen by hand, games set inactive by hand (this device) */
+  activity: loadActivity(),
 })
 
-export type View = 'dashboard' | 'config' | 'logs' | 'goals'
+const ACTIVITY_KEY = 'amt-activity'
+function loadActivity(): ActivityOverrides {
+  try {
+    const v = JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? 'null')
+    if (v && typeof v === 'object') {
+      const pinned = v.pinned && typeof v.pinned.name === 'string' && typeof v.pinned.at === 'number' ? v.pinned : null
+      const dismissed = v.dismissed && typeof v.dismissed === 'object' ? v.dismissed : {}
+      return { pinned, dismissed }
+    }
+  } catch {
+    /* ignore */
+  }
+  return { pinned: null, dismissed: {} }
+}
+function saveActivity(): void {
+  try {
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(tracker.activity))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** "Définir comme actif": this game is the one being played; the others stay active only with a newer check. */
+export function pinActive(name: string): void {
+  const dismissed = { ...tracker.activity.dismissed }
+  delete dismissed[name]
+  tracker.activity = { pinned: { name, at: serverNowMs() / 1000 }, dismissed }
+  saveActivity()
+}
+
+/** "Plus actif": not active any more, until its next check. */
+export function setInactive(name: string): void {
+  const s = tracker.slots.find((x) => x.name === name)
+  tracker.activity = {
+    pinned: tracker.activity.pinned?.name === name ? null : tracker.activity.pinned,
+    dismissed: { ...tracker.activity.dismissed, [name]: s?.last_check_at ?? 0 },
+  }
+  saveActivity()
+}
+
+export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history'
 
 function viewFromHash(): View {
   if (typeof location === 'undefined') return 'dashboard'
   if (/^#config(\?|$)/.test(location.hash)) return 'config'
   if (location.hash === '#goals') return 'goals'
+  if (location.hash === '#history') return 'history'
   return location.hash === '#logs' ? 'logs' : 'dashboard'
 }
 if (typeof window !== 'undefined') {
@@ -244,6 +288,11 @@ export function connect(): void {
 
 let clock: ReturnType<typeof setInterval> | undefined
 let offset = 0
+/** The server's clock now (ms), as corrected at the last /api/slots. */
+export function serverNowMs(): number {
+  return Date.now() + offset
+}
+
 function syncClock(serverNow: number | undefined): void {
   offset = clockOffset(serverNow)
   tracker.nowMs = Date.now() + offset

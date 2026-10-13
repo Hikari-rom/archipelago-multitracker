@@ -56,16 +56,43 @@ export function hasSomethingToDo(s: SlotSummary): boolean {
 
 export const DEFAULT_ACTIVE_MINUTES = 30
 
-/** "Active" = the slot checked a location recently (the server's client status cannot tell, see DECISIONS D11). */
-export function isActive(s: SlotSummary, nowMs: number, minutes = DEFAULT_ACTIVE_MINUTES): boolean {
-  return !s.goal && !!s.last_check_at && nowMs / 1000 - s.last_check_at < minutes * 60
+/** The player's own say on "active" (this device): one game chosen by hand, games set inactive by hand. */
+export interface ActivityOverrides {
+  /** game chosen as active ("Définir comme actif"), and when (epoch seconds) */
+  pinned: { name: string; at: number } | null
+  /** games set inactive by hand ("Plus actif"): their last check at that moment (0: none). They become active
+   * again with their next check. */
+  dismissed: Record<string, number>
+}
+export const NO_OVERRIDES: ActivityOverrides = { pinned: null, dismissed: {} }
+
+/** "Active" = the slot checked a location recently (the server's client status cannot tell, see DECISIONS D11),
+ * unless set inactive by hand since; the game chosen by hand is always active, and once one is chosen the other
+ * games are active only with a check made after that choice. */
+export function isActive(
+  s: SlotSummary,
+  nowMs: number,
+  minutes = DEFAULT_ACTIVE_MINUTES,
+  ov: ActivityOverrides = NO_OVERRIDES,
+): boolean {
+  if (ov.pinned?.name === s.name) return true
+  const last = s.last_check_at
+  if (s.goal || !last || nowMs / 1000 - last >= minutes * 60) return false
+  if (ov.pinned && last <= ov.pinned.at) return false
+  const dismissed = ov.dismissed[s.name]
+  return dismissed === undefined || last > dismissed
 }
 
 const inLogic = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
 
 /** Active games first, then the most checks in logic, then the most checks left; finished games last. */
-export function sortSlots(slots: SlotSummary[], nowMs = Date.now(), activeMinutes = DEFAULT_ACTIVE_MINUTES): SlotSummary[] {
-  const group = (s: SlotSummary) => (s.goal ? 2 : isActive(s, nowMs, activeMinutes) ? 0 : 1)
+export function sortSlots(
+  slots: SlotSummary[],
+  nowMs = Date.now(),
+  activeMinutes = DEFAULT_ACTIVE_MINUTES,
+  ov: ActivityOverrides = NO_OVERRIDES,
+): SlotSummary[] {
+  const group = (s: SlotSummary) => (isActive(s, nowMs, activeMinutes, ov) ? 0 : s.goal ? 2 : 1)
   return slots
     .map((s, i) => ({ s, i }))
     .sort((a, b) => {
@@ -93,8 +120,9 @@ export function summaryText(slots: SlotSummary[]): string {
   return `${n} ${n === 1 ? 'jeu' : 'jeux'} où avancer`
 }
 
+/** "Objet → check ∆ monde" (asked by Romain: shorter than a sentence). */
 export function hintMineElsewhere(h: Hint): string {
-  return `Ton ${h.item} est à ${h.location} dans le monde de ${h.finder} (${h.finder_game})`
+  return `${h.item} → ${h.location} ∆ ${h.finder} (${h.finder_game})`
 }
 
 export function hintInMyWorld(h: Hint): string {

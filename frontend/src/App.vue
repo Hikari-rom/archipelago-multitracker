@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { Flag, Monitor, Moon, ScrollText, Settings, Sun } from '@lucide/vue'
+import { Flag, History, House, Monitor, Moon, ScrollText, Settings, Sun } from '@lucide/vue'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import CompactList from './components/CompactList.vue'
 import ConfigView from './components/ConfigView.vue'
 import GoalsView from './components/GoalsView.vue'
+import HistoryView from './components/HistoryView.vue'
 import LogsView from './components/LogsView.vue'
 import ProgressSplit from './components/ProgressSplit.vue'
 import RecentFeed from './components/RecentFeed.vue'
@@ -17,7 +19,21 @@ import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
 import { stableOrder } from './lib/order'
 import { summaryText } from './lib/logic'
-import { SORT_LABELS, loadSortMode, percent, saveSortMode, sortBy, splitFeatured, totals, type SortMode } from './lib/dashboard'
+import {
+  LAYOUT_LABELS,
+  SORT_LABELS,
+  compactMain,
+  loadLayout,
+  loadSortMode,
+  percent,
+  saveLayout,
+  saveSortMode,
+  sortBy,
+  splitFeatured,
+  totals,
+  type Layout,
+  type SortMode,
+} from './lib/dashboard'
 import { applyTheme, loadTheme, nextTheme, saveTheme, themeLabel } from './lib/theme'
 import { wakeRoom } from './lib/api'
 import { refreshMeta, setFeatured, setView, tracker } from './stores/tracker'
@@ -36,7 +52,13 @@ function pickSort(v: unknown) {
   sortMode.value = v
   saveSortMode(v)
 }
-const sorted = computed(() => sortBy(sortMode.value, tracker.slots, tracker.nowMs, tracker.activeMinutes))
+const sorted = computed(() => sortBy(sortMode.value, tracker.slots, tracker.nowMs, tracker.activeMinutes, tracker.activity))
+const layout = ref<Layout>(loadLayout())
+function pickLayout(v: unknown) {
+  if (v !== 'cards' && v !== 'compact') return
+  layout.value = v
+  saveLayout(v)
+}
 let lastOrder: string[] = []
 const anyOpen = computed(() => Object.values(tracker.open).some(Boolean))
 const ordered = computed(() => {
@@ -76,9 +98,12 @@ async function onWake() {
 const themeIcon = computed(() => ({ auto: Monitor, light: Sun, dark: Moon })[theme.value])
 const byOwner = computed(() => filterByOwner(ordered.value, activeChip.value))
 const visible = computed(() => (hideDone.value ? byOwner.value.filter((s) => !s.goal) : byOwner.value))
-const split = computed(() => splitFeatured(visible.value, tracker.nowMs, tracker.activeMinutes))
+const split = computed(() => splitFeatured(visible.value, tracker.nowMs, tracker.activeMinutes, tracker.activity))
+/** compact layout: the one game shown in full on the left */
+const main = computed(() => compactMain(visible.value, tracker.nowMs, tracker.activeMinutes, tracker.activity))
+const compact = computed(() => layout.value === 'compact')
 watch(
-  () => split.value.featured.map((s) => s.name).join('\n'),
+  () => (compact.value ? (main.value ? [main.value] : []) : split.value.featured).map((s) => s.name).join('\n'),
   (names) => setFeatured(names ? names.split('\n') : []),
   { immediate: true },
 )
@@ -91,7 +116,8 @@ const sumsLabel = computed(
 const showConfig = computed(() => tracker.view === 'config' || (tracker.loaded && !tracker.slots.length && !tracker.loadError))
 const showLogs = computed(() => tracker.view === 'logs' && !showConfig.value)
 const showGoals = computed(() => tracker.view === 'goals' && !showConfig.value)
-const showDashboard = computed(() => !showConfig.value && !showLogs.value && !showGoals.value)
+const showHistory = computed(() => tracker.view === 'history' && !showConfig.value)
+const showDashboard = computed(() => !showConfig.value && !showLogs.value && !showGoals.value && !showHistory.value)
 const roomHref = computed(() => (/^https?:\/\//.test(tracker.roomUrl) ? tracker.roomUrl : ''))
 const sseLabel = computed(
   () => ({ open: 'En direct', connecting: 'Connexion…', reconnecting: 'Reconnexion…' })[tracker.sse],
@@ -116,6 +142,16 @@ const sseLabel = computed(
       <Button
         variant="outline"
         size="sm"
+        aria-label="Tableau de bord"
+        title="Tableau de bord"
+        :aria-pressed="showDashboard"
+        @click="setView('dashboard')"
+      >
+        <House aria-hidden="true" />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         aria-label="Configuration"
         :aria-pressed="showConfig"
         @click="setView(showConfig && tracker.slots.length ? 'dashboard' : 'config')"
@@ -134,6 +170,15 @@ const sseLabel = computed(
       <Button
         variant="outline"
         size="sm"
+        aria-label="Historique"
+        :aria-pressed="showHistory"
+        @click="setView(showHistory ? 'dashboard' : 'history')"
+      >
+        <History aria-hidden="true" /> Historique
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
         aria-label="Journal"
         :aria-pressed="showLogs"
         @click="setView(showLogs ? 'dashboard' : 'logs')"
@@ -144,7 +189,7 @@ const sseLabel = computed(
         <component :is="themeIcon" aria-hidden="true" /> Thème : {{ themeLabel[theme] }}
       </Button>
     </div>
-    <div v-if="(showDashboard || showGoals) && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
+    <div v-if="(showDashboard || showGoals || showHistory) && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
       <ToggleGroup
         type="single"
         variant="outline"
@@ -184,6 +229,20 @@ const sseLabel = computed(
             <ToggleGroupItem v-for="(label, key) in SORT_LABELS" :key="key" :value="key" class="px-3">{{ label }}</ToggleGroupItem>
           </ToggleGroup>
         </div>
+        <div class="flex items-center gap-2">
+          <span id="layout-label" class="text-muted-foreground text-sm">Affichage</span>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            :spacing="1"
+            :model-value="layout"
+            aria-labelledby="layout-label"
+            @update:model-value="pickLayout"
+          >
+            <ToggleGroupItem v-for="(label, key) in LAYOUT_LABELS" :key="key" :value="key" class="px-3">{{ label }}</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
         <div class="flex min-h-8 items-center gap-2">
           <Checkbox id="hide-done" v-model="hideDone" />
           <Label for="hide-done" class="font-normal">Masquer les jeux terminés</Label>
@@ -196,6 +255,7 @@ const sseLabel = computed(
     <ConfigView v-if="showConfig" />
     <LogsView v-else-if="showLogs" />
     <GoalsView v-else-if="showGoals" :slots="selected" />
+    <HistoryView v-else-if="showHistory" :slots="selected" />
     <template v-else>
       <Alert v-if="tracker.roomError" class="bg-warn text-warn-foreground mb-3 border-transparent" role="alert">
         <AlertDescription class="text-warn-foreground flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -212,6 +272,12 @@ const sseLabel = computed(
       </Alert>
       <p v-else-if="!tracker.loaded" class="text-muted-foreground">Chargement…</p>
       <p v-else-if="!visible.length" class="text-muted-foreground">Tous les jeux sont terminés 🎉</p>
+      <div v-else-if="compact" class="compact grid grid-cols-1 items-start gap-3 min-[900px]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div class="min-w-0">
+          <SlotCard v-if="main" :key="main.name" :summary="main" featured />
+        </div>
+        <CompactList :slots="visible" :current="main?.name ?? null" />
+      </div>
       <div v-else class="grid grid-cols-1 items-start gap-3 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-3">
         <SlotCard v-for="s in split.featured" :key="s.name" :summary="s" featured />
         <SlotCard v-for="s in split.rest" :key="s.name" :summary="s" />

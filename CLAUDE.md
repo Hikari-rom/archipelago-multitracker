@@ -36,6 +36,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   joueur, `slot_data`, datapackage, et la liste des locations du slot. Spoiler/multidata/zip : uniquement
   `tests/` et `scripts/testenv/`, jamais importés par l'app.
 - **Lecture seule** vers le serveur AP : liste blanche `ALLOWED_COMMANDS` dans `backend/multitracker/ap/tracker.py`.
+  `LocationScouts` y est, mais seulement sur des locations déjà faites du slot, sans hint (`create_as_hint: 0`), et
+  si l'option `scout_checked` est active (Historique, D20) : la vérification est dans `SlotTracker._send`.
   Seul le bot de test (`scripts/testenv/bot.py`, serveur local uniquement) envoie des checks.
 - **Pi** : pas de sudo/apt/systemctl, rien hors du repo, pas d'install globale (Python dans `.venv/`, Node dans
   `frontend/node_modules/`), ne tuer que ses propres process (PID dans `.run/`, vérifier la ligne de commande avant

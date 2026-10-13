@@ -71,7 +71,7 @@ describe('hint formatting', () => {
   const h = { item: 'Hookshot', location: 'Chest', finder: 'TWWHD', finder_game: 'The Wind Waker HD',
     receiver: 'KH2', receiver_game: 'KH2' } as Hint
   it('mine elsewhere', () => {
-    expect(hintMineElsewhere(h)).toBe('Ton Hookshot est à Chest dans le monde de TWWHD (The Wind Waker HD)')
+    expect(hintMineElsewhere(h)).toBe('Hookshot → Chest ∆ TWWHD (The Wind Waker HD)')
   })
   it('in my world', () => {
     expect(hintInMyWorld(h)).toBe('Chest contient Hookshot pour KH2')

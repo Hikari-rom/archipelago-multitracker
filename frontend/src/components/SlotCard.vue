@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
-import { Activity, ChevronRight, Flag, Star, TriangleAlert, Trophy } from '@lucide/vue'
+import { Activity, ChevronRight, Flag, Pin, PinOff, Star, TriangleAlert, Trophy } from '@lucide/vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import { counterText, mainCounter } from '../lib/goals'
 import { formatWhen } from '../lib/history'
 import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
-import { isOpen, loadDetail, markSeen, toggleOpen, tracker } from '../stores/tracker'
+import { isOpen, loadDetail, markSeen, pinActive, setInactive, toggleOpen, tracker } from '../stores/tracker'
 import ProgressSplit from './ProgressSplit.vue'
 import SlotDetailPanel from './SlotDetailPanel.vue'
 import StatusDot from './StatusDot.vue'
@@ -18,7 +18,11 @@ import StatusDot from './StatusDot.vue'
 const props = defineProps<{ summary: SlotSummary; featured?: boolean }>()
 
 const badge = computed(() => logicBadge(props.summary))
-const active = computed(() => isActive(props.summary, tracker.nowMs, tracker.activeMinutes))
+const active = computed(() => isActive(props.summary, tracker.nowMs, tracker.activeMinutes, tracker.activity))
+const pinned = computed(() => tracker.activity.pinned?.name === props.summary.name)
+const activeText = computed(() =>
+  pinned.value ? 'Actif · choisi' : `Actif · ${formatWhen(props.summary.last_check_at, tracker.nowMs)}`,
+)
 const badgeVariant = computed(() =>
   badge.value.variant === 'good' ? 'good' : badge.value.variant === 'muted' ? 'muted' : 'secondary',
 )
@@ -65,7 +69,7 @@ async function onSeen() {
           {{ summary.name }}<span v-if="summary.owner" class="italic"> · {{ summary.owner }}</span>
         </p>
         <Badge v-if="active" variant="good" class="active mt-1" :title="`Dernier check : ${formatWhen(summary.last_check_at, tracker.nowMs)}`">
-          <Activity aria-hidden="true" /> Actif · {{ formatWhen(summary.last_check_at, tracker.nowMs) }}
+          <Activity aria-hidden="true" /> {{ activeText }}
         </Badge>
       </div>
       <StatusDot :status="summary.status" :label="statusLabel(summary.status)" :title="rawError || statusLabel(summary.status)" />
@@ -124,16 +128,38 @@ async function onSeen() {
       </p>
     </div>
 
-    <button
-      type="button"
-      class="toggle text-primary flex min-h-11 items-center gap-1.5 border-t pt-2.5 text-left text-sm hover:underline"
-      :aria-expanded="open"
-      :aria-controls="panelId"
-      @click="toggleOpen(summary.name)"
-    >
-      <ChevronRight :class="cn('size-4 transition-transform motion-reduce:transition-none', open && 'rotate-90')" aria-hidden="true" />
-      {{ open ? 'Masquer les détails' : 'Voir les détails' }}
-    </button>
+    <div class="flex flex-wrap items-center justify-between gap-x-3 border-t pt-1.5">
+      <button
+        type="button"
+        class="toggle text-primary flex min-h-11 items-center gap-1.5 text-left text-sm hover:underline"
+        :aria-expanded="open"
+        :aria-controls="panelId"
+        @click="toggleOpen(summary.name)"
+      >
+        <ChevronRight :class="cn('size-4 transition-transform motion-reduce:transition-none', open && 'rotate-90')" aria-hidden="true" />
+        {{ open ? 'Masquer les détails' : 'Voir les détails' }}
+      </button>
+      <Button
+        v-if="active"
+        variant="ghost"
+        size="sm"
+        class="set-inactive text-muted-foreground"
+        title="Ce jeu ne sera plus mis en avant, jusqu’à son prochain check"
+        @click="setInactive(summary.name)"
+      >
+        <PinOff aria-hidden="true" /> Plus actif
+      </Button>
+      <Button
+        v-else
+        variant="ghost"
+        size="sm"
+        class="set-active text-muted-foreground"
+        title="Mettre ce jeu en avant : c’est celui auquel tu joues"
+        @click="pinActive(summary.name)"
+      >
+        <Pin aria-hidden="true" /> Définir comme actif
+      </Button>
+    </div>
     <div v-show="open" :id="panelId">
       <template v-if="open">
         <SlotDetailPanel v-if="detail" :detail="detail" />

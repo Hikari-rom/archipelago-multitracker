@@ -1,8 +1,9 @@
 # Progression
 
 ## État actuel (5 lignes)
-1. M0 à M18 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
-   M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs »).
+1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
+   M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
+   « Historique », bouton maison, jeu actif choisi à la main, mode compact).
 2. L'app tourne sur le Pi : `scripts/app.sh status` → http://<ip-du-pi>:42753, branchée sur la **vraie room** (elle s'endort quand personne ne joue ; l'app se reconnecte à son réveil).
 3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 21 jeux sur 22, voir `docs/COMPAT.md`.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
@@ -99,6 +100,11 @@
 - 2026-10-13 : logique Celeste fausse sur la nouvelle room (yaml de l'ancienne : pas de roomsanity) → adaptateur
   `_celeste` (options du slot_data) et avertissement générique quand le monde recalculé n'a pas toutes les locations
   du slot (D19). `validate_logic.py --tool-yaml` valide la logique avec un autre yaml que celui de la seed.
+
+- 2026-10-14, M19 : page « Historique » (`#history` : checks envoyés avec leur contenu et leur destinataire, items
+  reçus, compte par slot ; contenu demandé au serveur par `LocationScouts` sur les checks faits seulement, option
+  désactivable, D20), bouton maison, « Définir comme actif » / « Plus actif » sur les cartes, affichage « Compact ».
+  Vérifié sur la vraie room : les 67 checks faits ont leur contenu. Captures : `test-output/screenshots/m19/`.
 
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de

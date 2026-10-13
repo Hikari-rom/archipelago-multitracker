@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -65,6 +65,7 @@ class ConfigBody(BaseModel):
     server: str | None = None
     password: str | None = None  # None = keep the current password
     wake_room: bool | None = None  # None = keep the current setting
+    scout_checked: bool | None = None  # None = keep the current setting
     slots: list[SlotBody]
 
 
@@ -119,7 +120,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         cfg = get_service(request).config
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
-                "wake_room": cfg.wake_room, "has_backup": backup_path(cfg.path).exists(),
+                "wake_room": cfg.wake_room, "scout_checked": cfg.scout_checked,
+                "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml)} for s in cfg.slots],
                 "player_yamls": [y["path"] for y in yamls], "yamls": yamls, "games": game_catalog()}
@@ -240,13 +242,25 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         new = RoomConfig(server=(body.server or "").strip(), slots=slots, path=current.path,
                          password=current.password if body.password is None else body.password,
                          room_url=(body.room_url or "").strip() or None,
-                         wake_room=current.wake_room if body.wake_room is None else body.wake_room)
+                         wake_room=current.wake_room if body.wake_room is None else body.wake_room,
+                         scout_checked=current.scout_checked if body.scout_checked is None else body.scout_checked)
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 
     @app.get("/api/items/recent")
     async def recent_items(request: Request) -> dict[str, Any]:
         return {"items": get_service(request).recent_items()}
+
+    @app.get("/api/history")
+    async def history(request: Request, kind: str = "sent", slot: list[str] | None = Query(None), limit: int = 200,
+                      offset: int = 0) -> dict[str, Any]:
+        """Checks made (kind=sent) or items received, newest first; `slot` (repeatable): only these slots."""
+        service = get_service(request)
+        if kind not in ("sent", "received"):
+            raise HTTPException(400, "kind : sent ou received")
+        for name in slot or []:
+            require_slot(service, name)
+        return service.history_page(kind, slot or None, max(1, min(limit, 1000)), max(0, offset))
 
     @app.get("/api/slots/{name:path}")
     async def slot_detail(name: str, request: Request) -> dict[str, Any]:

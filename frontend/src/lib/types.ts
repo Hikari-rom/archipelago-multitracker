@@ -47,6 +47,8 @@ export interface SlotSummary {
     seconds?: number | null
   }
   objective?: Objective | null
+  /** checks whose content is known (scouted, or received by a tracked slot), and those sent to another player */
+  sent?: { known: number; to_others: number }
   updated_at?: number
 }
 
@@ -109,3 +111,49 @@ export interface SlotDetail extends SlotSummary {
 }
 
 export type SseState = 'connecting' | 'open' | 'reconnecting'
+
+/** A check made by a slot (History page, "Envoyés"). */
+export interface SentCheck {
+  slot: string
+  game: string
+  owner?: string | null
+  location_id: number
+  location: string
+  /** epoch seconds when the app saw it checked; null = before the app recorded check times */
+  checked_at: number | null
+  /** set when only a range is known: checked between checked_after and checked_at */
+  checked_after: number | null
+  /** null: what it held is not known (not scouted, and not received by a tracked slot) */
+  item: string | null
+  receiver: string | null
+  receiver_game: string | null
+  to_self: boolean | null
+  progression: boolean
+  useful: boolean
+  trap: boolean
+}
+
+/** An item received by a slot (History page, "Reçus"). */
+export interface ReceivedEntry extends ItemEntry {
+  slot: string
+  game: string
+  owner?: string | null
+}
+
+export interface HistorySlot {
+  name: string
+  game: string
+  owner?: string | null
+  checks: { done: number; total: number }
+  sent: { known: number; to_others: number }
+  received: number
+}
+
+export interface HistoryPage<T> {
+  kind: 'sent' | 'received'
+  total: number
+  offset: number
+  items: T[]
+  slots: HistorySlot[]
+  scout_checked: boolean
+}

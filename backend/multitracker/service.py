@@ -55,6 +55,7 @@ class Service:
         self._room_checked_at = 0.0
         self._room_woken_at = 0.0
         self._reload_lock = asyncio.Lock()
+        self._sent_index_cache: tuple[tuple, dict] | None = None
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
@@ -69,7 +70,8 @@ class Service:
             tracker = SlotTracker(lambda: self.current_server, self.config.password, slot.name, slot.game or "",
                                   self.datapackage, on_change=self._on_change,
                                   min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1],
-                                  on_connect_error=lambda _t: self.refresh_room())
+                                  on_connect_error=lambda _t: self.refresh_room(),
+                                  scout_checked=self.config.scout_checked)
             self.trackers[slot.name] = tracker
             self.logic[slot.name] = LogicResult("pending")
             tracker.start()
@@ -166,10 +168,16 @@ class Service:
             self.room_sleeping, self.room_error = False, None
             self._publish_room()
         st = tracker.state
+        if "connected" in kinds and st.seed_name and not st.contents:  # what the checked locations held
+            st.contents = {loc: (row["item"], row["receiver"], row["flags"] or 0)
+                           for loc, row in self.store.check_log(st.seed_name, name).items() if row["item"] is not None}
+        if "contents" in kinds and st.seed_name and st.new_contents:
+            self.store.set_check_contents(st.seed_name, name, st.new_contents)
+            st.new_contents = []
         if st.seed_name and st.status != "connected":
             self.history.lost(st.seed_name, name)
         elif st.synced and st.seed_name and kinds & {"items", "synced", "checks"}:
-            self.history.on_items(st.seed_name, name, len(st.items), fresh="synced" in kinds)
+            self.history.on_items(st.seed_name, name, len(st.items), fresh="synced" in kinds, checked=set(st.checked))
             if "checks" in kinds and "connected" not in kinds:
                 self.history.on_checks(st.seed_name, name, st.new_checks)
         if "connected" in kinds:
@@ -349,6 +357,7 @@ class Service:
                       "in_my_world_in_logic": hinted_in_logic},
             "goal": st.goal_reached,
             "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
+            "sent": self._sent_counts(name),
             "logic": logic.to_json(),
             "objective": self.objective(name),
             "updated_at": st.updated_at,
@@ -450,3 +459,91 @@ class Service:
             "players": {str(k): {"name": self.player_name(st, k), "game": v.get("game")}
                         for k, v in st.players.items()},
         }
+
+    # -- history page: checks sent, items received ---------------------------------------------
+    def _sent_index(self) -> dict[tuple[str, int, int], tuple[int, int, int]]:
+        """(seed, sending slot, location) -> (item, receiving slot, flags), from the items the tracked slots received:
+        what a check held is known without scouting when it went to a tracked slot."""
+        key = tuple((name, t.state.seed_name, len(t.state.items)) for name, t in self.trackers.items())
+        if self._sent_index_cache is not None and self._sent_index_cache[0] == key:
+            return self._sent_index_cache[1]
+        index: dict[tuple[str, int, int], tuple[int, int, int]] = {}
+        for tracker in self.trackers.values():
+            st = tracker.state
+            if not st.seed_name or st.slot is None:
+                continue
+            for item in st.items:
+                sender, location = item.get("player", 0), item.get("location")
+                if sender and location is not None and location >= 0:
+                    index[(st.seed_name, sender, location)] = (item.get("item"), st.slot, item.get("flags", 0) or 0)
+        self._sent_index_cache = (key, index)
+        return index
+
+    def check_contents(self, name: str) -> dict[int, tuple[int, int, int]]:
+        """What each checked location of the slot held: scouted, or seen received by a tracked slot."""
+        st = self.trackers[name].state
+        out: dict[int, tuple[int, int, int]] = {}
+        if st.seed_name and st.slot is not None:
+            index = self._sent_index()
+            for loc in st.checked:
+                found = index.get((st.seed_name, st.slot, loc))
+                if found is not None:
+                    out[loc] = found
+        out.update({loc: c for loc, c in st.contents.items() if loc in st.checked})
+        return out
+
+    def _sent_counts(self, name: str) -> dict[str, int]:
+        st = self.trackers[name].state
+        contents = self.check_contents(name)
+        return {"known": len(contents),
+                "to_others": sum(1 for _item, receiver, _f in contents.values() if receiver != st.slot)}
+
+    def _check_view(self, name: str, loc: int, when: tuple, content: tuple | None) -> dict[str, Any]:
+        st = self.trackers[name].state
+        cfg = self.slot_configs[name]
+        view = {"slot": name, "game": st.game or cfg.game, "owner": cfg.owner, "location_id": loc,
+                "location": self.datapackage.location_name(st.game, loc),
+                "checked_at": when[0], "checked_after": when[1],
+                "item": None, "receiver": None, "receiver_game": None, "to_self": None,
+                "progression": False, "useful": False, "trap": False}
+        if content is not None:
+            item, receiver, flags = content
+            view.update({"item": self.datapackage.item_name(self.player_game(st, receiver), item),
+                         "receiver": self.player_name(st, receiver), "receiver_game": self.player_game(st, receiver),
+                         "to_self": receiver == st.slot, "progression": bool(flags & ITEM_FLAG_PROGRESSION),
+                         "useful": bool(flags & ITEM_FLAG_USEFUL), "trap": bool(flags & ITEM_FLAG_TRAP)})
+        return view
+
+    def history_page(self, kind: str, slots: list[str] | str | None, limit: int, offset: int) -> dict[str, Any]:
+        """Every check made (kind "sent": location, what it held and for whom) or every item received, newest
+        first (unknown times last), for the given slots (None: all), plus per-slot counts."""
+        names = [slots] if isinstance(slots, str) else list(slots or self.trackers)
+        rows: list[dict[str, Any]] = []
+        for name in names:
+            st = self.trackers[name].state
+            if not st.seed_name:
+                continue
+            if kind == "sent":
+                times = self.history.check_times(st.seed_name, name)
+                contents = self.check_contents(name)
+                rows.extend(self._check_view(name, loc, times.get(loc, (None, None)), contents.get(loc))
+                            for loc in st.checked)
+            else:
+                cfg = self.slot_configs[name]
+                times_list = self.history.times(st.seed_name, name)
+                seen = self.seen_count(name)
+                rows.extend({**self._item_view(st, i, item, times_list[i] if i < len(times_list) else (None, None), seen),
+                             "slot": name, "game": st.game or cfg.game, "owner": cfg.owner}
+                            for i, item in enumerate(st.items))
+        when = "checked_at" if kind == "sent" else "received_at"
+        rows.sort(key=lambda r: (r[when] is None, -(r[when] or 0), r["slot"],
+                                 r.get("location") or "" if kind == "sent" else -r["index"]))
+        slots = []
+        for name in self.trackers:
+            st = self.trackers[name].state
+            cfg = self.slot_configs[name]
+            slots.append({"name": name, "game": st.game or cfg.game, "owner": cfg.owner,
+                          "checks": {"done": len(st.checked), "total": len(st.checked) + len(st.missing)},
+                          "sent": self._sent_counts(name), "received": len(st.items)})
+        return {"kind": kind, "total": len(rows), "offset": offset, "items": rows[offset:offset + limit],
+                "slots": slots, "scout_checked": self.config.scout_checked}

@@ -105,6 +105,20 @@ Mêmes champs que `items_list` de `GET /api/slots/{name}`, plus `slot`, `game` e
 envoyés par un autre joueur ou le serveur (`origin` `other` ou `server`) dont l'heure de réception est connue
 (`received_at` jamais nul). Le front le recharge quand `items.received` ou `items.new` d'un slot change.
 
+## `GET /api/history?kind=sent|received&slot=...&limit=200&offset=0` — page « Historique »
+`kind=sent` : tous les checks faits par les slots (`slot` répétable, absent = tous), du plus récent au plus ancien
+(heure inconnue en dernier). Chaque entrée : `slot`, `game`, `owner`, `location_id`, `location`, `checked_at`
+(heure à laquelle l'app a vu le check ; `null` = fait avant que l'app note l'heure des checks), `checked_after` (si
+seulement un intervalle est connu), `item`, `receiver`, `receiver_game`, `to_self`, `progression`, `useful`, `trap`.
+`item` est `null` quand le contenu n'est pas connu : il vient de `LocationScouts` (option `scout_checked`, D20) ou
+des items reçus par un slot suivi.
+`kind=received` : tous les items reçus (champs de `items_list`, plus `slot`, `game`, `owner`).
+Réponse : `{"kind", "total", "offset", "items": [...], "slots": [{name, game, owner, checks: {done, total},
+sent: {known, to_others}, received}], "scout_checked"}`.
+
+Le résumé de chaque slot (`GET /api/slots`, événements `slot`) a aussi `sent: {known, to_others}` : checks au contenu
+connu, et parmi eux ceux partis chez un autre joueur.
+
 ## `GET /api/logs/stream?lines=300` (Server-Sent Events) — page « Journal »
 Suit `data/logs/app.log` (écrit par `scripts/app.sh`) comme `tail -f`. Lecture seule ; le mot de passe de la room est
 remplacé par `•••`.
@@ -123,6 +137,7 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
 ```json
 {"room_url": "https://archipelago.gg/room/AbC...", "server": "", "has_password": true,
  "wake_room": false,                       // réveil automatique de la room (désactivé par défaut)
+  "scout_checked": true,                    // contenu des checks faits demandé au serveur (Historique, D20)
  "has_backup": true,                       // config/room.yaml.bak existe (bouton « Restaurer »)
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}],
  "player_yamls": ["config/players/kh2.yaml", "config/players/romain/romain_kh2.yaml"],

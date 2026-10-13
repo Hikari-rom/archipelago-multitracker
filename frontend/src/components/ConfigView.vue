@@ -40,6 +40,7 @@ const advanced = ref(false)
 const password = ref('')
 const clearPassword = ref(false)
 const wakeRoom = ref(false)
+const scoutChecked = ref(true)
 const rows = ref<SlotRow[]>([])
 const loading = ref(true)
 const loadError = ref('')
@@ -112,6 +113,7 @@ onMounted(async () => {
     server.value = c.room_url ? '' : (c.server ?? '')
     advanced.value = !c.room_url && !!c.server
     wakeRoom.value = !!c.wake_room
+    scoutChecked.value = c.scout_checked !== false
     rows.value = autoAssociate(mergeRows(c.slots, null), yamls.value).rows
   } catch (e) {
     loadError.value = errText(e)
@@ -263,6 +265,7 @@ async function onSave(): Promise<void> {
         password: { value: password.value, clear: clearPassword.value },
         rows: rows.value,
         wakeRoom: wakeRoom.value,
+        scoutChecked: scoutChecked.value,
       }),
     )
     password.value = ''
@@ -392,6 +395,18 @@ const selectClass =
               <Label for="cfg-wake" class="font-normal">Réveiller automatiquement la room quand elle dort</Label>
               <p class="text-muted-foreground text-xs">
                 Désactivé : l'app attend que quelqu'un ouvre la room (elle ne la garde pas allumée).
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-2">
+            <Checkbox id="cfg-scout" v-model="scoutChecked" class="mt-0.5" />
+            <div class="flex flex-col gap-0.5">
+              <Label for="cfg-scout" class="font-normal">Demander au serveur le contenu des checks déjà faits</Label>
+              <p class="text-muted-foreground text-xs">
+                Pour l'Historique : quel item était dans chacun de tes checks faits, et pour qui. Seulement des checks
+                déjà faits, sans créer de hint : rien n'est dévoilé. Désactivé : l'item n'est connu que s'il est parti
+                vers un slot suivi par l'app.
               </p>
             </div>
           </div>

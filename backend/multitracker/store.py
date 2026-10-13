@@ -36,6 +36,17 @@ CREATE TABLE IF NOT EXISTS item_times (
     received_after REAL,
     PRIMARY KEY (seed_name, slot_name, idx)
 );
+CREATE TABLE IF NOT EXISTS check_log (
+    seed_name TEXT NOT NULL,
+    slot_name TEXT NOT NULL,
+    location INTEGER NOT NULL,
+    checked_at REAL,
+    checked_after REAL,
+    item INTEGER,
+    receiver INTEGER,
+    flags INTEGER,
+    PRIMARY KEY (seed_name, slot_name, location)
+);
 CREATE TABLE IF NOT EXISTS datapackage (
     game TEXT NOT NULL,
     checksum TEXT NOT NULL,
@@ -58,7 +69,8 @@ class Store:
 
     def _migrate(self) -> None:
         """Columns added after the first release of a table (CREATE TABLE IF NOT EXISTS keeps old tables)."""
-        for table, column in (("tracking", "last_seen_at"), ("item_times", "received_after")):
+        for table, column in (("tracking", "last_seen_at"), ("item_times", "received_after"),
+                              ("tracking", "checks_started_at")):
             columns = {row[1] for row in self._db.execute(f"PRAGMA table_info({table})")}
             if column not in columns:
                 self._db.execute(f"ALTER TABLE {table} ADD COLUMN {column} REAL")
@@ -122,6 +134,45 @@ class Store:
             self._db.executemany("INSERT OR IGNORE INTO item_times(seed_name, slot_name, idx, received_at, "
                                  "received_after) VALUES (?,?,?,?,?)",
                                  [(seed_name, slot_name, i, at, after) for i in range(start, start + count)])
+
+    # -- history: when each location was checked, and what it held -------------------------
+    def checks_started_at(self, seed_name: str, slot_name: str) -> float | None:
+        """When the app started recording the slot's check times (None: not yet)."""
+        with self._lock:
+            row = self._db.execute("SELECT checks_started_at FROM tracking WHERE seed_name=? AND slot_name=?",
+                                   (seed_name, slot_name)).fetchone()
+        return None if row is None or row[0] is None else float(row[0])
+
+    def check_log(self, seed_name: str, slot_name: str) -> dict[int, dict[str, Any]]:
+        """{location: {checked_at, checked_after, item, receiver, flags}}"""
+        with self._lock:
+            rows = self._db.execute("SELECT location, checked_at, checked_after, item, receiver, flags FROM check_log "
+                                    "WHERE seed_name=? AND slot_name=?", (seed_name, slot_name)).fetchall()
+        keys = ("checked_at", "checked_after", "item", "receiver", "flags")
+        return {int(row[0]): dict(zip(keys, row[1:])) for row in rows}
+
+    def add_checks(self, seed_name: str, slot_name: str, locations: list[int], at: float | None,
+                   after: float | None = None, started_at: float | None = None) -> None:
+        """Locations newly seen checked, at `at` (None: before the app recorded check times). `started_at`: first
+        recording for this slot (the locations are the ones checked before)."""
+        with self._lock, self._db:
+            self._db.executemany("INSERT INTO check_log(seed_name, slot_name, location, checked_at, checked_after) "
+                                 "VALUES (?,?,?,?,?) ON CONFLICT(seed_name, slot_name, location) DO NOTHING",
+                                 [(seed_name, slot_name, int(loc), at, after) for loc in locations])
+            if started_at is not None:
+                self._db.execute("UPDATE tracking SET checks_started_at=? WHERE seed_name=? AND slot_name=?",
+                                 (started_at, seed_name, slot_name))
+
+    def set_check_contents(self, seed_name: str, slot_name: str,
+                           contents: list[tuple[int, int, int, int]]) -> None:
+        """What checked locations held: [(location, item, receiving slot, flags)] (from LocationScouts)."""
+        with self._lock, self._db:
+            self._db.executemany(
+                "INSERT INTO check_log(seed_name, slot_name, location, item, receiver, flags) VALUES (?,?,?,?,?,?) "
+                "ON CONFLICT(seed_name, slot_name, location) DO UPDATE SET item=excluded.item, "
+                "receiver=excluded.receiver, flags=excluded.flags",
+                [(seed_name, slot_name, int(loc), int(item), int(receiver), int(flags))
+                 for loc, item, receiver, flags in contents])
 
     # -- datapackage ---------------------------------------------------------------------
     def load_datapackages(self) -> dict[tuple[str, str], dict[str, Any]]:

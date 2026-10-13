@@ -170,3 +170,20 @@ manquaient au monde recalculé et la logique affichait 2 checks. Deux changement
   Sur la vraie room au 2026-10-13 : SM64, Odyssey, Ori WotW, TWW HD et AEMinecraft ont des yamls d'une autre room.
 Pas de « slot_data prioritaire » générique : un nom d'option peut avoir un autre sens dans le slot_data (Ori WotW,
 `bonus`, différent du yaml sur une seed pourtant cohérente). La vraie solution reste d'importer les yamls de la room.
+
+## D20 — Historique : heure et contenu des checks faits (2026-10-14, demandé par Romain)
+- **Heure d'un check** : celle où l'app le voit fait (le serveur ne date rien), mêmes règles que les items (D11) :
+  inconnue pour les checks faits avant que l'app note les heures, intervalle pour ceux faits pendant une absence.
+- **Contenu d'un check fait** : demandé au serveur avec `LocationScouts`, autorisé par Romain avec possibilité de le
+  couper (option « Demander au serveur le contenu des checks déjà faits », `scout_checked`, activée par défaut).
+  Pas de spoiler : seulement des locations **déjà faites** (l'item est déjà parti), et `create_as_hint: 0` (rien
+  n'est créé ni montré aux autres joueurs). Le garde-fou est dans `SlotTracker._send` : toute autre forme est refusée.
+  Le résultat est gardé en base (`check_log`) : une location n'est demandée qu'une fois. Sans l'option, le contenu
+  vient des items reçus par les slots suivis (ce qui part chez un joueur non suivi reste inconnu).
+- **Jeu actif choisi à la main** (sur l'appareil, `localStorage`) : « Définir comme actif » épingle un jeu ; les autres
+  ne restent actifs que s'ils ont un check plus récent que ce choix. « Plus actif » retire un jeu jusqu'à son prochain
+  check. En mode compact, un clic dans la liste épingle le jeu : une seule notion de « jeu actif ».
+- **Mode compact** : la carte du jeu actif (choisi, sinon le check le plus récent, sinon le premier de la liste) à
+  gauche, la liste de tous les jeux à droite (nom, barre, en logique, restants).
+- Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/BRIEF-claude-design.md`).
+

@@ -166,3 +166,15 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Tests : `tests/test_goals.py` (les 22 jeux sur la seed all22 : compteurs à 0 au départ, pleins avec tout le pool), `frontend/tests/goals.test.ts`
 - Plus tard, si Romain suit d'autres slots : descripteurs pour les autres jeux de la room (Stardew, Hollow Knight, Subnautica…)
 
+
+## M19 — Historique, bouton maison, jeu actif choisi, mode compact (demandé par Romain le 2026-10-13)
+Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/BRIEF-claude-design.md`).
+- [x] Heure de chaque check (première fois que l'app voit la location faite), persistée comme celle des items
+- [x] Contenu des checks faits demandé au serveur (`LocationScouts`, uniquement des locations déjà faites, sans hint), mis en cache ; désactivable dans Configuration ; sans ça, l'item n'est connu que s'il va vers un slot suivi
+- [x] `GET /api/history` (checks envoyés et items reçus, par slot) et nombre de checks envoyés aux autres dans le résumé de chaque slot
+- [x] Page « Historique » (`#history`) : onglets Envoyés / Reçus, filtre par jeu, tableau du nombre de checks envoyés par slot
+- [x] Bouton maison dans l'en-tête (retour au tableau de bord)
+- [x] Jeu actif choisi à la main (« Définir comme actif ») et carte active désactivable (« Plus actif » : redevient active seulement au prochain check)
+- [x] Mode compact : à gauche la carte du jeu actif (un seul : choisi à la main, sinon le check le plus récent), à droite la liste compacte des jeux (nom, barre, en logique) ; un clic change le jeu affiché
+- [x] Hints dans les cartes au format « Objet → check ∆ monde » (demandé par Romain le 2026-10-14)
+- [x] Tests (backend 69 + `test_history_checks.py`, front 75), captures `test-output/screenshots/m19/`, docs (API, D20, PROGRESS), relecture, commit/push

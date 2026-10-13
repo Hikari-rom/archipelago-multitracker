@@ -74,3 +74,19 @@ export function saveActiveMinutes(v: number): void {
     /* ignore */
   }
 }
+
+/** Time of a check of the History page (same rules as the items: unknown before tracking, or a range). */
+export function formatChecked(c: { checked_at: number | null; checked_after: number | null }, nowMs = Date.now()): string {
+  return formatReceived({ received_at: c.checked_at, received_after: c.checked_after }, nowMs)
+}
+export function checkedTitle(c: { checked_at: number | null; checked_after: number | null }): string {
+  if (c.checked_at == null) return "Fait avant que l'app note l'heure des checks : heure inconnue"
+  if (c.checked_after != null) return "Fait pendant que l'app ne suivait pas ce slot (app arrêtée, room endormie…), entre ces deux moments"
+  return ''
+}
+
+/** Per-slot line of the History page: checks sent to other players, and how many checks have a known content. */
+export function sentText(s: { checks: { done: number }; sent: { known: number; to_others: number } }): string {
+  const unknown = s.checks.done - s.sent.known
+  return unknown > 0 ? `${s.sent.to_others} (+ ${unknown} au contenu inconnu)` : String(s.sent.to_others)
+}

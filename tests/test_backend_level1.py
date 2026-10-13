@@ -175,8 +175,8 @@ async def test_wrong_password_is_reported(server, tmp_path):
 
 async def test_tracker_never_sends_write_commands():
     from multitracker.ap.tracker import ALLOWED_COMMANDS, ForbiddenCommand, SlotTracker
-    assert ALLOWED_COMMANDS == {"GetDataPackage", "Connect", "Sync", "Get", "SetNotify"}
-    tracker = SlotTracker("127.0.0.1:1", "", "x", "y", datapackage=None)
+    assert ALLOWED_COMMANDS == {"GetDataPackage", "Connect", "Sync", "Get", "SetNotify", "LocationScouts"}
+    tracker = SlotTracker("127.0.0.1:1", "", "x", "y", datapackage=None)  # scout_checked off by default
 
     class FakeSock:
         sent = []
@@ -188,7 +188,18 @@ async def test_tracker_never_sends_write_commands():
     for cmd in ("LocationChecks", "StatusUpdate", "Say", "Set", "LocationScouts", "CreateHints", "Bounce"):
         with pytest.raises(ForbiddenCommand):
             await tracker._send({"cmd": cmd})
+    # LocationScouts: only when enabled, on checked locations, never as hints
+    tracker.state.checked = {1, 2}
+    with pytest.raises(ForbiddenCommand):
+        await tracker._send({"cmd": "LocationScouts", "locations": [1], "create_as_hint": 0})
+    tracker.scout_checked = True
+    for bad in ({"locations": [1, 3], "create_as_hint": 0}, {"locations": [1], "create_as_hint": 2},
+                {"locations": [1]}):
+        with pytest.raises(ForbiddenCommand):
+            await tracker._send({"cmd": "LocationScouts", **bad})
     assert FakeSock.sent == []
+    await tracker._send({"cmd": "LocationScouts", "locations": [1, 2], "create_as_hint": 0})
+    assert len(FakeSock.sent) == 1
 
 
 def free_port() -> int:
