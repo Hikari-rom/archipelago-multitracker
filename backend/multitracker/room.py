@@ -39,6 +39,15 @@ def allowed_hosts() -> set[str]:
     return DEFAULT_HOSTS | extra
 
 
+NAT64_PREFIX = ipaddress.IPv6Network("64:ff9b::/96")  # RFC 6052 well-known prefix (IPv6-only networks, DNS64)
+
+
+def _is_private(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if isinstance(ip, ipaddress.IPv6Address) and ip in NAT64_PREFIX:
+        ip = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)  # judge the IPv4 address it translates to
+    return ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+
+
 def _check_target(scheme: str, host: str) -> None:
     host = host.lower()
     if host not in allowed_hosts():
@@ -54,7 +63,7 @@ def _check_target(scheme: str, host: str) -> None:
             raise RoomError(f"impossible de résoudre {host}") from exc
         for info in infos:
             ip = ipaddress.ip_address(info[4][0])
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            if _is_private(ip):
                 raise RoomError(f"{host} pointe vers une adresse privée ({ip}) : refusé")
 
 
