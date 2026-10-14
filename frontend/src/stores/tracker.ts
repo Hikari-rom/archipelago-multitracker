@@ -7,6 +7,9 @@ import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
 import type { RecentItem, SlotDetail, SseState } from '../lib/types'
 
+// declared before the store: its initializer reads it (a later const would throw there, silently caught)
+const ACTIVITY_KEY = 'amt-activity'
+
 export const tracker = reactive({
   ...initialState(),
   sse: 'connecting' as SseState,
@@ -35,7 +38,6 @@ export const tracker = reactive({
   activity: loadActivity(),
 })
 
-const ACTIVITY_KEY = 'amt-activity'
 function loadActivity(): ActivityOverrides {
   try {
     const v = JSON.parse(localStorage.getItem(ACTIVITY_KEY) ?? 'null')

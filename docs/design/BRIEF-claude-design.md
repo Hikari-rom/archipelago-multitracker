@@ -1,7 +1,9 @@
 # Brief pour Claude Design : refonte de l'affichage de l'Archipelago Multitracker
 
 > À coller tel quel dans Claude Design, avec les captures de l'app actuelle en pièces jointes
-> (`test-output/design/captures/`, voir la liste en fin de document).
+> (`test-output/design/captures/` ou `test-output/design/captures-app-actuelle.zip`, liste en fin de document).
+> Mis à jour le 2026-10-14 : Historique, mode compact, jeu actif choisi à la main et bouton maison existent
+> maintenant dans une première version fonctionnelle, à redessiner ; il reste à créer le fond étoilé et les thèmes.
 
 ---
 
@@ -49,7 +51,10 @@ Une maquette ne doit montrer **que ces données** : l'app n'en a pas d'autres.
   qui sont en logique (important : ce sont des checks utiles à faire en priorité) ;
 - **but** du jeu (« 120 fraises, puis Core A ») avec des compteurs (Strawberry 1 / 120) et des étapes (faite / à
   faire / invisible pour un tracker), et un drapeau « but atteint » ;
-- heure du dernier check : un jeu est **« actif »** s'il a eu un check dans les 30 dernières minutes (réglable) ;
+- heure du dernier check : un jeu est **« actif »** s'il a eu un check dans les 30 dernières minutes (réglable), ou
+  si je l'ai **choisi comme actif** à la main (« Actif · choisi ») ; je peux aussi retirer un jeu des actifs
+  (« Plus actif ») jusqu'à son prochain check ;
+- checks **envoyés aux autres** : parmi mes checks faits, combien contenaient un item pour un autre joueur ;
 - en détail : la liste des **locations en logique**, groupées par région du jeu, celles qui sont hintées mises en
   avant ; la liste des items reçus (nom, de qui, depuis quel jeu, quand, catégorie : progression / utile / piège /
   normal) ; la liste des hints.
@@ -61,9 +66,16 @@ Une maquette ne doit montrer **que ces données** : l'app n'en a pas d'autres.
   maintenant ») ;
 - état de la connexion temps réel de la page (« En direct »).
 
-**Prévu, pour la nouvelle page Historique** : pour chacun de mes checks faits, la location, l'item qui y était et à
-qui il est parti (moi ou un autre joueur), avec l'heure quand l'app l'a vu. Aussi, par slot, le nombre de checks
-envoyés aux autres.
+**Historique** :
+- pour chacun de mes checks faits : la location, l'item qui y était (avec sa catégorie : progression / utile /
+  piège / normal) et à qui il est parti (moi, ou un autre joueur et son jeu), avec l'heure à laquelle l'app l'a vu
+  (« avant le suivi » pour les checks faits avant que l'app ne suive le slot) ; parfois « contenu inconnu » ;
+- pour chaque item reçu : l'item, pour quel jeu, de qui et depuis quelle location (ou « inventaire de départ »),
+  et quand ;
+- par slot : checks faits / total, envoyés aux autres, items reçus.
+
+Exemple de ligne : « Old Site A - Room s2 → ★ **Sand of Hours** pour romain_zeldaph (The Legend of Zelda - Phantom
+Hourglass) · Celeste (Open World) (romain_celeste) · avant le suivi ».
 
 Exemple réel d'un slot, tel que l'app le reçoit :
 
@@ -73,7 +85,7 @@ Exemple réel d'un slot, tel que l'app le reçoit :
   "checks": {"done": 42, "total": 729, "remaining": 687},
   "items": {"received": 1, "new": 1},
   "hints": {"mine_elsewhere": 6, "in_my_world": 0, "in_my_world_in_logic": 0},
-  "goal": false, "last_check_at": 1791926335,
+  "goal": false, "last_check_at": 1791926335, "sent": {"known": 42, "to_others": 41},
   "logic": {"state": "ok", "count": 7, "message": null},
   "objective": {
     "summary": "120 fraises, puis Core A",
@@ -89,34 +101,55 @@ Exemple d'une entrée du fil des items reçus : « ★ **Sand Kingdom Power Moon
 
 ## 3. L'app actuelle (voir les captures jointes)
 
-Une seule page avec un en-tête et plusieurs vues :
-- **Tableau de bord** : en-tête avec les totaux, la barre de progression globale, le tri (Conseillé / En logique /
-  % en logique) et « Masquer les jeux terminés » ; fil des 5 derniers items reçus ; puis une grille de cartes, une
-  par jeu (3 colonnes sur grand écran, 1 sur téléphone). Le jeu actif est mis en avant dans une carte pleine
-  largeur, détails ouverts. Barre de progression à deux couleurs : **vert = checks faits, bleu = checks en logique**.
-- **Détails d'une carte** : locations en logique par région, items reçus, hints.
+Une seule page avec un en-tête et plusieurs vues. En-tête : titre, serveur et lien de la room, « En direct »,
+bouton **maison** (retour au tableau de bord), Configuration, Objectifs, Historique, Journal, Thème (clair / sombre /
+auto).
+- **Tableau de bord** : sous l'en-tête, les totaux, la barre de progression globale, le tri (Conseillé / En logique /
+  % en logique), **l'affichage (Cartes / Compact)** et « Masquer les jeux terminés » ; fil des 5 derniers items
+  reçus ; puis les jeux. Barre de progression à deux couleurs : **vert = checks faits, bleu = checks en logique**.
+  - **Affichage Cartes** : une grille de cartes, une par jeu (3 colonnes sur grand écran, 1 sur téléphone). Le ou
+    les jeux actifs sont mis en avant dans une carte pleine largeur, détails ouverts.
+  - **Affichage Compact** : à gauche, une seule grande carte (le jeu actif : celui choisi à la main, sinon celui
+    au check le plus récent) ; à droite, une ligne par jeu (nom, nombre en logique, barre, slot, nouveaux items,
+    restants). Un clic sur une ligne en fait le jeu actif. Sur téléphone, la liste passe sous la carte.
+  - Chaque carte a un bouton **« Définir comme actif »**, ou **« Plus actif »** si elle l'est déjà. Ce choix est
+    mémorisé par appareil.
+- **Détails d'une carte** : locations en logique par région, nouveaux items, historique des items reçus, hints
+  (« Hookshot → Chest ∆ TWWHD (The Wind Waker HD) »).
+- **Historique** : onglets « Checks envoyés » / « Items reçus », filtre par jeu, tableau par jeu (checks faits,
+  envoyés aux autres, items reçus, avec un total ; un clic sur une ligne filtre), puis la liste complète, du plus
+  récent au plus ancien, par pages de 200.
 - **Objectifs** : une carte par jeu avec son but, ses compteurs et ses étapes, triées par avancement.
-- **Configuration** : lien de la room, mot de passe, import de yamls, choix des slots suivis.
+- **Configuration** : lien de la room, mot de passe, réveil de la room, contenu des checks faits, import de yamls,
+  choix des slots suivis.
 - **Journal** : logs de l'app en direct, avec filtres.
-- Thèmes clair / sombre / auto.
 
 Ce qui me gêne aujourd'hui (complète avec ton propre regard sur les captures) :
 - les 22 cartes se ressemblent toutes et sont longues : on scrolle beaucoup pour voir où avancer ;
 - beaucoup de texte et de badges de même poids : l'info clé, le nombre de checks en logique, ne ressort pas assez ;
-- l'aspect est fonctionnel mais neutre : je voudrais quelque chose de plus agréable et avec du caractère.
+- l'aspect est fonctionnel mais neutre : je voudrais quelque chose de plus agréable et avec du caractère ;
+- l'en-tête a 6 boutons : sur téléphone il prend un écran entier avec les totaux et le fil, et le jeu actif
+  n'apparaît qu'après avoir scrollé ;
+- le mode compact ressemble à un collage de l'existant : la grande carte à gauche reste très longue (détails
+  ouverts), et sur téléphone la liste des jeux est tout en bas ;
+- l'Historique est une longue liste de texte, difficile à parcourir ; sur téléphone, le tableau par jeu est à
+  l'étroit ;
+- les boutons « Définir comme actif » / « Plus actif » sont discrets et leur effet n'est pas évident.
 
-## 4. Ce que je veux ajouter (à intégrer dans tes propositions)
+## 4. Ce que je veux
 
+**À créer** :
 1. **Fond étoilé légèrement animé** (ciel, étoiles qui scintillent ou dérivent lentement, sans gêner la lecture),
-   et **d'autres thèmes au choix** dans un **menu déroulant « Thème » en haut à droite**. Propose 3 ou 4 thèmes
-   cohérents entre eux (par exemple un ciel étoilé sombre, un clair, et d'autres idées liées à l'univers
-   « archipel / multi-jeux »).
-2. **Une page Historique** : tous mes checks envoyés et tous les items reçus, en entier, filtrables par jeu, plus
-   le nombre de checks envoyés par slot (voir « Prévu » plus haut).
-3. **Un bouton avec une icône maison** pour revenir au tableau de bord depuis n'importe quelle page.
-4. **Choisir moi-même la carte active, et désactiver une carte active** : l'activité automatique (un check dans les
-   30 dernières minutes) reste trop longtemps alors que j'ai déjà changé de jeu.
-5. **Un mode « compact »** à étudier :
+   et **d'autres thèmes au choix** dans un **menu déroulant « Thème » en haut à droite** (il remplace le bouton
+   clair / sombre / auto actuel). Propose 3 ou 4 thèmes cohérents entre eux (par exemple un ciel étoilé sombre, un
+   clair, et d'autres idées liées à l'univers « archipel / multi-jeux »).
+
+**Existe déjà en version fonctionnelle, à redessiner** (voir les captures) :
+2. **La page Historique** : checks envoyés et items reçus, en entier, filtrables par jeu, avec le tableau par jeu.
+3. **Le bouton maison** et la navigation en général (6 boutons dans l'en-tête aujourd'hui).
+4. **Le jeu actif choisi à la main** (« Définir comme actif » / « Plus actif ») : l'activité automatique (un check
+   dans les 30 dernières minutes) reste trop longtemps alors que j'ai déjà changé de jeu.
+5. **Le mode compact** :
    - à gauche, une seule grande carte : le jeu actif (s'il y en a plusieurs, celui qui a le check le plus récent) ;
    - à droite, une liste compacte de tous les jeux : nom, barre de checks, nombre de checks en logique ;
    - un clic sur un jeu de la liste en fait le jeu affiché à gauche.
@@ -147,12 +180,15 @@ Ce qui me gêne aujourd'hui (complète avec ton propre regard sur les captures) 
 - propose **3 directions visuelles contrastées**. Pour chacune : un nom, l'ambiance en une phrase, la palette, la
   typographie, la façon dont le tableau de bord met en avant « où avancer », et un aperçu rapide du tableau de bord
   (grand écran) dans cette direction ;
-- donne ton avis sur le mode compact : faut-il qu'il devienne l'affichage par défaut, une option, ou autre chose ?
+- donne ton avis sur le mode compact, maintenant que tu vois la première version : faut-il qu'il devienne
+  l'affichage par défaut, reste une option, ou autre chose (et comment il doit se comporter sur téléphone) ?
 
 **Étape 2, une fois la direction choisie** : maquettes de
-- tableau de bord (grand écran et téléphone), en mode normal et compact ;
-- carte d'un jeu : repos, active, détails ouverts, but atteint, logique indisponible, room endormie ;
-- page Historique ;
+- en-tête et navigation (grand écran et téléphone) ;
+- tableau de bord (grand écran et téléphone), en mode Cartes et Compact ;
+- carte d'un jeu : repos, active (automatiquement / choisie à la main), détails ouverts, but atteint, logique
+  indisponible, room endormie ;
+- page Historique (checks envoyés, items reçus, tableau par jeu ; grand écran et téléphone) ;
 - page Objectifs ;
 - menu Thème, avec les 3 ou 4 thèmes.
 
@@ -164,15 +200,20 @@ Code puisse l'implémenter fidèlement.
 
 ---
 
-**Captures jointes** (app actuelle, données réelles) :
+**Captures jointes** (app actuelle au 2026-10-14, données réelles ; l'Isaac « Actif · choisi » a été choisi à la
+main pour la capture) :
 
 | Fichier | Page |
 |---|---|
-| `01-tableau-de-bord-desktop-dark.png` | Tableau de bord, haut de page, sombre |
-| `02-tableau-de-bord-complet-desktop-dark.png` | Tableau de bord, page entière (22 jeux), sombre |
+| `01-tableau-de-bord-cartes-desktop-dark.png` | Tableau de bord, affichage Cartes, haut de page |
+| `02-tableau-de-bord-cartes-complet-desktop-dark.png` | Le même, page entière (22 jeux) |
 | `03-carte-details-ouverts-desktop-dark.png` | Carte avec détails ouverts |
-| `04-objectifs-desktop-dark.png`, `08-objectifs-desktop-light.png` | Objectifs, sombre et clair |
-| `05-journal-desktop-dark.png` | Journal |
-| `06-configuration-desktop-dark.png` | Configuration |
-| `07-tableau-de-bord-desktop-light.png` | Tableau de bord, clair |
-| `09` à `13` (`-mobile-dark`) | Les mêmes pages sur téléphone |
+| `04-tableau-de-bord-compact-desktop-dark.png` | Affichage Compact |
+| `05-tableau-de-bord-compact-autre-jeu-desktop-dark.png` | Compact après un clic sur un autre jeu, page entière |
+| `06-historique-checks-envoyes-desktop-dark.png` | Historique, checks envoyés, page entière |
+| `07-historique-items-recus-desktop-dark.png` | Historique, items reçus |
+| `08-objectifs-desktop-dark.png` | Objectifs |
+| `09-journal-desktop-dark.png` | Journal |
+| `10-configuration-desktop-dark.png` | Configuration |
+| `11` à `14` (`-desktop-light`) | Cartes, Compact, Historique et Objectifs en thème clair |
+| `15` à `23` (`-mobile-dark`) | Les mêmes pages sur téléphone (390 px) |

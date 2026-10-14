@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import CompactList from '../src/components/CompactList.vue'
 import HistoryView from '../src/components/HistoryView.vue'
 import SlotCard from '../src/components/SlotCard.vue'
@@ -65,6 +65,17 @@ describe('active game chosen by hand', () => {
     expect(tracker.activity.pinned?.name).toBe('idle')
     pinActive('played')
     expect(tracker.activity.pinned?.name).toBe('played')
+  })
+})
+
+describe('active game chosen by hand, after a reload', () => {
+  it('the store reads the saved choice back', async () => {
+    const saved = { pinned: { name: 'kept', at: 1_700_000_000 }, dismissed: { gone: 12 } }
+    localStorage.setItem('amt-activity', JSON.stringify(saved))
+    vi.resetModules()
+    const fresh = await import('../src/stores/tracker')
+    expect(fresh.tracker.activity).toEqual(saved)
+    localStorage.removeItem('amt-activity')
   })
 })
 

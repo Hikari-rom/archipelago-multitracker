@@ -121,7 +121,8 @@
 
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de
-  l'app actuelle dans `test-output/design/captures-app-actuelle.zip`.
+  l'app actuelle dans `test-output/design/captures-app-actuelle.zip` (23 captures, refaites le 2026-10-14 après M19,
+  brief inclus ; script `test-output/design/capture.mjs`).
 - **Yamls de la nouvelle room** : faits le 2026-10-14 (copiés de `~/romaing/Validés`, anciens gardés dans
   `config/players/romain-ancienne-room/`, non versionné ; `config/players/romain/` est commité depuis) ; plus aucun jeu ne signale de locations manquantes.
 - **Room vérifiée le 2026-10-11 vers 10 h 30** : 22 slots connectés, logique OK pour 21 jeux (OoT indisponible).
