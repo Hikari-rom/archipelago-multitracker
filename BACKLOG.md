@@ -165,6 +165,7 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Ligne « But » sur chaque carte du tableau de bord (avec le premier compteur pas encore atteint) et page « Objectifs » (`#goals`) : compteurs avec barres, étapes (faite / à faire / invisible pour un tracker), tri par avancement
 - [x] Tests : `tests/test_goals.py` (les 22 jeux sur la seed all22 : compteurs à 0 au départ, pleins avec tout le pool), `frontend/tests/goals.test.ts`
 - [x] (2026-10-14) Étapes « ? » remplacées quand un check les montre : cartes d'Ori BF, Wisps d'Ori WotW, Bowser de SM64
+- [x] (2026-10-14) Mario Kart Double Dash (remplace OoT dans la nouvelle room) : trophées, puis All Cup Tour (débloqué, cylindrée minimale, victoire) ou objectif « trophées »
 - Plus tard, si Romain suit d'autres slots : descripteurs pour les autres jeux de la room (Stardew, Hollow Knight, Subnautica…)
 
 

@@ -137,3 +137,33 @@ def test_sm64_bowser_stages_follow_their_key_checks():
     assert steps["Bowser in the Dark World"] is True and steps["Bowser in the Fire Sea"] is False
     goal = describe(_ctx("Super Mario 64", {"StarsToFinish": 70, "CompletionType": 1}, [], []))
     assert {s["label"]: s["done"] for s in goal["steps"]}["Bowser in the Fire Sea"] is None
+
+
+def test_mkdd_all_cup_tour_goal():
+    from multitracker.goals import describe
+    ctx = _ctx("Mario Kart Double Dash", {"trophy_requirement": 13, "all_cup_tour_min_cc": 1,
+                                          "all_cup_tour_min_rank": 0},
+               ["All Cup Tour Gold", "Trophy Goal Completed"], [])
+    ctx.received = Counter({"Trophy": 4, "Progressive CC": 1})
+    goal = describe(ctx)
+    assert goal["summary"] == "13 trophées, puis l'All Cup Tour en or (100cc)"
+    assert goal["counters"] == [{"label": "Trophées", "current": 4, "target": 13}]
+    assert goal["steps"] == [{"label": "All Cup Tour débloqué", "done": False},
+                             {"label": "100cc", "done": True},
+                             {"label": "Gagner l'All Cup Tour", "done": False}]
+    ctx.checked = {"All Cup Tour Gold"}
+    assert describe(ctx)["steps"][-1]["done"] is True
+
+
+def test_mkdd_trophies_goal_from_the_locations_and_the_yaml():
+    from multitracker.goals import describe
+    ctx = _ctx("Mario Kart Double Dash", {"trophy_requirement": 10, "all_cup_tour_min_cc": 2},
+               ["Trophy Goal Completed"], ["Trophy Goal Completed"])
+    goal = describe(ctx)
+    assert goal["summary"] == "10 trophées"
+    assert [s["label"] for s in goal["steps"]] == ["Objectif atteint"] and goal["steps"][0]["done"] is True
+    ctx = _ctx("Mario Kart Double Dash", {}, [], [])
+    ctx.yaml = {"goal": "all_cup_tour", "all_cup_tour_min_cc": "50cc"}
+    goal = describe(ctx)
+    assert goal["summary"] == "Trophées, puis l'All Cup Tour en or (50cc)"
+    assert [s["label"] for s in goal["steps"]] == ["All Cup Tour débloqué", "Gagner l'All Cup Tour"]

@@ -113,6 +113,11 @@
 - Objectifs : plus d'étape « ? » quand un check la montre. Ori BF : compteur « Cartes activées » (locations des
   cartes, ou `ProgressiveMap1..9`) ; Ori WotW : compteur « Wisps » (les 5 locations des Wisps) ; SM64 : Bowser in
   the Dark World / Fire Sea suivent leur clé. « ? » seulement si ces locations manquent au slot.
+- Objectif de Mario Kart Double Dash (jeu arrivé avec la nouvelle room, à la place d'OoT) : compteur de trophées
+  (`trophy_requirement` du slot_data), puis All Cup Tour débloqué, cylindrée minimale et victoire ; le mode vient du
+  yaml, sinon de la présence de la location « All Cup Tour Gold ». Les 22 slots ont maintenant un objectif.
+- Yamls de `config/players/romain/` reliés aux 22 slots dans `config/room.yaml` (10 slots n'ont pas le même nom que
+  leur yaml, « Associer automatiquement » ne les trouve pas) : logique OK pour les 22 jeux.
 
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de

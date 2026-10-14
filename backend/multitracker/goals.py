@@ -418,6 +418,37 @@ def mkwii(c: GoalContext) -> Goal:
     return g
 
 
+MKDD_CC = ["50cc", "100cc", "150cc", "Mirror"]
+MKDD_RANKS = ["en or", "en argent ou mieux", "en bronze ou mieux", "parfait"]
+
+
+def mkdd(c: GoalContext) -> Goal:
+    # the goal option is not in the slot_data: the All Cup Tour win location only exists in that mode
+    goal = c.opt("goal", "goal", None)
+    goal = {"all_cup_tour": 0, "trophies": 1}.get(goal, goal)
+    if goal is None:
+        goal = 0 if "All Cup Tour Gold" in c.locations or not c.locations else 1
+    trophies = int(c.opt("trophy_requirement", None, 0) or 0)  # computed by the generator from a percentage
+    needed = plural(trophies, "trophée") if trophies else "Trophées"
+    if goal == 1:
+        g = Goal(c, needed)
+        g.counter("Trophées", c.count("Trophy"), trophies)
+        g.final("Objectif atteint", "Trophy Goal Completed")
+        return g
+    cc = c.opt("all_cup_tour_min_cc", "all_cup_tour_min_cc", 1)
+    cc = MKDD_CC.index(cc) if cc in MKDD_CC else int(cc)
+    rank = c.opt("all_cup_tour_min_rank", "all_cup_tour_min_rank", 0)
+    rank = {"gold": 0, "silver": 1, "bronze": 2, "perfect": 3}.get(rank, rank)
+    rank = MKDD_RANKS[rank] if isinstance(rank, int) and 0 <= rank < 4 else str(rank)
+    g = Goal(c, f"{needed}, puis l'All Cup Tour {rank} ({MKDD_CC[cc]})")
+    g.counter("Trophées", c.count("Trophy"), trophies)
+    g.item("All Cup Tour débloqué", "All Cup Tour")
+    if cc > 0:  # races start at 50cc, each Progressive CC unlocks the next class
+        g.item(MKDD_CC[cc], "Progressive CC", cc)
+    g.final("Gagner l'All Cup Tour", "All Cup Tour Gold")
+    return g
+
+
 SMO_GATES = [("Cascade", 5, "Sand"), ("Sand", 16, "Lake"), ("Lake", 8, "Wooded"), ("Wooded", 16, "Lost"),
              ("Lost", 10, "Metro"), ("Metro", 20, "Snow"), ("Snow", 10, "Seaside"), ("Seaside", 10, "Luncheon"),
              ("Luncheon", 18, "Ruined"), ("Ruined", 3, "Bowser's"), ("Bowser's", 8, "Moon")]
@@ -543,6 +574,7 @@ DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Kingdom Hearts Birth by Sleep": kh_bbs,
     "AEMinecraft": minecraft,
     "Mario Kart Wii": mkwii,
+    "Mario Kart Double Dash": mkdd,
     "Spicy Meatball Overdrive": odyssey,
     "Ocarina of Time": oot,
     "Ratchet & Clank 2": rac2,
