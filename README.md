@@ -197,7 +197,7 @@ Le plus simple : ouvre l'app, bouton **Configuration**.
    slots et de jeux, le port, et si la room dort (bouton « Réveiller la room »). Mets le mot de passe et
    « Tester la connexion » (une connexion d'essai en lecture seule).
 2. **Yamls** : « Importer des yamls » (un ou plusieurs fichiers, multi-documents acceptés) les range dans
-   `config/players/` (jamais commité). « Associer automatiquement » donne à chaque slot le yaml qui a le même `name`
+   `config/players/` (gitignoré, sauf `config/players/romain/` : les yamls de Romain pour sa room). « Associer automatiquement » donne à chaque slot le yaml qui a le même `name`
    (avec `{player}`/`{number}` gérés) et le même jeu.
 3. **Slots** : recherche, filtre par jeu, « Cocher les affichés », « Cocher ceux qui ont un yaml ». Sous chaque slot
    coché, un diagnostic : pas d'apworld (suivi des checks seulement), logique pas encore validée, yaml nécessaire mais
