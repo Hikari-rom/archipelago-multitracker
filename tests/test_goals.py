@@ -93,3 +93,47 @@ def test_yaml_options_skip_random_values(tmp_path):
     assert yaml_options(p, "Balatro") == {"goal": "beat_decks", "required_stake_for_goal": ["White Stake"],
                                           "jokers_unlock_goal": 75}
     assert yaml_options(None, "Balatro") == {} and yaml_options(tmp_path / "missing.yaml", "Balatro") == {}
+
+
+def _ctx(game, slot_data, locations, checked):
+    from multitracker.goals import GoalContext
+    return GoalContext(game=game, slot_data=slot_data, yaml={}, received=Counter(), checked=set(checked),
+                       locations=set(locations), goal=False)
+
+
+ORI_BF_MAPS = ["GladesMap", "BlackrootMap", "HollowGroveMap", "GumoHideoutMap", "SwampMap", "HoruMap", "ValleyMap",
+               "ForlornMap", "SorrowMap"]
+
+
+@pytest.mark.parametrize("maps", [ORI_BF_MAPS, [f"ProgressiveMap{i}" for i in range(1, 10)]])
+def test_ori_bf_maps_are_counted_from_the_map_checks(maps):
+    from multitracker.goals import describe
+    goal = describe(_ctx("Ori and the Blind Forest", {"goal": ["AllMaps"]}, maps + ["SorrowMapstone"],
+                         maps[:3] + ["SorrowMapstone"]))
+    assert {"label": "Cartes activées", "current": 3, "target": 9} in goal["counters"]
+    assert [s["label"] for s in goal["steps"]] == ["Fuir le mont Horu"]
+
+
+def test_ori_bf_maps_unknown_without_map_locations():
+    from multitracker.goals import describe
+    goal = describe(_ctx("Ori and the Blind Forest", {"goal": ["AllMaps"]}, [], []))
+    assert {"label": "Toutes les cartes", "done": None} in goal["steps"]
+
+
+def test_ori_wotw_wisps_are_counted_from_their_locations():
+    from multitracker.goals import describe
+    wisps = ["EastHollow.ForestsVoice", "LowerReach.ForestsMemory", "UpperDepths.ForestsEyes",
+             "WestPools.ForestsStrength", "WindtornRuins.Seir"]
+    goal = describe(_ctx("Ori and the Will of the Wisps", {"goal_wisps": True}, wisps, wisps[:2]))
+    assert {"label": "Wisps", "current": 2, "target": 5} in goal["counters"]
+    assert all(s["done"] is not None for s in goal["steps"]), goal["steps"]
+
+
+def test_sm64_bowser_stages_follow_their_key_checks():
+    from multitracker.goals import describe
+    keys = ["Bowser in the Dark World Key", "Bowser in the Fire Sea Key"]
+    goal = describe(_ctx("Super Mario 64", {"StarsToFinish": 70, "CompletionType": 1}, keys, keys[:1]))
+    steps = {s["label"]: s["done"] for s in goal["steps"]}
+    assert steps["Bowser in the Dark World"] is True and steps["Bowser in the Fire Sea"] is False
+    goal = describe(_ctx("Super Mario 64", {"StarsToFinish": 70, "CompletionType": 1}, [], []))
+    assert {s["label"]: s["done"] for s in goal["steps"]}["Bowser in the Fire Sea"] is None

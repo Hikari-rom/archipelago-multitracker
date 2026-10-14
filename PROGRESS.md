@@ -106,6 +106,14 @@
   désactivable, D20), bouton maison, « Définir comme actif » / « Plus actif » sur les cartes, affichage « Compact ».
   Vérifié sur la vraie room : les 67 checks faits ont leur contenu. Captures : `test-output/screenshots/m19/`.
 
+### 2026-10-14 — Réseau IPv6 seul et objectifs sans « ? »
+- Connexion depuis un partage de connexion de téléphone (IPv6 seul, NAT64) : archipelago.gg résolu en
+  `64:ff9b::…` était refusé comme « adresse privée ». `room.py` juge maintenant l'IPv4 traduite (une IPv4 privée
+  derrière NAT64 reste refusée) ; tests `tests/test_room_target.py`.
+- Objectifs : plus d'étape « ? » quand un check la montre. Ori BF : compteur « Cartes activées » (locations des
+  cartes, ou `ProgressiveMap1..9`) ; Ori WotW : compteur « Wisps » (les 5 locations des Wisps) ; SM64 : Bowser in
+  the Dark World / Fire Sea suivent leur clé. « ? » seulement si ces locations manquent au slot.
+
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de
   l'app actuelle dans `test-output/design/captures-app-actuelle.zip`.

@@ -137,7 +137,8 @@ def sm64(c: GoalContext) -> Goal:
     g.step("Basement Key", c.has("Basement Key") or prog >= 1)
     g.step("Second Floor Key", c.has("Second Floor Key") or prog >= 2)
     if all_bowsers:
-        g.step("Bowser in the Dark World", None).step("Bowser in the Fire Sea", None)
+        g.location("Bowser in the Dark World", "Bowser in the Dark World Key")
+        g.location("Bowser in the Fire Sea", "Bowser in the Fire Sea Key")
     g.final("Vaincre Bowser in the Sky")
     return g
 
@@ -291,6 +292,11 @@ ORI_BF_TREES = ["WallJumpSkillTree", "ChargeFlameSkillTree", "DashSkillTree", "G
                 "ClimbSkillTree"]
 
 
+ORI_BF_MAPS = ["GladesMap", "BlackrootMap", "HollowGroveMap", "GumoHideoutMap", "SwampMap", "HoruMap", "ValleyMap",
+               "ForlornMap", "SorrowMap"]
+ORI_BF_PROGRESSIVE_MAPS = [f"ProgressiveMap{i}" for i in range(1, 10)]
+
+
 def ori_bf(c: GoalContext) -> Goal:
     goals = c.opt("goal", "goal", ["AllSkillTrees"])
     goals = [goals] if isinstance(goals, str) else list(goals or [])
@@ -305,7 +311,12 @@ def ori_bf(c: GoalContext) -> Goal:
     if "WorldTour" in goals:
         g.counter("Relics", c.count("Relic"), int(c.opt("relic_count", "relic_count", 0) or 0))
     if "AllMaps" in goals:
-        g.step("Toutes les cartes", None)
+        # activating a map stone checks its area's map location (ProgressiveMap1..9 with progressive mapstone logic)
+        maps = next((m for m in (ORI_BF_MAPS, ORI_BF_PROGRESSIVE_MAPS) if c.locations.issuperset(m)), None)
+        if maps:
+            g.counter("Cartes activées", sum(m in c.checked for m in maps), len(maps))
+        else:
+            g.step("Toutes les cartes", None)
     g.final("Fuir le mont Horu" if escape else "Objectif atteint")
     return g
 
@@ -314,6 +325,8 @@ ORI_WOTW_TREES = ["MarshSpawn.RegenTree", "MarshSpawn.DamageTree", "HowlsDen.Swo
                   "MarshPastOpher.BowTree", "WestHollow.DashTree", "EastHollow.BashTree", "GladesTown.DamageTree",
                   "InnerWellspring.GrappleTree", "UpperPools.SwimDashTree", "UpperReach.LightBurstTree",
                   "LowerDepths.FlashTree", "LowerWastes.BurrowTree", "WeepingRidge.LaunchTree"]
+ORI_WOTW_WISPS = ["EastHollow.ForestsVoice", "LowerReach.ForestsMemory", "UpperDepths.ForestsEyes",
+                  "WestPools.ForestsStrength", "WindtornRuins.Seir"]
 ORI_WOTW_FINAL = ["Double Jump", "Dash", "Bash", "Grapple", "Glide", "Burrow", "Launch"]
 
 
@@ -330,7 +343,10 @@ def ori_wotw(c: GoalContext) -> Goal:
     g.counter("Capacités pour Shriek", owned, len(ORI_WOTW_FINAL) + 1,
               "Sword ou Hammer, Double Jump, Dash, Bash, Grapple, Glide, Burrow, Launch")
     if "wisps" in goals:
-        g.step("Les 5 Wisps", None)
+        if c.locations.issuperset(ORI_WOTW_WISPS):
+            g.counter("Wisps", sum(w in c.checked for w in ORI_WOTW_WISPS), len(ORI_WOTW_WISPS))
+        else:
+            g.step("Les 5 Wisps", None)
     g.final("Vaincre Shriek")
     return g
 
