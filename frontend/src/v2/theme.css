@@ -1,0 +1,35 @@
+@import "../style.css";
+
+@theme inline {
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-logic: var(--logic);
+  --color-done: var(--done);
+  --color-hint: var(--hint);
+  --color-new: var(--new);
+  --color-error: var(--error);
+  --color-header: var(--header);
+}
+
+/* Page ground: the night sky gradient (stars are SkyBackground.vue), or the drawing grid of "Plan". */
+html[data-v2='nuit'] body {
+  background: radial-gradient(ellipse at 75% -5%, #19263f, #09121f 50%) fixed;
+}
+html[data-v2='plan'] body {
+  background-color: #eaeef3;
+  background-image: linear-gradient(#c7d0db 1px, transparent 1px), linear-gradient(90deg, #c7d0db 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+  background-attachment: fixed;
+}
+
+@keyframes v2-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+@keyframes v2-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-sky], [data-star] { animation: none !important; }
+}

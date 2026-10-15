@@ -1,5 +1,5 @@
 import type { ConfigResponse, DiscoverResponse } from '../lib/config'
-import type { Hint, RecentItem, SlotDetail, SlotSummary } from '../lib/types'
+import type { Hint, HistoryPage, HistorySlot, ReceivedEntry, RecentItem, SentCheck, SlotDetail, SlotSummary } from '../lib/types'
 
 function slot(p: Partial<SlotSummary> & { name: string; game: string }): SlotSummary {
   const total = p.checks?.total ?? 100
@@ -104,6 +104,35 @@ export function mockRecent(): RecentItem[] {
       slot: s.name, game: s.game, owner: s.owner,
     }
   })
+}
+
+export function mockHistory(kind: 'sent' | 'received', slots: string[]): HistoryPage<any> {
+  const chosen = mockSlots.filter((s) => slots.length === 0 || slots.includes(s.name))
+  const names = new Set(chosen.map((s) => s.name))
+  const hslots: HistorySlot[] = chosen.map((s) => ({
+    name: s.name, game: s.game, owner: s.owner, checks: { done: s.checks.done, total: s.checks.total },
+    sent: s.sent ?? { known: 0, to_others: 0 }, received: s.items.received,
+  }))
+  let items: Array<SentCheck | ReceivedEntry>
+  if (kind === 'sent') {
+    const now = Date.now() / 1000
+    const pool = chosen.length ? chosen : mockSlots
+    items = Array.from({ length: 12 }, (_, i) => {
+      const s = pool[i % pool.length]
+      const day = i < 5 ? 0 : i < 9 ? 1 : null
+      const checked_at = day === null ? null : now - day * 86400 - i * 1800
+      const item = i === 11 ? null : ['Hookshot', 'Dash Refill', 'Bomb Trap', 'Fire', 'Rupee (50)'][i % 5]
+      return {
+        slot: s.name, game: s.game, owner: s.owner, location_id: 1000 + i, location: 'Mock Location ' + i,
+        checked_at, checked_after: null, item, receiver: item ? (i % 2 ? 'Alice_Hades' : s.name) : null,
+        receiver_game: item ? (i % 2 ? 'Hades' : s.game) : null, to_self: item ? i % 2 === 0 : null,
+        progression: i % 3 === 0, useful: i % 7 === 6, trap: i % 5 === 3,
+      }
+    })
+  } else {
+    items = mockRecent().filter((r) => names.has(r.slot)) as unknown as ReceivedEntry[]
+  }
+  return { kind, total: items.length, offset: 0, items, slots: hslots, scout_checked: true }
 }
 
 export const mockConfig: ConfigResponse = {

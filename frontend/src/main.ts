@@ -1,16 +1,9 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import './style.css'
-import { applyTheme, loadTheme } from './lib/theme'
-import { dispatch, start } from './stores/tracker'
+import { isV2Path } from './lib/v2path'
 
-applyTheme(loadTheme())
-if (import.meta.env.VITE_MOCK === '1') {
-  void import('./mock/install').then((m) => {
-    m.installMockMode(dispatch)
-    createApp(App).mount('#app')
-  })
-} else {
-  createApp(App).mount('#app')
-  void start()
+function showLoadError(e: unknown): void {
+  document.body.textContent = 'Impossible de charger l’interface : ' + String(e)
 }
+
+// Each version loads its own code and CSS: /v2 is the "Observatoire" interface, anything else the v1.
+if (isV2Path(location.pathname)) void import('./v2/main').catch(showLoadError)
+else void import('./v1').catch(showLoadError)

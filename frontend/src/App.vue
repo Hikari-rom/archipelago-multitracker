@@ -18,6 +18,7 @@ import SlotCard from './components/SlotCard.vue'
 import StatusDot from './components/StatusDot.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice, showOwnerFilter } from './lib/config'
 import { stableOrder } from './lib/order'
+import { v2Href } from './lib/v2path'
 import { summaryText } from './lib/logic'
 import {
   LAYOUT_LABELS,
@@ -39,6 +40,8 @@ import { wakeRoom } from './lib/api'
 import { refreshMeta, setFeatured, setView, tracker } from './stores/tracker'
 
 const theme = ref(loadTheme())
+// Evaluated at render time; the hash is carried over so the v2 opens on the same view.
+const v2Url = () => v2Href(typeof location === 'undefined' ? '' : location.hash)
 const hideDone = ref(false)
 onMounted(() => applyTheme(theme.value))
 watch(theme, (t) => {
@@ -188,6 +191,7 @@ const sseLabel = computed(
       <Button variant="outline" size="sm" :aria-label="`Thème : ${themeLabel[theme]}. Changer de thème`" @click="theme = nextTheme(theme)">
         <component :is="themeIcon" aria-hidden="true" /> Thème : {{ themeLabel[theme] }}
       </Button>
+      <Button as="a" variant="outline" size="sm" :href="v2Url()">Essayer la v2</Button>
     </div>
     <div v-if="(showDashboard || showGoals || showHistory) && filterOn" class="mx-auto max-w-[1400px] px-4 pb-2">
       <ToggleGroup

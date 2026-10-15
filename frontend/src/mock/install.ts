@@ -1,7 +1,7 @@
 import { installMock } from '../lib/api'
 import type { TrackerEvent } from '../lib/state'
 import { tracker } from '../stores/tracker'
-import { mockConfig, mockDetail, mockDiscover, mockRecent, mockSlots } from './fixtures'
+import { mockConfig, mockDetail, mockDiscover, mockHistory, mockRecent, mockSlots } from './fixtures'
 
 export function installMockMode(dispatch: (e: TrackerEvent) => void): void {
   installMock({
@@ -10,6 +10,7 @@ export function installMockMode(dispatch: (e: TrackerEvent) => void): void {
     recentItems: async () => ({ items: mockRecent() }),
     getConfig: async () => mockConfig,
     discover: async () => mockDiscover,
+    history: async (k, s) => mockHistory(k, s),
     putConfig: async () => ({ ok: true }),
   })
   tracker.sse = 'open'

@@ -77,6 +77,12 @@ export function setInactive(name: string): void {
   saveActivity()
 }
 
+/** "Annuler" after "Plus actif": put back the choices as they were. */
+export function restoreActivity(prev: ActivityOverrides): void {
+  tracker.activity = { pinned: prev.pinned ? { ...prev.pinned } : null, dismissed: { ...prev.dismissed } }
+  saveActivity()
+}
+
 export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history'
 
 function viewFromHash(): View {

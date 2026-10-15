@@ -180,3 +180,15 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Mode compact : à gauche la carte du jeu actif (un seul : choisi à la main, sinon le check le plus récent), à droite la liste compacte des jeux (nom, barre, en logique) ; un clic change le jeu affiché
 - [x] Hints dans les cartes au format « Objet → check ∆ monde » (demandé par Romain le 2026-10-14)
 - [x] Tests (backend 69 + `test_history_checks.py`, front 75), captures `test-output/screenshots/m19/`, docs (API, D20, PROGRESS), relecture, commit/push
+
+## M20 — v2 « Observatoire » sous /v2 (demandé par Romain le 2026-10-15)
+- [x] Entrée séparée `/v2` et lien depuis la v1
+- [x] Thèmes Nuit et Plan (tokens, contraste AA testé) + ciel animé
+- [x] Tableau de bord Cartes et Focus, téléphone
+- [x] États des cartes et « Plus actif » avec Annuler
+- [x] Historique par jour
+- [x] Objectifs
+- [x] Captures `test-output/screenshots/v2/` prises avec Firefox headless (puppeteer-core) ; `screenshot-v2.mjs` (Playwright) demande Chromium, absent ici
+- [ ] 3e/4e thème
+- [ ] Refonte Journal/Configuration
+- [ ] Retrait de la v1 quand la v2 est validée

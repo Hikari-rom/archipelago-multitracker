@@ -187,3 +187,5 @@ Pas de « slot_data prioritaire » générique : un nom d'option peut avoir un a
   gauche, la liste de tous les jeux à droite (nom, barre, en logique, restants).
 - Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/BRIEF-claude-design.md`).
 
+## D21 — v2 « Observatoire » servie à côté de la v1 sous /v2 (2026-10-15, demandé par Romain)
+v2 servie à côté de la v1 sous `/v2` : un seul point d'entrée qui charge l'une ou l'autre (code et CSS séparés), mêmes store et API, préférences `amt-v2-*` séparées, choix du jeu actif partagé. Thèmes définis en TS (`src/v2/lib/tokens.ts`) et appliqués en variables CSS pour tester le contraste.

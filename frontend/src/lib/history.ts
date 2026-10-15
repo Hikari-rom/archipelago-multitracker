@@ -20,7 +20,7 @@ export function historyItems(items: ItemEntry[], filter: HistoryFilter): ItemEnt
 
 const two = (n: number) => String(n).padStart(2, '0')
 const hm = (d: Date) => `${two(d.getHours())}:${two(d.getMinutes())}`
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+export const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 
 /** "à l'instant", "il y a 12 min", "aujourd'hui 14:02", "hier 21:14", "3 oct. 09:30" or "avant le suivi". */
 export function formatWhen(ts: number | null | undefined, nowMs = Date.now()): string {
