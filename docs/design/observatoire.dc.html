@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EAEEF3;color:#16202E;font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#8FA8FF;text-decoration:none}a:hover{color:#F4F6F9}
+@keyframes twinkle{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,-50%,0)}}
+@media (prefers-reduced-motion: reduce){[data-sky],[data-star]{animation:none !important}}
+</style>
+</helmet>
+
+<section data-screen-label="Intro" style="padding:64px 72px 24px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px">
+  <div style="max-width:980px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#1B4DFF;display:flex;align-items:center;gap:10px"><span style="width:28px;height:2px;background:#1B4DFF;display:inline-block"></span>Étape 2 · direction Observatoire</div>
+    <h1 style="margin:0;font-size:46px;line-height:1.05;letter-spacing:-0.02em;font-weight:680">Maquettes détaillées</h1>
+    <p style="margin:0;font-size:17px;line-height:1.55;color:#4A5868;max-width:70ch;text-wrap:pretty">Thème Nuit, ciel en dérive lente. Cartes reste l'affichage par défaut, Focus est l'option. Navigation : 3 onglets (Tableau, Historique, Objectifs), Journal et Configuration dans « Plus », thème en haut à droite. Le logo ramène au tableau de bord et remplace le bouton maison.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">
+      <a href="#2a" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2a Cartes</a>
+      <a href="#2b" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2b Focus</a>
+      <a href="#2c" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2c–2f Téléphone</a>
+      <a href="#2g" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2g États des cartes</a>
+      <a href="#2h" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2h Historique</a>
+      <a href="#2i" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2i Objectifs</a>
+      <a href="#2j" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2j Menu Thème</a>
+      <a href="#2k" style="color:#1B4DFF;border:1px solid #C7D0DB;background:#F4F6F9;border-radius:6px;padding:4px 9px">2k Thème Plan</a>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Tableau de bord desktop" style="padding:40px 72px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px;display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+
+  <!-- ===== 2a CARTES DESKTOP ===== -->
+  <div id="2a" style="width:1440px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2a</span><span style="font-size:22px;font-weight:660">Tableau de bord · Cartes</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#4A5868">1440 · par défaut · page entière</span></div>
+    <div data-screen-label="2a Cartes" style="position:relative;overflow:hidden;border-radius:14px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 50%);color:#EAEEF3;display:flex;flex-direction:column;padding-bottom:36px">
+      {{ skyD }}
+      <div style="position:relative;height:56px;flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:0 32px;background:rgba(15,22,33,.66);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#8FA8FF">AP</span><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0">archipelago.gg:54853 · xfkp3S4q ↗</span></div></div>
+        <div style="display:flex;align-self:stretch;margin-left:20px">
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;border-bottom:2px solid #8FA8FF">Tableau</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Historique</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Objectifs</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.82 0.12 160)"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>En direct</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">◐ Nuit ▾</span>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:28px;padding:18px 32px 14px">
+        <div style="display:flex;align-items:baseline;gap:24px">
+          <div style="display:flex;align-items:baseline;gap:7px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:26px;font-weight:700;color:#8FA8FF">504</span><span style="font-size:13px;color:#C9D3E0">en logique</span></div>
+          <div style="display:flex;align-items:baseline;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600;color:#F4F6F9">67</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#C9D3E0"> / 8013 faits</span></div>
+          <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600;color:oklch(0.80 0.11 340)">★ 68</span><span style="font-size:13px;color:#C9D3E0">nouveaux</span></div>
+          <span style="font-size:13px;color:#C9D3E0">22 jeux</span>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">Tri</span><div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:12.5px"><span style="padding:6px 11px;background:rgba(143,168,255,.2);color:#F4F6F9">Conseillé</span><span style="padding:6px 11px;color:#C9D3E0">En logique</span><span style="padding:6px 11px;color:#C9D3E0">% en logique</span></div></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">Affichage</span><div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:12.5px"><span style="padding:6px 11px;background:rgba(143,168,255,.2);color:#F4F6F9">Cartes</span><span style="padding:6px 11px;color:#C9D3E0">Focus</span></div></div>
+        <span style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#C9D3E0"><span style="width:14px;height:14px;border-radius:4px;border:1px solid rgba(201,211,224,.4)"></span>Masquer terminés</span>
+        <span style="font-size:12.5px;color:#EAEEF3;border:1px solid rgba(201,211,224,.22);border-radius:8px;padding:6px 11px">Joueur : tous ▾</span>
+      </div>
+      <div style="position:relative;margin:0 32px;display:flex;align-items:center;gap:26px;padding:10px 16px;background:rgba(22,32,46,.72);border:1px solid rgba(201,211,224,.14);border-radius:10px;white-space:nowrap;overflow:hidden;font-size:13px">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:oklch(0.80 0.11 340)">Derniers reçus</span>
+        <sc-for list="{{ feed4 }}" as="f" hint-placeholder-count="4">
+          <span style="display:inline-flex;gap:6px;align-items:baseline"><b style="font-weight:600;color:#F4F6F9">{{ f.item }}</b><span style="color:#C9D3E0">→ {{ f.game }} · {{ f.ago }}</span></span>
+        </sc-for>
+        <div style="flex:1"></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#8FA8FF">Tout voir →</span>
+      </div>
+
+      <div style="position:relative;display:flex;justify-content:space-between;align-items:baseline;margin:26px 32px 12px;padding-bottom:8px;border-bottom:1px solid rgba(201,211,224,.16);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#C9D3E0"><span><span style="color:#8FA8FF">◉</span>  Actifs · 2</span><span>auto = check il y a moins de 30 min</span></div>
+      <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 32px">
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(143,168,255,.55);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:4px 10px;font-weight:700">◉ Actif · choisi</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">● Connecté</span>
+            <div style="flex:1"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:8px;padding:6px 10px">✕ Plus actif</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#16202E;background:#F4F6F9;border-radius:8px;padding:6px 10px">Détails ▾</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:20px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:68px;font-weight:700;line-height:.85;color:#8FA8FF;letter-spacing:-0.04em">58</span>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+              <span style="font-size:22px;font-weight:650;color:#F4F6F9;line-height:1.15">The Binding of Isaac Repentance</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#C9D3E0">checks en logique · romain_boiiiiii · 0 / 361 faits</span>
+            </div>
+          </div>
+          <div style="display:flex;height:7px;border-radius:4px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:0%;background:oklch(0.78 0.12 160)"></div><div style="width:16%;background:repeating-linear-gradient(135deg,#8FA8FF 0 5px,#6F8CF0 5px 7px)"></div></div>
+          <div style="display:flex;gap:18px;font-size:13px;color:#C9D3E0;flex-wrap:wrap"><span><span style="color:#EAEEF3">Basement</span> 14</span><span><span style="color:#EAEEF3">Cellar</span> 12</span><span><span style="color:#EAEEF3">Burning Basement</span> 9</span><span>+ 4 régions</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">But · boss vaincus <b style="color:#F4F6F9">0 / 3</b></span></div>
+        </div>
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(143,168,255,.3);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8FA8FF;border:1px solid rgba(143,168,255,.6);border-radius:999px;padding:3px 10px;white-space:nowrap">◔ Actif · auto · il y a 12 min</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">● Connecté</span>
+            <div style="flex:1"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:8px;padding:6px 10px">✕ Plus actif</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#16202E;background:#F4F6F9;border-radius:8px;padding:6px 10px">Détails ▾</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:20px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:68px;font-weight:700;line-height:.85;color:#8FA8FF;letter-spacing:-0.04em">7</span>
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:0;flex:1">
+              <span style="font-size:22px;font-weight:650;color:#F4F6F9;line-height:1.15">Celeste (Open World)</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#C9D3E0">checks en logique · romain_celeste · 42 / 729 faits</span>
+            </div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:oklch(0.80 0.11 340);border:1px solid oklch(0.80 0.11 340 / .5);border-radius:8px;padding:5px 9px;white-space:nowrap">★ 1 nouveau · Marquer comme vu</span>
+          </div>
+          <div style="display:flex;height:7px;border-radius:4px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:5.8%;background:oklch(0.78 0.12 160)"></div><div style="width:1%;background:repeating-linear-gradient(135deg,#8FA8FF 0 5px,#6F8CF0 5px 7px)"></div></div>
+          <div style="display:flex;gap:18px;font-size:13px;color:#C9D3E0;flex-wrap:wrap"><span><span style="color:#EAEEF3">Forsaken City A</span> 3</span><span><span style="color:#EAEEF3">Old Site A</span> 2</span><span><span style="color:#EAEEF3">Celestial Resort A</span> 2</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px">But · Strawberry <b style="color:#F4F6F9">1 / 120</b></span></div>
+        </div>
+      </div>
+
+      <div style="position:relative;display:flex;justify-content:space-between;align-items:baseline;margin:30px 32px 12px;padding-bottom:8px;border-bottom:1px solid rgba(201,211,224,.16);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#C9D3E0"><span><span style="color:#8FA8FF">▸</span>  Où avancer · 20 jeux</span><span>tri conseillé</span></div>
+      <div style="position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 32px">
+        <sc-for list="{{ grid }}" as="g" hint-placeholder-count="20">
+          <div style="background:rgba(22,32,46,.82);border:1px solid rgba(201,211,224,.16);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:{{ g.logicColor }};min-width:46px;letter-spacing:-0.03em">{{ g.logicLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font-size:14.5px;font-weight:600;color:#F4F6F9;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ g.game }}</span>
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.meta }}</span>
+              </div>
+            </div>
+            <div style="display:flex;height:5px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:{{ g.wDone }};background:oklch(0.78 0.12 160)"></div><div style="width:{{ g.wLogic }};background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+            <div style="display:flex;align-items:center;gap:8px;min-height:24px">
+              <sc-if value="{{ g.hasNew }}" hint-placeholder-val="{{ true }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.80 0.11 340);white-space:nowrap">{{ g.newLabel }}</span></sc-if>
+              <sc-if value="{{ g.hasHint }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.83 0.12 82);white-space:nowrap">{{ g.hintLabel }}</span></sc-if>
+              <sc-if value="{{ g.na }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#C9D3E0">Logique indisponible</span></sc-if>
+              <div style="flex:1"></div>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0;border:1px solid rgba(201,211,224,.22);border-radius:7px;padding:4px 8px;white-space:nowrap" title="Définir comme actif">◎ Activer</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2b FOCUS DESKTOP ===== -->
+  <div id="2b" style="width:1440px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2b</span><span style="font-size:22px;font-weight:660">Tableau de bord · Focus</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#4A5868">1440 × 900 · après un clic sur The Wind Waker HD dans la liste</span></div>
+    <div data-screen-label="2b Focus" style="position:relative;height:900px;overflow:hidden;border-radius:14px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 60%);color:#EAEEF3;display:flex;flex-direction:column">
+      {{ skyD }}
+      <div style="position:relative;height:56px;flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:0 32px;background:rgba(15,22,33,.66);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#8FA8FF">AP</span><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0">archipelago.gg:54853 · xfkp3S4q ↗</span></div></div>
+        <div style="display:flex;align-self:stretch;margin-left:20px">
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;border-bottom:2px solid #8FA8FF">Tableau</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Historique</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Objectifs</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.82 0.12 160)"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>En direct</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">◐ Nuit ▾</span>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:28px;padding:16px 32px 14px">
+        <div style="display:flex;align-items:baseline;gap:24px">
+          <div style="display:flex;align-items:baseline;gap:7px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:26px;font-weight:700;color:#8FA8FF">504</span><span style="font-size:13px;color:#C9D3E0">en logique</span></div>
+          <div style="display:flex;align-items:baseline;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600;color:#F4F6F9">67</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#C9D3E0"> / 8013 faits</span></div>
+          <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600;color:oklch(0.80 0.11 340)">★ 68</span><span style="font-size:13px;color:#C9D3E0">nouveaux</span></div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;gap:22px;white-space:nowrap;overflow:hidden;font-size:13px;padding-left:12px;border-left:1px solid rgba(201,211,224,.16)">
+          <sc-for list="{{ feed4 }}" as="f" hint-placeholder-count="3">
+            <span style="display:inline-flex;gap:6px;align-items:baseline"><span style="color:oklch(0.80 0.11 340)">★</span><b style="font-weight:600;color:#F4F6F9">{{ f.item }}</b><span style="color:#C9D3E0">{{ f.ago }}</span></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">Affichage</span><div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:12.5px"><span style="padding:6px 11px;color:#C9D3E0">Cartes</span><span style="padding:6px 11px;background:rgba(143,168,255,.2);color:#F4F6F9">Focus</span></div></div>
+      </div>
+      <div style="position:relative;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:18px;padding:0 32px 28px">
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(143,168,255,.4);border-radius:14px;padding:24px 28px;display:flex;flex-direction:column;gap:16px;min-height:0;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:4px 10px;font-weight:700">◉ Actif · choisi</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">● Connecté · dernier check il y a 3 h</span>
+            <div style="flex:1"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:8px;padding:6px 10px">✕ Plus actif</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:24px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:104px;font-weight:700;line-height:.82;color:#8FA8FF;letter-spacing:-0.05em">58</span>
+            <div style="display:flex;flex-direction:column;gap:5px;min-width:0;flex:1">
+              <span style="font-size:30px;font-weight:660;letter-spacing:-0.015em;color:#F4F6F9;line-height:1.1">The Wind Waker HD</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;color:#C9D3E0">checks en logique · romain_wwhd · 0 / 295 faits · 295 restants</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">But · Triforce Shard</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:700;color:#F4F6F9">0 / 8</span>
+            </div>
+          </div>
+          <div style="display:flex;height:8px;border-radius:4px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:0%;background:oklch(0.78 0.12 160)"></div><div style="width:19.7%;background:repeating-linear-gradient(135deg,#8FA8FF 0 5px,#6F8CF0 5px 7px)"></div></div>
+          <div style="display:flex;gap:2px;border-bottom:1px solid rgba(201,211,224,.16)">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;padding:9px 13px;border-bottom:2px solid #8FA8FF">En logique 58</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:oklch(0.80 0.11 340);padding:9px 13px">★ Nouveaux 3</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:9px 13px">Reçus 3</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:9px 13px">Hints 2</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:9px 13px">But</span>
+          </div>
+          <div style="flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px">
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ wwRegions }}" as="r" hint-placeholder-count="7">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 12px;border-radius:8px;background:{{ r.bg }}"><span style="font-size:14px;color:#EAEEF3">{{ r.name }}</span><span style="display:flex;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700"><span style="color:oklch(0.83 0.12 82)">{{ r.hint }}</span><span style="color:#8FA8FF">{{ r.n }}</span></span></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;min-width:0">
+              <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0;padding-bottom:8px;border-bottom:1px solid rgba(201,211,224,.14)">Windfall Island · 14 en logique · hintées en premier</div>
+              <sc-for list="{{ wwLocs }}" as="l" hint-placeholder-count="8">
+                <div style="display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(201,211,224,.08)">
+                  <span style="width:14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:oklch(0.83 0.12 82)">{{ l.mark }}</span>
+                  <span style="font-size:14px;color:#EAEEF3;flex:1;min-width:0">{{ l.name }}</span>
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.83 0.12 82)">{{ l.note }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(201,211,224,.14)"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">22 jeux · clic = afficher et rendre actif</span><span style="font-size:12.5px;color:#EAEEF3;border:1px solid rgba(201,211,224,.22);border-radius:8px;padding:5px 10px">Conseillé ▾</span></div>
+          <sc-for list="{{ focusList }}" as="g" hint-placeholder-count="14">
+            <div style="display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 16px 9px 13px;border-left:3px solid {{ g.rail }};background:{{ g.rowBg }};border-bottom:1px solid rgba(201,211,224,.08)">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:24px;font-weight:700;color:{{ g.logicColor }};text-align:right;line-height:1">{{ g.logicLabel }}</span>
+              <div style="min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="display:flex;align-items:baseline;gap:8px;min-width:0"><span style="font-size:14px;color:#F4F6F9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.game }}</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#8FA8FF;white-space:nowrap">{{ g.tag }}</span></div>
+                <div style="display:flex;height:4px;border-radius:2px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:{{ g.wDone }};background:oklch(0.78 0.12 160)"></div><div style="width:{{ g.wLogic }};background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:70px">
+                <span style="display:flex;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px"><span style="color:oklch(0.83 0.12 82)">{{ g.hintShort }}</span><span style="color:oklch(0.80 0.11 340)">{{ g.newShort }}</span></span>
+                <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">{{ g.rem }} rest.</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-screen-label="Téléphone" style="padding:40px 72px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px;display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+  <!-- ===== 2c CARTES PHONE ===== -->
+  <div id="2c" style="width:390px;flex:0 0 auto;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2c</span><span style="font-size:18px;font-weight:660">Téléphone · Cartes</span></div>
+    <div data-screen-label="2c Cartes téléphone" style="position:relative;height:844px;overflow:hidden;border-radius:28px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 80% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 55%);color:#EAEEF3;display:flex;flex-direction:column">
+      {{ skyP }}
+      <div style="position:relative;height:52px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px;background:rgba(15,22,33,.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <span style="width:26px;height:26px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:#8FA8FF">AP</span>
+        <span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span>
+        <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>
+        <div style="flex:1"></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#8FA8FF"><b>504</b> en logique</span>
+        <span style="width:44px;height:44px;display:grid;place-items:center;font-size:16px;color:#EAEEF3">◐</span>
+      </div>
+      <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:12px 14px 0;display:flex;flex-direction:column;gap:12px">
+        <div style="background:rgba(22,32,46,.86);border:1px solid rgba(143,168,255,.55);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:3px 9px;font-weight:700">◉ Actif · choisi</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0">1 / 2</span>
+            <div style="flex:1"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:8px;padding:8px 10px">✕ Plus actif</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:14px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:54px;font-weight:700;line-height:.85;color:#8FA8FF;letter-spacing:-0.04em">58</span>
+            <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:17px;font-weight:650;color:#F4F6F9;line-height:1.2">The Binding of Isaac Repentance</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">en logique · 0 / 361</span></div>
+          </div>
+          <div style="display:flex;height:6px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:16%;background:repeating-linear-gradient(135deg,#8FA8FF 0 4px,#6F8CF0 4px 6px)"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px"><span style="color:#C9D3E0">Boss vaincus 0 / 3</span><span style="color:#8FA8FF">Détails ↑</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(22,32,46,.72);border:1px solid rgba(201,211,224,.14);border-radius:10px;font-size:12.5px;white-space:nowrap;overflow:hidden">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:oklch(0.80 0.11 340);font-weight:600">★ 68</span>
+          <b style="font-weight:600;color:#F4F6F9;overflow:hidden;text-overflow:ellipsis">Sand Kingdom Power Moon</b>
+          <span style="color:#C9D3E0">16 min</span>
+          <div style="flex:1"></div><span style="color:#8FA8FF">›</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0;flex:1">Où avancer · 20</span>
+          <span style="font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.22);border-radius:8px;padding:6px 9px">Conseillé ▾</span>
+          <div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:12px"><span style="padding:6px 9px;background:rgba(143,168,255,.2);color:#F4F6F9">Cartes</span><span style="padding:6px 9px;color:#C9D3E0">Focus</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <sc-for list="{{ phoneGrid }}" as="g" hint-placeholder-count="8">
+            <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:28px;font-weight:700;line-height:.9;color:{{ g.logicColor }}">{{ g.logicLabel }}</span><span style="display:flex;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px"><span style="color:oklch(0.83 0.12 82)">{{ g.hintShort }}</span><span style="color:oklch(0.80 0.11 340)">{{ g.newShort }}</span></span></div>
+              <span style="font-size:13px;font-weight:600;color:#F4F6F9;line-height:1.25;min-height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ g.game }}</span>
+              <div style="display:flex;height:4px;border-radius:2px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:{{ g.wDone }};background:oklch(0.78 0.12 160)"></div><div style="width:{{ g.wLogic }};background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:68px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(15,22,33,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(201,211,224,.16);font-size:11px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8FA8FF"><span style="font-size:17px">⌂</span>Tableau</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">↺</span>Historique</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⚑</span>Objectifs</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⋯</span>Plus</div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.5;color:#4A5868;text-wrap:pretty">Le jeu actif tient en 190 px, sans scroll. Avec 2 actifs, on glisse la carte de côté (« 1 / 2 »). Navigation en barre basse, à portée de pouce.</div>
+  </div>
+
+  <!-- ===== 2d FOCUS PHONE ===== -->
+  <div id="2d" style="width:390px;flex:0 0 auto;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2d</span><span style="font-size:18px;font-weight:660">Téléphone · Focus</span></div>
+    <div data-screen-label="2d Focus téléphone" style="position:relative;height:844px;overflow:hidden;border-radius:28px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 80% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 55%);color:#EAEEF3;display:flex;flex-direction:column">
+      {{ skyP }}
+      <div style="position:relative;height:52px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px;background:rgba(15,22,33,.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <span style="width:26px;height:26px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:#8FA8FF">AP</span>
+        <span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span>
+        <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>
+        <div style="flex:1"></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#8FA8FF"><b>504</b> en logique</span>
+        <span style="width:44px;height:44px;display:grid;place-items:center;font-size:16px;color:#EAEEF3">◐</span>
+      </div>
+      <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:12px 14px 0;display:flex;flex-direction:column;gap:12px">
+        <div style="background:rgba(22,32,46,.86);border:1px solid rgba(143,168,255,.55);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:3px 9px;font-weight:700">◉ Actif · choisi</span>
+            <div style="flex:1"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:8px;padding:8px 10px">✕ Plus actif</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:14px">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:54px;font-weight:700;line-height:.85;color:#8FA8FF;letter-spacing:-0.04em">58</span>
+            <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:17px;font-weight:650;color:#F4F6F9;line-height:1.2">The Wind Waker HD</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">en logique · 0 / 295 · <span style="color:oklch(0.80 0.11 340)">★3</span> <span style="color:oklch(0.83 0.12 82)">◆1</span></span></div>
+          </div>
+          <div style="display:flex;height:6px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:19.7%;background:repeating-linear-gradient(135deg,#8FA8FF 0 4px,#6F8CF0 4px 6px)"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px"><span style="color:#C9D3E0">Triforce Shard 0 / 8</span><span style="color:#8FA8FF">Détails ↑</span></div>
+        </div>
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:14px;overflow:hidden;display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(201,211,224,.14)"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">Toucher = rendre actif</span><div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:12px"><span style="padding:5px 9px;color:#C9D3E0">Cartes</span><span style="padding:5px 9px;background:rgba(143,168,255,.2);color:#F4F6F9">Focus</span></div></div>
+          <sc-for list="{{ phoneList }}" as="g" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:48px;padding:6px 12px;border-bottom:1px solid rgba(201,211,224,.08)">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:20px;font-weight:700;color:{{ g.logicColor }};text-align:right">{{ g.logicLabel }}</span>
+              <div style="min-width:0;display:flex;flex-direction:column;gap:5px"><span style="font-size:13.5px;color:#F4F6F9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.game }}</span><div style="display:flex;height:3px;border-radius:2px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:{{ g.wDone }};background:oklch(0.78 0.12 160)"></div><div style="width:{{ g.wLogic }};background:#8FA8FF"></div></div></div>
+              <span style="display:flex;gap:6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px"><span style="color:oklch(0.83 0.12 82)">{{ g.hintShort }}</span><span style="color:oklch(0.80 0.11 340)">{{ g.newShort }}</span><span style="color:#C9D3E0">{{ g.tag }}</span></span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:68px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(15,22,33,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(201,211,224,.16);font-size:11px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8FA8FF"><span style="font-size:17px">⌂</span>Tableau</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">↺</span>Historique</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⚑</span>Objectifs</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⋯</span>Plus</div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.5;color:#4A5868;text-wrap:pretty">La liste vient juste sous le jeu actif. Toucher une ligne la remonte en carte et la mémorise comme « choisi ».</div>
+  </div>
+
+  <!-- ===== 2e DÉTAILS PHONE ===== -->
+  <div id="2e" style="width:390px;flex:0 0 auto;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2e</span><span style="font-size:18px;font-weight:660">Téléphone · Détails</span></div>
+    <div data-screen-label="2e Détails téléphone" style="position:relative;height:844px;overflow:hidden;border-radius:28px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:oklch(0.15 0.03 258);color:#EAEEF3;display:flex;flex-direction:column">
+      {{ skyP }}
+      <div style="position:absolute;left:0;right:0;top:44px;bottom:0;background:oklch(0.21 0.03 258);border-radius:20px 20px 0 0;border-top:1px solid rgba(201,211,224,.2);display:flex;flex-direction:column;overflow:hidden">
+        <div style="display:flex;justify-content:center;padding:8px 0 4px"><span style="width:40px;height:4px;border-radius:2px;background:rgba(201,211,224,.4)"></span></div>
+        <div style="padding:6px 18px 12px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:3px 9px;font-weight:700">◉ Actif · choisi</span><div style="flex:1"></div><span style="width:44px;height:44px;display:grid;place-items:center;font-size:18px;color:#C9D3E0">✕</span></div>
+          <div style="display:flex;align-items:flex-end;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:54px;font-weight:700;line-height:.85;color:#8FA8FF">58</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:19px;font-weight:650;color:#F4F6F9">The Wind Waker HD</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_wwhd · 0 / 295</span></div></div>
+        </div>
+        <div style="display:flex;gap:2px;padding:0 10px;border-bottom:1px solid rgba(201,211,224,.16);white-space:nowrap;overflow:hidden">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#F4F6F9;padding:12px 10px;border-bottom:2px solid #8FA8FF">Logique 58</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.80 0.11 340);padding:12px 10px">★ 3</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#C9D3E0;padding:12px 10px">Reçus</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#C9D3E0;padding:12px 10px">Hints 2</span>
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#C9D3E0;padding:12px 10px">But</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;padding:4px 18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid rgba(201,211,224,.12)"><span style="font-size:15px;font-weight:600;color:#F4F6F9">▾ Windfall Island</span><span style="display:flex;gap:8px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700"><span style="color:oklch(0.83 0.12 82)">◆1</span><span style="color:#8FA8FF">14</span></span></div>
+          <sc-for list="{{ wwLocs }}" as="l" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:9px 0 9px 16px;border-bottom:1px solid rgba(201,211,224,.08)">
+              <span style="font-size:13.5px;color:#EAEEF3;line-height:1.35"><span style="color:oklch(0.83 0.12 82);font-family:'JetBrains Mono',ui-monospace,monospace">{{ l.mark }}</span> {{ l.name }}</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:oklch(0.83 0.12 82)">{{ l.note }}</span>
+            </div>
+          </sc-for>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:48px;border-bottom:1px solid rgba(201,211,224,.12)"><span style="font-size:15px;font-weight:600;color:#F4F6F9">▸ Great Sea</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;color:#8FA8FF">12</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.5;color:#4A5868;text-wrap:pretty">« Détails » ouvre une feuille plein écran. Onglets fixes, régions repliables, locations hintées en tête de leur région.</div>
+  </div>
+
+  <!-- ===== 2f HISTORIQUE PHONE ===== -->
+  <div id="2f" style="width:390px;flex:0 0 auto;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2f</span><span style="font-size:18px;font-weight:660">Téléphone · Historique</span></div>
+    <div data-screen-label="2f Historique téléphone" style="position:relative;height:844px;overflow:hidden;border-radius:28px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 80% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 55%);color:#EAEEF3;display:flex;flex-direction:column">
+      {{ skyP }}
+      <div style="position:relative;height:52px;flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:0 16px;background:rgba(15,22,33,.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <span style="font-size:17px;font-weight:660;color:#F4F6F9">Historique</span>
+        <div style="flex:1"></div>
+        <span style="width:44px;height:44px;display:grid;place-items:center;font-size:16px;color:#EAEEF3">◐</span>
+      </div>
+      <div style="position:relative;flex:1;min-height:0;overflow:hidden;padding:12px 14px 0;display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid rgba(201,211,224,.22);border-radius:10px;overflow:hidden;font-size:13px;background:rgba(22,32,46,.7)"><span style="padding:11px 0;text-align:center;color:#C9D3E0">Checks envoyés · 67</span><span style="padding:11px 0;text-align:center;background:rgba(143,168,255,.2);color:#F4F6F9">Items reçus · 68</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:0 12px;border:1px solid rgba(201,211,224,.22);border-radius:10px;background:rgba(22,32,46,.7);font-size:13.5px"><span>Tous les jeux (22)</span><span style="color:#C9D3E0">▾</span></div>
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:12px;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:44px;padding:0 12px;border-bottom:1px solid rgba(201,211,224,.12)"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">Par jeu ▾</span><span style="display:flex;gap:14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0"><span>faits</span><span>env.</span><span>reçus</span></span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 12px;border-bottom:1px solid rgba(201,211,224,.08);font-size:13px"><span>Celeste (Open World)</span><span style="display:flex;gap:14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px"><span style="color:oklch(0.80 0.12 160)">42</span><span>41</span><span style="color:oklch(0.80 0.11 340)">1</span></span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 12px;border-bottom:1px solid rgba(201,211,224,.08);font-size:13px"><span>Jak and Daxter: The Precursor…</span><span style="display:flex;gap:14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px"><span style="color:oklch(0.80 0.12 160)">17</span><span>17</span><span style="color:oklch(0.80 0.11 340)">11</span></span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;min-height:40px;padding:0 12px;font-size:13px;color:#C9D3E0"><span>+ 20 jeux</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3">67 · 66 · 68</span></div>
+        </div>
+        <div style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0;padding:4px 2px 0">Aujourd'hui · hier</div>
+        <sc-for list="{{ recv }}" as="r" hint-placeholder-count="5">
+          <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.14);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:{{ r.catColor }};background:{{ r.catBg }};border-radius:4px;padding:2px 5px">{{ r.cat }}</span><b style="font-size:14px;font-weight:620;color:#F4F6F9;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.item }}</b><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">{{ r.at }}</span></div>
+            <span style="font-size:12.5px;color:#EAEEF3">pour {{ r.game }}</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.src }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:68px;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(15,22,33,.92);backdrop-filter:blur(10px);border-top:1px solid rgba(201,211,224,.16);font-size:11px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⌂</span>Tableau</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8FA8FF"><span style="font-size:17px">↺</span>Historique</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⚑</span>Objectifs</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#C9D3E0"><span style="font-size:17px">⋯</span>Plus</div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.5;color:#4A5868;text-wrap:pretty">Le tableau par jeu devient une liste repliable à 3 chiffres. Chaque entrée est une petite carte : item, pour quel jeu, d'où il vient.</div>
+  </div>
+</section>
+<section data-screen-label="États" style="padding:40px 72px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px">
+  <div id="2g" style="width:1440px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2g</span><span style="font-size:22px;font-weight:660">Carte d'un jeu · états</span></div>
+    <div data-screen-label="2g États" style="position:relative;overflow:hidden;border-radius:14px;border:1px solid #16202E;background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 50%);color:#EAEEF3;padding:32px;display:flex;flex-direction:column;gap:28px">
+      {{ skyD }}
+      <div style="position:relative;display:flex;flex-direction:column;gap:8px">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">Room endormie · bandeau global, sous l'en-tête</span>
+        <div style="display:flex;align-items:center;gap:16px;padding:14px 18px;background:oklch(0.26 0.04 82 / .9);border:1px solid oklch(0.83 0.12 82 / .5);border-radius:12px">
+          <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:18px;color:oklch(0.85 0.12 82)">☾</span>
+          <div style="display:flex;flex-direction:column;gap:2px;flex:1"><b style="font-size:14.5px;color:#F4F6F9">La room est endormie</b><span style="font-size:13px;color:#EAEEF3">archipelago.gg l'a arrêtée faute d'activité. Les chiffres affichés datent de 02:14.</span></div>
+          <span style="font-size:13px;font-weight:600;color:#16202E;background:oklch(0.85 0.12 82);border-radius:8px;padding:9px 14px">Réveiller maintenant</span>
+        </div>
+      </div>
+      <div style="position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 16px;align-items:start">
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">01 · Repos</span>
+          <div style="background:rgba(22,32,46,.82);border:1px solid rgba(201,211,224,.16);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">34</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Jak 3</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_jak3 · 254 restants</span></div></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:13.4%;background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.80 0.11 340)">★ 1 nouveau</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0;border:1px solid rgba(201,211,224,.22);border-radius:7px;padding:4px 8px;white-space:nowrap" title="Définir comme actif">◎ Activer</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">02 · Survol / focus clavier</span>
+          <div style="background:rgba(30,42,60,.9);border:1px solid rgba(143,168,255,.6);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px;outline:2px solid #8FA8FF;outline-offset:2px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">34</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Jak 3</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_jak3 · 254 restants</span></div></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:13.4%;background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.80 0.11 340)">★ 1 nouveau</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#16202E;background:#8FA8FF;border-radius:7px;padding:5px 9px;white-space:nowrap">◎ Activer</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">03 · Actif automatiquement</span>
+          <div style="background:rgba(22,32,46,.86);border:1px solid rgba(143,168,255,.35);border-left:3px solid #8FA8FF;border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <span style="align-self:flex-start;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8FA8FF;border:1px solid rgba(143,168,255,.6);border-radius:999px;padding:3px 9px;white-space:nowrap">◔ Actif · auto · 12 min</span>
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">7</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Celeste (Open World)</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_celeste · 687 restants</span></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#C9D3E0">Expire dans 18 min</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:7px;padding:4px 8px">✕ Plus actif</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">04 · Actif · choisi à la main</span>
+          <div style="background:rgba(22,32,46,.86);border:1px solid rgba(143,168,255,.6);border-left:3px solid #8FA8FF;border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <span style="align-self:flex-start;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#16202E;background:#8FA8FF;border-radius:999px;padding:3px 9px;font-weight:700">◉ Actif · choisi</span>
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">58</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">The Binding of Isaac Repentance</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_boiiiiii · 361 restants</span></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#C9D3E0">Mémorisé sur cet appareil</span><div style="flex:1"></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:7px;padding:4px 8px">✕ Plus actif</span></div>
+          </div>
+        </div>
+
+        <div style="grid-column:span 2;grid-row:span 2;display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">05 · Détails ouverts (mode Cartes : la carte prend 2 colonnes)</span>
+          <div style="background:rgba(22,32,46,.88);border:1px solid rgba(201,211,224,.24);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">33</span><div style="display:flex;flex-direction:column;gap:3px;flex:1"><span style="font-size:15px;font-weight:600;color:#F4F6F9">Jak and Daxter: The Precursor Legacy</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_jak1 · 17 / 239 faits · 17 envoyés aux autres</span></div><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#16202E;background:#F4F6F9;border-radius:8px;padding:6px 10px">Détails ▴</span></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="width:7.1%;background:oklch(0.78 0.12 160)"></div><div style="width:13.8%;background:repeating-linear-gradient(135deg,#8FA8FF 0 3px,#6F8CF0 3px 5px)"></div></div>
+            <div style="display:flex;gap:2px;border-bottom:1px solid rgba(201,211,224,.16)">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:8px 11px">En logique 33</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;padding:8px 11px;border-bottom:2px solid oklch(0.80 0.11 340)">★ Nouveaux 11</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:8px 11px">Reçus 11</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:8px 11px">Hints 1</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;padding:8px 11px">But</span>
+              <div style="flex:1"></div>
+              <span style="align-self:center;font-size:12px;color:oklch(0.80 0.11 340);border:1px solid oklch(0.80 0.11 340 / .5);border-radius:7px;padding:4px 9px">Marquer comme vu</span>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <div style="display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:12px;padding:8px 0;border-bottom:1px solid rgba(201,211,224,.08);font-size:13.5px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:#8FA8FF;background:rgba(143,168,255,.14);border-radius:4px;padding:2px 5px;justify-self:start">PROG</span><span><b style="font-weight:600;color:#F4F6F9">Blue Eco Switch</b> <span style="color:#C9D3E0">de romain_celeste · Old Site A - Room 1</span></span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">hier 22:40</span></div>
+              <div style="display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:12px;padding:8px 0;border-bottom:1px solid rgba(201,211,224,.08);font-size:13.5px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:#8FA8FF;background:rgba(143,168,255,.14);border-radius:4px;padding:2px 5px;justify-self:start">PROG</span><span><b style="font-weight:600;color:#F4F6F9">Power Cell</b> <span style="color:#C9D3E0">de romain_slayyyyyy · Watcher Reached Floor 3</span></span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">hier 22:31</span></div>
+              <div style="display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:12px;padding:8px 0;border-bottom:1px solid rgba(201,211,224,.08);font-size:13.5px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:oklch(0.82 0.12 160);background:rgba(120,200,160,.12);border-radius:4px;padding:2px 5px;justify-self:start">UTILE</span><span><b style="font-weight:600;color:#F4F6F9">Scout Fly</b> <span style="color:#C9D3E0">inventaire de départ</span></span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">avant le suivi</span></div>
+              <div style="padding:8px 0;font-size:12.5px;color:#C9D3E0">+ 8 autres</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">06 · But atteint</span>
+          <div style="background:rgba(22,32,46,.66);border:1px solid oklch(0.78 0.12 160 / .55);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;font-weight:700;line-height:1;color:oklch(0.80 0.12 160);min-width:46px">✓</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#EAEEF3">Stardew Valley</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">kuro_valley · kuro</span></div></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:oklch(0.78 0.12 160)"></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.82 0.12 160)">✓ But atteint · masquable</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">07 · Logique indisponible</span>
+          <div style="background:rgba(22,32,46,.82);border:1px dashed rgba(201,211,224,.32);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#C9D3E0;min-width:46px">—</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Mario Kart Wii</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_mkwii · 288 restants</span></div></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:rgba(201,211,224,.14)"></div>
+            <span style="font-size:12px;color:#C9D3E0">Logique indisponible pour ce jeu</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">08 · Logique en calcul</span>
+          <div style="background:rgba(22,32,46,.82);border:1px solid rgba(201,211,224,.16);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:rgba(143,168,255,.5);min-width:46px">··</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Kingdom Hearts 2</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_kh2 · 643 restants</span></div></div>
+            <div style="display:flex;height:5px;border-radius:3px;background:repeating-linear-gradient(90deg,rgba(143,168,255,.25) 0 10px,rgba(201,211,224,.1) 10px 20px)"></div>
+            <span style="font-size:12px;color:#C9D3E0">Calcul de la logique…</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">09 · Avertissement</span>
+          <div style="background:rgba(22,32,46,.82);border:1px solid rgba(201,211,224,.16);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px">21<span style="font-size:16px;color:oklch(0.83 0.12 82);vertical-align:top">≈</span></span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Pokemon Black and White</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_bw · 705 restants</span></div></div>
+            <div style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4;color:oklch(0.86 0.10 82)"><b style="font-family:'JetBrains Mono',ui-monospace,monospace">!</b><span>Options aléatoires dans le yaml, logique peut-être approximative</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">10 · Erreur de connexion</span>
+          <div style="background:rgba(22,32,46,.82);border:1px solid oklch(0.72 0.15 25 / .55);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px;opacity:.6">24</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#F4F6F9">Ori and the Blind Forest</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_oribf · 255 restants</span></div></div>
+            <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:oklch(0.80 0.12 25)"><b style="font-family:'JetBrains Mono',ui-monospace,monospace">!</b><span style="flex:1">Déconnecté · nouvel essai dans 30 s</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#EAEEF3;border:1px solid rgba(201,211,224,.3);border-radius:7px;padding:4px 8px">Réessayer</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">11 · Room endormie</span>
+          <div style="background:rgba(22,32,46,.6);border:1px solid rgba(201,211,224,.14);border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px">
+            <div style="display:flex;gap:14px;align-items:flex-start"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#8FA8FF;min-width:46px;opacity:.6">35</span><div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;color:#EAEEF3">Mario Kart Double Dash</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">romain_mkdd · 299 restants</span></div></div>
+            <span style="font-size:12px;color:oklch(0.86 0.10 82)">☾ En pause, chiffres de 02:14</span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">12 · Après « Plus actif »</span>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#F4F6F9;color:#16202E;border-radius:10px;box-shadow:0 12px 30px -12px rgba(0,0,0,.6)">
+            <span style="font-size:13px;line-height:1.4;flex:1">Celeste n'est plus actif jusqu'à son prochain check.</span>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:#1B4DFF">Annuler</span>
+          </div>
+          <span style="font-size:12px;line-height:1.45;color:#C9D3E0;text-wrap:pretty">La carte rejoint la grille avec une courte transition ; le message reste 6 s.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Historique et Objectifs" style="padding:40px 72px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px;display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+
+  <!-- ===== 2h HISTORIQUE DESKTOP ===== -->
+  <div id="2h" style="width:1440px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2h</span><span style="font-size:22px;font-weight:660">Historique · checks envoyés</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#4A5868">1440 · groupé par jour, jeu source affiché une seule fois par série</span></div>
+    <div data-screen-label="2h Historique" style="position:relative;overflow:hidden;border-radius:14px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 50%);color:#EAEEF3;display:flex;flex-direction:column;padding-bottom:32px">
+      {{ skyD }}
+      <div style="position:relative;height:56px;flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:0 32px;background:rgba(15,22,33,.66);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#8FA8FF">AP</span><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0">archipelago.gg:54853 · xfkp3S4q ↗</span></div></div>
+        <div style="display:flex;align-self:stretch;margin-left:20px">
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Tableau</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;border-bottom:2px solid #8FA8FF">Historique</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Objectifs</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.82 0.12 160)"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>En direct</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">◐ Nuit ▾</span>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:16px;padding:20px 32px 16px">
+        <span style="font-size:24px;font-weight:660;color:#F4F6F9">Historique</span>
+        <div style="display:flex;border:1px solid rgba(201,211,224,.22);border-radius:8px;overflow:hidden;font-size:13px;margin-left:8px"><span style="padding:7px 12px;background:rgba(143,168,255,.2);color:#F4F6F9">Checks envoyés · 67</span><span style="padding:7px 12px;color:#C9D3E0">Items reçus · 68</span></div>
+        <span style="font-size:13px;color:#EAEEF3;border:1px solid rgba(201,211,224,.22);border-radius:8px;padding:7px 12px">Jeu : tous (22) ▾</span>
+        <div style="flex:1"></div>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#C9D3E0">du plus récent au plus ancien · pages de 200</span>
+      </div>
+      <div style="position:relative;display:grid;grid-template-columns:420px minmax(0,1fr);gap:20px;padding:0 32px;align-items:start">
+        <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 60px 54px;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(201,211,224,.16);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#C9D3E0"><span>Jeu · clic = filtrer</span><span style="text-align:right">Faits</span><span style="text-align:right">Envoyés</span><span style="text-align:right">Reçus</span></div>
+          <sc-for list="{{ histTable }}" as="g" hint-placeholder-count="22">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 60px 54px;gap:10px;align-items:baseline;padding:7px 14px;border-bottom:1px solid rgba(201,211,224,.07);font-size:13px">
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#EAEEF3">{{ g.game }}</span>
+              <span style="text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#C9D3E0"><b style="color:oklch(0.82 0.12 160);font-weight:700">{{ g.done }}</b> / {{ g.total }}</span>
+              <span style="text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3">{{ g.sent }}</span>
+              <span style="text-align:right;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:oklch(0.80 0.11 340)">{{ g.recv }}</span>
+            </div>
+          </sc-for>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 72px 60px 54px;gap:10px;padding:10px 14px;border-top:2px solid #8FA8FF;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;font-weight:700"><span style="font-family:system-ui,sans-serif">Total</span><span style="text-align:right;color:oklch(0.82 0.12 160)">67</span><span style="text-align:right">66</span><span style="text-align:right;color:oklch(0.80 0.11 340)">68</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+          <div style="display:flex;gap:18px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0;align-items:center">
+            <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:10px;font-weight:700;color:#8FA8FF;background:rgba(143,168,255,.14);border-radius:4px;padding:2px 5px">PROG</span>progression</span>
+            <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:10px;font-weight:700;color:oklch(0.82 0.12 160);background:rgba(120,200,160,.12);border-radius:4px;padding:2px 5px">UTILE</span>utile</span>
+            <span style="display:inline-flex;gap:6px;align-items:center"><span style="font-size:10px;font-weight:700;color:oklch(0.76 0.14 25);background:rgba(230,110,90,.12);border-radius:4px;padding:2px 5px">PIÈGE</span>piège</span>
+            <span>sans étiquette = normal</span>
+          </div>
+          <sc-for list="{{ histDays }}" as="d" hint-placeholder-count="3">
+            <div style="background:rgba(22,32,46,.84);border:1px solid rgba(201,211,224,.16);border-radius:12px;overflow:hidden">
+              <div style="display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(201,211,224,.14);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0"><span style="color:#F4F6F9">{{ d.label }}</span><span>{{ d.count }}</span></div>
+              <sc-for list="{{ d.rows }}" as="r" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:44px 170px minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:baseline;padding:8px 16px;border-bottom:1px solid rgba(201,211,224,.07);font-size:13px">
+                  <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#C9D3E0">{{ r.at }}</span>
+                  <span style="font-size:12px;color:#8FA8FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.src }}</span>
+                  <span style="color:#EAEEF3;min-width:0">{{ r.loc }}</span>
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <sc-if value="{{ r.unknown }}" hint-placeholder-val="{{ false }}"><span style="font-style:italic;color:#C9D3E0">contenu inconnu</span></sc-if>
+                    <span style="display:flex;gap:8px;align-items:baseline"><sc-if value="{{ r.hasCat }}" hint-placeholder-val="{{ true }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:700;color:{{ r.catColor }};background:{{ r.catBg }};border-radius:4px;padding:2px 5px">{{ r.cat }}</span></sc-if><b style="font-weight:620;color:#F4F6F9">{{ r.item }}</b></span>
+                    <span style="font-size:12px;color:#C9D3E0">{{ r.toLine }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2i OBJECTIFS DESKTOP ===== -->
+  <div id="2i" style="width:1440px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2i</span><span style="font-size:22px;font-weight:660">Objectifs</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#4A5868">1440 · triés par avancement · Stardew Valley = slot d'un ami suivi</span></div>
+    <div data-screen-label="2i Objectifs" style="position:relative;overflow:hidden;border-radius:14px;border:1px solid #16202E;box-shadow:0 24px 60px -30px rgba(22,32,46,.8);background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 50%);color:#EAEEF3;display:flex;flex-direction:column;padding-bottom:32px">
+      {{ skyD }}
+      <div style="position:relative;height:56px;flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:0 32px;background:rgba(15,22,33,.66);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,211,224,.14)">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;border:1px solid rgba(143,168,255,.6);display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#8FA8FF">AP</span><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:660;color:#F4F6F9">Multitracker</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#C9D3E0">archipelago.gg:54853 · xfkp3S4q ↗</span></div></div>
+        <div style="display:flex;align-self:stretch;margin-left:20px">
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Tableau</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0;border-bottom:2px solid transparent">Historique</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F4F6F9;border-bottom:2px solid #8FA8FF">Objectifs</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:oklch(0.82 0.12 160)"><span style="width:7px;height:7px;border-radius:50%;background:oklch(0.78 0.12 160)"></span>En direct</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">◐ Nuit ▾</span>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:16px;padding:20px 32px 16px">
+        <span style="font-size:24px;font-weight:660;color:#F4F6F9">Objectifs</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#C9D3E0">1 but atteint sur 23</span>
+        <div style="flex:1"></div>
+        <span style="font-size:13px;color:#EAEEF3;border:1px solid rgba(201,211,224,.22);border-radius:8px;padding:7px 12px">Joueur : tous ▾</span>
+        <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:#C9D3E0"><span style="width:14px;height:14px;border-radius:4px;border:1px solid rgba(201,211,224,.4)"></span>Masquer les buts atteints</span>
+      </div>
+      <div style="position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 32px;align-items:start">
+        <sc-for list="{{ objs }}" as="o" hint-placeholder-count="9">
+          <div style="background:rgba(22,32,46,.84);border:{{ o.border }};border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0"><span style="font-size:15.5px;font-weight:620;color:#F4F6F9;line-height:1.25">{{ o.game }}</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#C9D3E0">{{ o.slot }}</span></div>
+              <sc-if value="{{ o.goal }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#16202E;background:oklch(0.80 0.12 160);border-radius:999px;padding:4px 10px">✓ But atteint</span></sc-if>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:20px;font-weight:700;color:#F4F6F9">{{ o.pct }}</span>
+            </div>
+            <div style="font-size:13.5px;line-height:1.45;color:#EAEEF3;text-wrap:pretty"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">But · </span>{{ o.summary }}</div>
+            <sc-for list="{{ o.counters }}" as="c" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:#EAEEF3">{{ c.label }}</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:700;color:#F4F6F9">{{ c.txt }}</span></div>
+                <div style="height:6px;border-radius:3px;background:rgba(201,211,224,.14);overflow:hidden"><div style="height:100%;width:{{ c.w }};background:oklch(0.78 0.12 160)"></div></div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ o.hasSteps }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;border-top:1px solid rgba(201,211,224,.12);padding-top:6px">
+                <sc-for list="{{ o.steps }}" as="s" hint-placeholder-count="2">
+                  <div style="display:flex;gap:10px;align-items:baseline;padding:5px 0;font-size:13px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;color:{{ s.color }};width:14px">{{ s.glyph }}</span><span style="color:#EAEEF3;flex:1">{{ s.label }}</span><span style="font-size:11.5px;color:#C9D3E0">{{ s.note }}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Thèmes" style="padding:40px 72px 96px;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px;display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+  <div id="2j" style="width:560px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2j</span><span style="font-size:22px;font-weight:660">Menu Thème</span></div>
+    <div style="position:relative;height:470px;overflow:hidden;border-radius:14px;border:1px solid #16202E;background:radial-gradient(ellipse at 75% -5%,oklch(0.27 0.05 262),oklch(0.18 0.03 258) 60%);color:#EAEEF3">
+      {{ skyP }}
+      <div style="position:relative;height:56px;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:0 24px;background:rgba(15,22,33,.66);border-bottom:1px solid rgba(201,211,224,.14)">
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#EAEEF3;border:1px solid rgba(201,211,224,.24);border-radius:8px;padding:7px 11px">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#F4F6F9;border:1px solid #8FA8FF;background:rgba(143,168,255,.16);border-radius:8px;padding:7px 11px">◐ Nuit ▴</span>
+      </div>
+      <div style="position:absolute;right:24px;top:64px;width:320px;background:oklch(0.22 0.03 258);border:1px solid rgba(201,211,224,.22);border-radius:12px;box-shadow:0 20px 50px -20px rgba(0,0,0,.8);padding:6px;display:flex;flex-direction:column">
+        <div style="padding:8px 10px 6px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#C9D3E0">Thème</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;background:rgba(143,168,255,.16)">
+          <span style="width:44px;height:30px;border-radius:6px;border:1px solid rgba(201,211,224,.3);background-color:oklch(0.18 0.03 258);background-image:radial-gradient(#EAEEF3 1px,transparent 1.2px);background-size:9px 9px"></span>
+          <div style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-size:14px;font-weight:600;color:#F4F6F9">Nuit</span><span style="font-size:12px;color:#C9D3E0">Ciel étoilé, sombre</span></div><span style="color:#8FA8FF">✓</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px">
+          <span style="width:44px;height:30px;border-radius:6px;border:1px solid #C7D0DB;background-color:#EAEEF3;background-image:linear-gradient(#C7D0DB 1px,transparent 1px),linear-gradient(90deg,#C7D0DB 1px,transparent 1px);background-size:8px 8px"></span>
+          <div style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-size:14px;font-weight:600;color:#F4F6F9">Plan</span><span style="font-size:12px;color:#C9D3E0">Clair, grille de dessin</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px">
+          <span style="width:44px;height:30px;border-radius:6px;border:1px solid rgba(201,211,224,.3);background:linear-gradient(135deg,#EAEEF3 50%,oklch(0.18 0.03 258) 50%)"></span>
+          <div style="display:flex;flex-direction:column;gap:1px;flex:1"><span style="font-size:14px;font-weight:600;color:#F4F6F9">Auto</span><span style="font-size:12px;color:#C9D3E0">Suit le système : Plan ou Nuit</span></div>
+        </div>
+        <div style="height:1px;background:rgba(201,211,224,.14);margin:6px 4px"></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font-size:13.5px;color:#F4F6F9">Ciel animé</span><span style="font-size:11.5px;line-height:1.4;color:#C9D3E0">Coupé si le système réduit les animations</span></div>
+          <span style="width:38px;height:22px;border-radius:11px;background:#8FA8FF;position:relative"><span style="position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#16202E"></span></span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:13px;line-height:1.5;color:#4A5868;text-wrap:pretty">Le choix est mémorisé par appareil. Le libellé du bouton reprend le thème courant. Sur téléphone, le même menu s'ouvre en feuille depuis ◐.</div>
+  </div>
+
+  <div id="2k" style="width:1440px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:700;background:#16202E;color:#fff;padding:4px 10px;border-radius:6px">2k</span><span style="font-size:22px;font-weight:660">Thème Plan · tableau de bord Cartes</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:#4A5868">mêmes composants, autres tokens · pas de ciel, la grille sert de texture</span></div>
+    <div data-screen-label="2k Plan" style="position:relative;overflow:hidden;border-radius:14px;border:1px solid #C7D0DB;box-shadow:0 24px 60px -30px rgba(22,32,46,.5);background-color:#EAEEF3;background-image:linear-gradient(#D7DEE7 1px,transparent 1px),linear-gradient(90deg,#D7DEE7 1px,transparent 1px);background-size:28px 28px;color:#16202E;display:flex;flex-direction:column;padding-bottom:32px">
+      <div style="height:56px;display:flex;align-items:center;gap:20px;padding:0 32px;background:#F4F6F9;border-bottom:1px solid #C7D0DB">
+        <div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:7px;border:1px solid #1B4DFF;display:grid;place-items:center;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;color:#1B4DFF">AP</span><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:660">Multitracker</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:#4A5868">archipelago.gg:54853 · xfkp3S4q ↗</span></div></div>
+        <div style="display:flex;align-self:stretch;margin-left:20px">
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:2px solid #1B4DFF">Tableau</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#4A5868;border-bottom:2px solid transparent">Historique</span>
+          <span style="display:flex;align-items:center;padding:0 14px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#4A5868;border-bottom:2px solid transparent">Objectifs</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#1F7A52"><span style="width:7px;height:7px;border-radius:50%;background:#1F7A52"></span>En direct</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;border:1px solid #C7D0DB;border-radius:8px;padding:7px 11px;background:#EAEEF3">Plus ▾</span>
+        <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;border:1px solid #C7D0DB;border-radius:8px;padding:7px 11px;background:#EAEEF3">◐ Plan ▾</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:28px;padding:18px 32px 14px">
+        <div style="display:flex;align-items:baseline;gap:7px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:26px;font-weight:700;color:#1B4DFF">504</span><span style="font-size:13px;color:#4A5868">en logique</span></div>
+        <div style="display:flex;align-items:baseline;gap:2px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600">67</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:#4A5868"> / 8013 faits</span></div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:17px;font-weight:600;color:oklch(0.50 0.17 340)">★ 68</span><span style="font-size:13px;color:#4A5868">nouveaux</span></div>
+        <div style="flex:1"></div>
+        <div style="display:flex;border:1px solid #C7D0DB;border-radius:8px;overflow:hidden;font-size:12.5px;background:#F4F6F9"><span style="padding:6px 11px;background:#16202E;color:#fff">Cartes</span><span style="padding:6px 11px;color:#4A5868">Focus</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:0 32px">
+        <div style="background:#F4F6F9;border:1px solid #C7D0DB;border-radius:14px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:18px;padding:16px 20px;background:#16202E;color:#fff">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:56px;font-weight:700;line-height:.85;color:#8FA8FF">58</span>
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">◉ Actif · choisi</span><span style="font-size:20px;font-weight:650">The Binding of Isaac Repentance</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#C9D3E0">romain_boiiiiii · 0 / 361 faits</span></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;border:1px solid rgba(201,211,224,.45);border-radius:8px;padding:6px 10px">✕ Plus actif</span>
+          </div>
+          <div style="padding:12px 20px 14px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;height:7px;border-radius:4px;background:#DCE2EA;overflow:hidden"><div style="width:16%;background:repeating-linear-gradient(135deg,#1B4DFF 0 5px,#4E74FF 5px 7px)"></div></div><span style="font-size:13px;color:#4A5868">Basement 14 · Cellar 12 · Burning Basement 9 · + 4 régions</span></div>
+        </div>
+        <div style="background:#F4F6F9;border:1px solid #C7D0DB;border-radius:14px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:18px;padding:16px 20px;background:#16202E;color:#fff">
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:56px;font-weight:700;line-height:.85;color:#8FA8FF">7</span>
+            <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:0"><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#C9D3E0">◔ Actif · auto · il y a 12 min</span><span style="font-size:20px;font-weight:650">Celeste (Open World)</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#C9D3E0">romain_celeste · 42 / 729 faits</span></div>
+            <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;border:1px solid rgba(201,211,224,.45);border-radius:8px;padding:6px 10px">✕ Plus actif</span>
+          </div>
+          <div style="padding:12px 20px 14px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;height:7px;border-radius:4px;background:#DCE2EA;overflow:hidden"><div style="width:5.8%;background:#1F7A52"></div><div style="width:1%;background:#1B4DFF"></div></div><span style="font-size:13px;color:#4A5868">Forsaken City A 3 · Old Site A 2 · Celestial Resort A 2 · <span style="color:oklch(0.50 0.17 340)">★ 1 nouveau</span></span></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin:28px 32px 12px;padding-bottom:8px;border-bottom:1px solid #C7D0DB;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#4A5868"><span><span style="color:#1B4DFF">▸</span>  Où avancer · 20 jeux</span><span>tri conseillé</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 32px">
+        <sc-for list="{{ planGrid }}" as="g" hint-placeholder-count="8">
+          <div style="background:#F4F6F9;border:1px solid #C7D0DB;border-radius:12px;padding:15px 16px;display:flex;flex-direction:column;gap:11px;box-shadow:0 1px 0 rgba(22,32,46,.04),0 10px 30px -22px rgba(22,32,46,.5)">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:34px;font-weight:700;line-height:.9;color:#1B4DFF;min-width:46px">{{ g.logicLabel }}</span>
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:14.5px;font-weight:600;line-height:1.25">{{ g.game }}</span><span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#4A5868">{{ g.meta }}</span></div>
+            </div>
+            <div style="display:flex;height:5px;border-radius:3px;background:#DCE2EA;overflow:hidden"><div style="width:{{ g.wDone }};background:#1F7A52"></div><div style="width:{{ g.wLogic }};background:repeating-linear-gradient(135deg,#1B4DFF 0 3px,#4E74FF 3px 5px)"></div></div>
+            <div style="display:flex;align-items:center;gap:8px;min-height:24px">
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:oklch(0.50 0.17 340)">{{ g.newShort }}</span>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;color:#9A6B12">{{ g.hintShort }}</span>
+              <div style="flex:1"></div>
+              <span style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:#16202E;border:1px solid #C7D0DB;border-radius:7px;padding:4px 8px;white-space:nowrap" title="Définir comme actif">◎ Activer</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</section></x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;starsAnimated&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ciel&quot;},&quot;starDensity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1,&quot;min&quot;:0.3,&quot;max&quot;:2,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ciel&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const raw = [
+      ['The Binding of Isaac Repentance','romain_boiiiiii',0,361,58,0,0,0],
+      ['The Wind Waker HD','romain_wwhd',0,295,58,3,1,0],
+      ['AEMinecraft','romain_minecraft',0,189,42,0,0,0],
+      ['Mario Kart Double Dash','romain_mkdd',0,299,35,27,0,0],
+      ['Jak 3','romain_jak3',0,254,34,1,0,0],
+      ['Jak and Daxter: The Precursor Legacy','romain_jak1',17,239,33,11,1,17],
+      ['Pokemon Platinum','romain_platinum',0,619,29,0,0,0],
+      ['Kingdom Hearts 2','romain_kh2',0,643,27,2,0,0],
+      ['Ori and the Blind Forest','romain_oribf',0,255,24,1,0,0],
+      ['Ratchet and Clank 3','romain_ratchet3',0,393,22,5,0,0],
+      ['Pokemon Black and White','romain_bw',0,705,21,0,0,0],
+      ['Balatro','balatrom',0,505,19,1,0,0],
+      ['The Legend of Zelda - Phantom Hourglass','romain_zeldaph',0,322,18,2,1,0],
+      ['Spicy Meatball Overdrive','romain_odyssey',0,475,16,1,0,0],
+      ['Ori and the Will of the Wisps','romain_oriwotw',0,389,15,1,0,0],
+      ['Kingdom Hearts Birth by Sleep','romain_khbbs',0,216,14,1,0,0],
+      ['PokePark','romain_pokepark',0,266,12,3,0,0],
+      ['Super Mario 64','romain_mario64',2,164,9,0,0,2],
+      ['Ratchet & Clank 2','romain_ratchet2',0,123,8,5,0,0],
+      ['Celeste (Open World)','romain_celeste',42,729,7,1,0,41],
+      ['Slay the Spire','romain_slayyyyyy',6,284,3,2,0,6],
+      ['Mario Kart Wii','romain_mkwii',0,288,null,1,0,0]
+    ];
+    const pct = (v, t) => v ? Math.max(v / t * 100, 0.8).toFixed(1) + '%' : '0%';
+    const all = raw.map(([game, slot, done, total, logic, nw, hint, sent]) => {
+      const na = logic == null, rem = total - done;
+      return {
+        game, slot, done, total, rem, sent, recv: nw, na,
+        logicLabel: na ? '—' : String(logic), logicColor: na ? '#C9D3E0' : '#8FA8FF',
+        wDone: pct(done, total), wLogic: na ? '0%' : pct(logic, total),
+        meta: `${slot} · ${rem} restants`,
+        hasNew: nw > 0, newLabel: `★ ${nw} nouveau${nw > 1 ? 'x' : ''}`, newShort: nw ? `★${nw}` : '',
+        hasHint: hint > 0, hintLabel: `◆ ${hint} hint`, hintShort: hint ? `◆${hint}` : '',
+        doneLabel: `${done} / ${total}`
+      };
+    });
+    const by = n => all.find(g => g.game === n);
+    const isActive = g => g.game === 'The Binding of Isaac Repentance' || g.game === 'Celeste (Open World)';
+    const grid = all.filter(g => !isActive(g));
+    const focusList = all.map(g => {
+      const sel = g.game === 'The Wind Waker HD';
+      return { ...g, rail: sel ? '#8FA8FF' : 'transparent', rowBg: sel ? 'rgba(143,168,255,.14)' : 'transparent',
+        tag: sel ? '◉ choisi' : g.game === 'Celeste (Open World)' ? '◔ auto' : '' };
+    }).slice(0, 15);
+    const wwRegions = [['Windfall Island',14,'◆1'],['Great Sea',12,''],['Dragon Roost Island',9,''],['Outset Island',8,''],['Forest Haven',7,''],['Dragon Roost Cavern',5,''],['Private Oasis',3,'']]
+      .map(([name, n, hint], i) => ({ name, n, hint, bg: i === 0 ? 'rgba(143,168,255,.14)' : 'transparent' }));
+    const wwLocs = [
+      ['Windfall Island - Jail - Tingle - First Gift','◆','hint · Golden Walnut pour kuro_valley'],
+      ["Windfall Island - Lenzo’s House - Become Lenzo’s Assistant",'',''],
+      ['Windfall Island - Cafe Bar - Postman','',''],
+      ['Windfall Island - Mrs. Marie - Catch Killer Bees','',''],
+      ['Windfall Island - Chu Jelly Juice Shop - Give 15 Green Chu Jelly','',''],
+      ['Windfall Island - Bomb Shop - Bomb Bag','',''],
+      ["Windfall Island - Zunari - Stock Exotic Flower in Zunari’s Shop",'',''],
+      ['Windfall Island - Maggie - Free Item','',''],
+      ['+ 6 autres locations','','']
+    ].map(([name, mark, note]) => ({ name, mark, note }));
+    const feed = [
+      { item: 'Sand Kingdom Power Moon', game: 'Spicy Meatball Overdrive', slot: 'romain_odyssey', from: 'romain_slayyyyyy', fromGame: 'Slay the Spire', loc: 'Watcher Reached Floor 1', ago: 'il y a 16 min', at: "aujourd’hui 00:06", cat: 'PROG' },
+      { item: 'Watcher Card Reward', game: 'Slay the Spire', slot: 'romain_slayyyyyy', from: 'romain_jak1', fromGame: 'Jak and Daxter: The Precursor Legacy', loc: 'GR: Climb Up The Cliff', ago: 'il y a 24 min', at: 'hier 23:58', cat: 'PROG' },
+      { item: 'Elekid Friendship', game: 'PokePark', slot: 'romain_pokepark', from: 'romain_jak1', fromGame: 'Jak and Daxter: The Precursor Legacy', loc: 'GR: Scout Fly On Ground, Back', ago: 'il y a 27 min', at: 'hier 23:55', cat: 'PROG' },
+      { item: 'Gun Turret', game: 'Jak 3', slot: 'romain_jak3', from: 'romain_celeste', fromGame: 'Celeste (Open World)', loc: 'Celestial Resort A - Room s2', ago: 'il y a 1 h', at: 'hier 23:15', cat: 'PROG' },
+      { item: 'Groudon Friendship', game: 'PokePark', slot: 'romain_pokepark', from: 'romain_celeste', fromGame: 'Celeste (Open World)', loc: 'Celestial Resort A - Room s1', ago: 'il y a 1 h', at: 'hier 23:15', cat: 'PROG' },
+      { item: 'Progressive Sword', game: 'The Wind Waker HD', slot: 'romain_wwhd', from: '', fromGame: '', loc: 'inventaire de départ', ago: '', at: 'avant le suivi', cat: 'PROG' }
+    ];
+    const catStyle = c => c === 'PROG' ? ['#8FA8FF', 'rgba(143,168,255,.14)'] : c === 'UTILE' ? ['oklch(0.82 0.12 160)', 'rgba(120,200,160,.12)'] : c === 'PIÈGE' ? ['oklch(0.76 0.14 25)', 'rgba(230,110,90,.12)'] : ['#C9D3E0', 'transparent'];
+    const recv = feed.map(f => { const [cc, cb] = catStyle(f.cat); return { ...f, catColor: cc, catBg: cb, src: f.from ? `de ${f.from} · ${f.loc}` : f.loc }; });
+    const H = (src, loc, item, cat, to, toGame, at) => { const [cc, cb] = catStyle(cat); return { src, loc, item, cat, catColor: cc, catBg: cb, to, toGame, at, hasCat: !!cat, unknown: !item, toLine: !item ? '' : to === 'moi' ? 'pour moi' : `pour ${to} · ${toGame}` }; };
+    const histDays = [
+      { label: "Aujourd’hui", count: '1 check', rows: [
+        H('Slay the Spire', 'Watcher Reached Floor 1', 'Sand Kingdom Power Moon', 'PROG', 'romain_odyssey', 'Spicy Meatball Overdrive', '00:06') ] },
+      { label: 'Hier', count: '5 checks', rows: [
+        H('Jak and Daxter: The Precursor Legacy', 'GR: Climb Up The Cliff', 'Watcher Card Reward', 'PROG', 'romain_slayyyyyy', 'Slay the Spire', '23:58'),
+        H('', 'GR: Scout Fly On Ground, Back', 'Elekid Friendship', 'PROG', 'romain_pokepark', 'PokePark', '23:55'),
+        H('', 'GR: Scout Fly On Top Ledge', 'Knowledge Fragment', 'PROG', 'kuro_wiki', 'Wikipelago', '23:41'),
+        H('Celeste (Open World)', 'Celestial Resort A - Room s2', 'Gun Turret', 'PROG', 'romain_jak3', 'Jak 3', '23:15'),
+        H('', 'Celestial Resort A - Room s1', 'Groudon Friendship', 'PROG', 'romain_pokepark', 'PokePark', '23:15') ] },
+      { label: 'Avant le suivi', count: '61 checks', rows: [
+        H('Celeste (Open World)', 'Old Site A - Room s2', 'Sand of Hours', 'PROG', 'romain_zeldaph', 'The Legend of Zelda - Phantom Hourglass', '—'),
+        H('', 'Old Site A - Room d6', 'Strawberry', 'PROG', 'moi', 'Celeste (Open World)', '—'),
+        H('', 'Forsaken City A - Room 5', 'Kart: Wild Wing', 'UTILE', 'romain_mkwii', 'Mario Kart Wii', '—'),
+        H('', 'Forsaken City A - Room 3b Strawberry', 'Random Heart', '', 'kuro_isaac', 'The Binding of Isaac Repentance', '—'),
+        H('', 'Forsaken City A - Room 5z Strawberry', 'Free Consumable Pack', '', 'kuro_balatro', 'Balatro', '—'),
+        H('', 'Celestial Resort A - Room s4', '', '', '', '', '—') ] }
+    ];
+    const histTable = [...all].sort((a, b) => b.done - a.done || b.recv - a.recv).map(g => ({ ...g, rowBg: 'transparent' }));
+    const C = (label, cur, target) => ({ label, cur, target, w: Math.max(cur / target * 100, 0) + '%', txt: `${cur} / ${target}` });
+    const S = (label, st) => ({ label, glyph: st === 'done' ? '✓' : st === 'hidden' ? '⊘' : '○', color: st === 'done' ? 'oklch(0.80 0.12 160)' : '#C9D3E0', note: st === 'hidden' ? 'invisible pour un tracker' : '' });
+    const objs = [
+      { game: 'Stardew Valley', slot: 'kuro_valley · kuro', summary: 'Restaurer le Community Center', pct: '100 %', goal: true, counters: [C('Bundle', 30, 30)], steps: [S('Community Center', 'done')] },
+      { game: 'Jak and Daxter: The Precursor Legacy', slot: 'romain_jak1', summary: 'Vaincre Gol et Maia', pct: '6 %', goal: false, counters: [C('Power Cell', 4, 72)], steps: [S('Ouvrir la porte de la Citadelle', 'todo'), S('Final Boss', 'todo')] },
+      { game: 'Super Mario 64', slot: 'romain_mario64', summary: '70 étoiles, puis Bowser in the Sky', pct: '3 %', goal: false, counters: [C('Power Star', 2, 70)], steps: [S('Bowser in the Sky', 'todo')] },
+      { game: 'Celeste (Open World)', slot: 'romain_celeste', summary: '120 fraises, puis Core A', pct: '1 %', goal: false, counters: [C('Strawberry', 1, 120)], steps: [S('Finir Core A (Core A - Level Clear)', 'todo'), S("Épilogue (Granny’s House Keys)", 'todo')] },
+      { game: 'The Binding of Isaac Repentance', slot: 'romain_boiiiiii', summary: 'Vaincre 3 de ces boss : Beast|Tainted Magdalene, Blue Baby|Tainted Forgotten, Mega Satan|Isaac, Mother|Samson, The Lamb|Tainted Lilith', pct: '0 %', goal: false, counters: [C('Boss vaincus', 0, 3)], steps: [] },
+      { game: 'The Wind Waker HD', slot: 'romain_wwhd', summary: 'Vaincre Ganondorf', pct: '0 %', goal: false, counters: [C('Triforce Shard', 0, 8)], steps: [S("Ganon’s Tower - Defeat Ganondorf", 'todo')] },
+      { game: 'Kingdom Hearts 2', slot: 'romain_kh2', summary: 'Réunir les 3 preuves, puis Final Xemnas', pct: '0 %', goal: false, counters: [C('Proof', 0, 3)], steps: [S('Final Xemnas', 'todo')] },
+      { game: 'Pokemon Platinum', slot: 'romain_platinum', summary: 'Devenir Maître de la Ligue', pct: '0 %', goal: false, counters: [C('Badge', 0, 8)], steps: [S('Champion Cynthia', 'hidden')] },
+      { game: 'Slay the Spire', slot: 'romain_slayyyyyy', summary: 'Vaincre le Cœur avec le Watcher', pct: '0 %', goal: false, counters: [], steps: [S("Vaincre le boss de l’Acte 1", 'todo'), S('Vaincre le Cœur', 'todo')] }
+    ].map(o => ({ ...o, border: o.goal ? '1px solid oklch(0.78 0.12 160 / .6)' : '1px solid rgba(201,211,224,.16)', hasSteps: o.steps.length > 0 }));
+
+    const animated = this.props.starsAnimated ?? true;
+    const k = this.props.starDensity ?? 1;
+    const sky = (far, near, key) => {
+      let seed = key;
+      const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      const layer = (count, sizeMin, sizeMax, dur, op, tw) => {
+        const pts = Array.from({ length: Math.round(count * k) }, () => ({ x: rnd() * 100, y: rnd() * 50, s: sizeMin + rnd() * (sizeMax - sizeMin), o: op[0] + rnd() * (op[1] - op[0]), t: rnd() < tw, d: 3 + rnd() * 5, dl: -rnd() * 8 }));
+        const dots = [];
+        pts.forEach((p, i) => [0, 50].forEach(off => dots.push(React.createElement('span', { key: i + '-' + off, 'data-star': '', style: {
+          position: 'absolute', left: p.x.toFixed(2) + '%', top: (p.y + off).toFixed(2) + '%', width: p.s, height: p.s, borderRadius: '50%',
+          background: '#EAEEF3', opacity: p.o, boxShadow: p.s > 1.8 ? '0 0 4px rgba(200,215,255,.7)' : 'none',
+          animation: animated && p.t ? `twinkle ${p.d.toFixed(1)}s ease-in-out ${p.dl.toFixed(1)}s infinite` : 'none' } }))));
+        return React.createElement('div', { 'data-sky': '', style: { position: 'absolute', left: 0, top: 0, width: '100%', height: '200%', willChange: 'transform', animation: animated ? `drift ${dur}s linear infinite` : 'none' } }, dots);
+      };
+      return React.createElement('div', { 'aria-hidden': true, style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' } },
+        layer(far, 0.8, 1.3, 260, [0.25, 0.6], 0.15), layer(near, 1.5, 2.4, 150, [0.5, 0.9], 0.4));
+    };
+    return {
+      grid, focusList, wwRegions, wwLocs, feed4: feed.slice(0, 4), feed5: feed.slice(0, 5), recv,
+      histDays, histTable, objs,
+      phoneGrid: grid.slice(0, 8), planGrid: grid.slice(0, 8), phoneList: focusList.slice(1, 12),
+      skyD: sky(150, 34, 11), skyP: sky(55, 14, 29)
+    };
+  }
+}
+</script>
+</body>
+</html>
+
