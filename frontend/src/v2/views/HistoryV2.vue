@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
+import { useWindowVirtualizer } from '@tanstack/vue-virtual'
+import { useResizeObserver } from '@vueuse/core'
 import { tracker } from '../../stores/tracker'
-import type { SlotSummary } from '../../lib/types'
+import type { ReceivedEntry, SentCheck, SlotSummary } from '../../lib/types'
 import { sentText } from '../../lib/history'
 import OwnerSelect from '../components/OwnerSelect.vue'
 import { hhmm } from '../lib/card'
-import { CATEGORY_CLASS as badgeClass, category, groupByDay, itemOrigin } from '../lib/days'
+import { CATEGORY_CLASS as badgeClass, category, groupByDay, itemOrigin, type DayGroup, type DayRow } from '../lib/days'
 import { historyTab } from '../lib/nav'
-import { useHistory } from '../lib/useHistory'
+import { PAGE, useHistory } from '../lib/useHistory'
 
 const props = defineProps<{ slots: SlotSummary[]; owner: string; chips: { key: string; label: string }[] }>()
 defineEmits<{ 'update:owner': [key: string] }>()
@@ -28,6 +30,47 @@ const receivedGroups = computed(() =>
 
 const time = (t: number | null | undefined) => (t == null ? '—' : hhmm(t))
 
+// One flat list (day headings + entries) so the window virtualizer only mounts the rows on screen.
+type Row =
+  | { kind: 'day'; key: string; label: string; count: number }
+  | { kind: 'sent'; key: string; row: DayRow<SentCheck> }
+  | { kind: 'received'; key: string; row: DayRow<ReceivedEntry> }
+function flatten<T>(groups: DayGroup<T>[], wrap: (r: DayRow<T>) => Row): Row[] {
+  return groups.flatMap((g) => [{ kind: 'day' as const, key: `day:${g.key}`, label: g.label, count: g.rows.length }, ...g.rows.map(wrap)])
+}
+const rows = computed<Row[]>(() =>
+  historyTab.value === 'sent'
+    ? flatten(sentGroups.value, (row) => ({ kind: 'sent', key: `${row.entry.slot}:${row.entry.location_id}`, row }))
+    : flatten(receivedGroups.value, (row) => ({ kind: 'received', key: `${row.entry.slot}:${row.entry.index}`, row })))
+
+const listEl = ref<HTMLElement | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
+const scrollMargin = ref(0)
+const measureMargin = () => {
+  if (listEl.value) scrollMargin.value = listEl.value.getBoundingClientRect().top + window.scrollY
+}
+// Anything above the list (per-game table on narrow screens, notices) moves it: re-measure on resize.
+useResizeObserver(rootEl, measureMargin)
+onMounted(measureMargin)
+
+const virtualizer = useWindowVirtualizer<HTMLElement>(computed(() => ({
+  count: rows.value.length,
+  estimateSize: (i: number) => (rows.value[i]?.kind === 'day' ? 37 : 33),
+  getItemKey: (i: number) => rows.value[i]?.key ?? i,
+  overscan: 12,
+  scrollMargin: scrollMargin.value,
+})))
+const visible = computed(() => virtualizer.value.getVirtualItems().map((v) => ({ v, r: rows.value[v.index] })).filter((x) => x.r))
+const measure = (el: Element | ComponentPublicInstance | null) => {
+  if (el instanceof HTMLElement) virtualizer.value.measureElement(el)
+}
+
+// Load the next page once the end of the loaded rows comes into view.
+const hasMore = computed(() => !!page.value && page.value.items.length < page.value.total)
+watch(() => visible.value.at(-1)?.v.index ?? -1, (last) => {
+  if (last >= rows.value.length - 5 && hasMore.value && !loading.value && !error.value) more()
+})
+
 const tabs = computed(() => [
   { key: 'sent' as const, label: `Checks envoyés${sent.value ? ` · ${sent.value.total}` : ''}` },
   { key: 'received' as const, label: `Items reçus${received.value ? ` · ${received.value.total}` : ''}` },
@@ -35,7 +78,7 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <section class="flex flex-col gap-4" aria-labelledby="history-title">
+  <section ref="rootEl" class="flex flex-col gap-4" aria-labelledby="history-title">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
       <h2 id="history-title" class="text-lg font-semibold">Historique</h2>
       <div role="tablist" aria-label="Type d'historique" class="flex gap-1 border-b">
@@ -54,7 +97,7 @@ const tabs = computed(() => [
         </select>
       </label>
       <OwnerSelect :model-value="owner" :chips="chips" @update:model-value="(k: string) => $emit('update:owner', k)" />
-      <span class="font-mono text-xs text-muted-foreground">du plus récent au plus ancien · pages de 200</span>
+      <span class="font-mono text-xs text-muted-foreground">du plus récent au plus ancien · pages de {{ PAGE }}</span>
     </div>
 
     <p v-if="error" role="alert" class="rounded-xl bg-warn p-3 text-sm text-warn-foreground"><span class="text-error">! </span>{{ error }}</p>
@@ -116,41 +159,36 @@ const tabs = computed(() => [
         <p v-if="!page && loading" class="text-sm text-muted-foreground">Chargement…</p>
         <p v-else-if="page && !page.total" class="text-sm text-muted-foreground">{{ historyTab === 'sent' ? 'Aucun check fait.' : 'Aucun item reçu.' }}</p>
 
-        <template v-if="historyTab === 'sent'">
-          <section v-for="g in sentGroups" :key="g.key" :data-day="g.label" class="mb-3">
-            <h3 class="border-b py-1 text-sm font-semibold">{{ g.label }} · {{ g.rows.length }} check{{ g.rows.length > 1 ? 's' : '' }}</h3>
-            <ul class="divide-y">
-              <li v-for="r in g.rows" :key="`${r.entry.slot}:${r.entry.location_id}`" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
-                <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.entry.checked_at) }}</span>
-                <span v-if="r.showSource" class="font-semibold">{{ r.entry.game }}</span>
-                <span class="font-mono text-xs">{{ r.entry.location }}</span>
-                <span v-if="r.entry.item == null" class="italic text-muted-foreground">contenu inconnu</span>
-                <template v-else>
-                  <span v-if="category(r.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.entry)!]">{{ category(r.entry) }}</span>
-                  <span>{{ r.entry.item }}</span>
-                  <span class="text-muted-foreground">{{ r.entry.to_self ? 'pour moi' : `pour ${r.entry.receiver} · ${r.entry.receiver_game}` }}</span>
-                </template>
-              </li>
-            </ul>
-          </section>
-        </template>
+        <ul ref="listEl" class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
+          <li
+            v-for="{ v, r } in visible" :key="r.key" :ref="measure" :data-index="v.index"
+            class="absolute inset-x-0 top-0" :style="{ transform: `translateY(${v.start - scrollMargin}px)` }"
+          >
+            <h3 v-if="r.kind === 'day'" :data-day="r.label" class="border-b py-1 text-sm font-semibold" :class="v.index > 0 && 'mt-3'">
+              {{ r.label }} · {{ r.count }} {{ historyTab === 'sent' ? 'check' : 'item' }}{{ r.count > 1 ? 's' : '' }}
+            </h3>
+            <div v-else-if="r.kind === 'sent'" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
+              <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.checked_at) }}</span>
+              <span v-if="r.row.showSource" class="font-semibold">{{ r.row.entry.game }}</span>
+              <span class="font-mono text-xs">{{ r.row.entry.location }}</span>
+              <span v-if="r.row.entry.item == null" class="italic text-muted-foreground">contenu inconnu</span>
+              <template v-else>
+                <span v-if="category(r.row.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.row.entry)!]">{{ category(r.row.entry) }}</span>
+                <span>{{ r.row.entry.item }}</span>
+                <span class="text-muted-foreground">{{ r.row.entry.to_self ? 'pour moi' : `pour ${r.row.entry.receiver} · ${r.row.entry.receiver_game}` }}</span>
+              </template>
+            </div>
+            <div v-else class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
+              <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.received_at) }}</span>
+              <span v-if="category(r.row.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.row.entry)!]">{{ category(r.row.entry) }}</span>
+              <span>{{ r.row.entry.name }}</span>
+              <span v-if="r.row.showSource" class="text-muted-foreground">pour <span class="font-semibold text-foreground">{{ r.row.entry.game }}</span></span>
+              <span class="text-muted-foreground">{{ itemOrigin(r.row.entry) }}</span>
+            </div>
+          </li>
+        </ul>
 
-        <template v-else>
-          <section v-for="g in receivedGroups" :key="g.key" :data-day="g.label" class="mb-3">
-            <h3 class="border-b py-1 text-sm font-semibold">{{ g.label }} · {{ g.rows.length }} item{{ g.rows.length > 1 ? 's' : '' }}</h3>
-            <ul class="divide-y">
-              <li v-for="r in g.rows" :key="`${r.entry.slot}:${r.entry.index}`" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
-                <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.entry.received_at) }}</span>
-                <span v-if="category(r.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.entry)!]">{{ category(r.entry) }}</span>
-                <span>{{ r.entry.name }}</span>
-                <span v-if="r.showSource" class="text-muted-foreground">pour <span class="font-semibold text-foreground">{{ r.entry.game }}</span></span>
-                <span class="text-muted-foreground">{{ itemOrigin(r.entry) }}</span>
-              </li>
-            </ul>
-          </section>
-        </template>
-
-        <button v-if="page && page.items.length < page.total" type="button" class="mt-1 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="more">Afficher plus</button>
+        <button v-if="hasMore" type="button" class="mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="more">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
       </div>
     </div>
   </section>

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",
+    "@tanstack/vue-virtual": "3.13.40",
     "@vueuse/core": "^15.0.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

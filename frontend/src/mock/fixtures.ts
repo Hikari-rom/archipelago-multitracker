@@ -106,7 +106,7 @@ export function mockRecent(): RecentItem[] {
   })
 }
 
-export function mockHistory(kind: 'sent' | 'received', slots: string[]): HistoryPage<any> {
+export function mockHistory(kind: 'sent' | 'received', slots: string[], limit = 200, offset = 0): HistoryPage<any> {
   const chosen = mockSlots.filter((s) => slots.length === 0 || slots.includes(s.name))
   const names = new Set(chosen.map((s) => s.name))
   const hslots: HistorySlot[] = chosen.map((s) => ({
@@ -117,9 +117,9 @@ export function mockHistory(kind: 'sent' | 'received', slots: string[]): History
   if (kind === 'sent') {
     const now = Date.now() / 1000
     const pool = chosen.length ? chosen : mockSlots
-    items = Array.from({ length: 12 }, (_, i) => {
+    items = Array.from({ length: 130 }, (_, i) => {
       const s = pool[i % pool.length]
-      const day = i < 5 ? 0 : i < 9 ? 1 : null
+      const day = i < 5 ? 0 : i < 9 ? 1 : i < 125 ? 2 + Math.floor((i - 9) / 20) : null
       const checked_at = day === null ? null : now - day * 86400 - i * 1800
       const item = i === 11 ? null : ['Hookshot', 'Dash Refill', 'Bomb Trap', 'Fire', 'Rupee (50)'][i % 5]
       return {
@@ -132,7 +132,7 @@ export function mockHistory(kind: 'sent' | 'received', slots: string[]): History
   } else {
     items = mockRecent().filter((r) => names.has(r.slot)) as unknown as ReceivedEntry[]
   }
-  return { kind, total: items.length, offset: 0, items, slots: hslots, scout_checked: true }
+  return { kind, total: items.length, offset, items: items.slice(offset, offset + limit), slots: hslots, scout_checked: true }
 }
 
 export const mockConfig: ConfigResponse = {

@@ -10,7 +10,7 @@ export function installMockMode(dispatch: (e: TrackerEvent) => void): void {
     recentItems: async () => ({ items: mockRecent() }),
     getConfig: async () => mockConfig,
     discover: async () => mockDiscover,
-    history: async (k, s) => mockHistory(k, s),
+    history: async (k, s, limit, offset) => mockHistory(k, s, limit, offset),
     putConfig: async () => ({ ok: true }),
   })
   tracker.sse = 'open'

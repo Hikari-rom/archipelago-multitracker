@@ -22,7 +22,10 @@ const page: HistoryPage<SentCheck> = {
   ],
 }
 
-afterEach(() => (tracker.slots = []))
+afterEach(() => {
+  tracker.slots = []
+  window.scrollTo(0, 0)
+})
 
 function setup(p: HistoryPage<SentCheck>) {
   installMock({ getSlot: async () => { throw new Error('no') }, markSeen: async () => ({ seen: 0 }), history: async () => p })
@@ -48,5 +51,25 @@ describe('HistoryV2', () => {
     const w = setup({ ...page, items: [...page.items].reverse() })
     await flushPromises()
     expect(w.findAll('[data-day]').map((d) => d.attributes('data-day'))).toEqual(["Aujourd'hui", 'Hier', 'Avant le suivi'])
+  })
+
+  it('loads 50 rows per page and fetches the next page when the end of the list comes into view', async () => {
+    const all = Array.from({ length: 120 }, (_, i) => check({ location_id: i, location: `L${i}`, checked_at: t(15, 0, 0) - i * 60 }))
+    const limits: number[] = []
+    installMock({
+      getSlot: async () => { throw new Error('no') }, markSeen: async () => ({ seen: 0 }),
+      history: async (_k, _s, limit) => (limits.push(limit), { ...page, total: all.length, items: all.slice(0, limit) }),
+    })
+    tracker.nowMs = new Date(2026, 9, 15, 0, 30).getTime()
+    tracker.slots = [mk({ name: 'celeste', game: 'Celeste (Open World)' })]
+    const w = mount(HistoryV2, { props: { slots: tracker.slots, owner: '*', chips: [] } })
+    await flushPromises()
+    expect(limits).toEqual([50])
+    expect(w.findAll('li[data-index]').length).toBeLessThan(51) // only the rows on screen are mounted
+    window.scrollTo(0, 50 * 33)
+    window.dispatchEvent(new Event('scroll'))
+    await flushPromises()
+    expect(limits).toEqual([50, 100])
+    expect(w.text()).toContain('pages de 50')
   })
 })

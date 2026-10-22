@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import * as api from '../../lib/api'
 import type { HistoryPage, HistorySlot, ReceivedEntry, SentCheck, SlotSummary } from '../../lib/types'
 
-const PAGE = 200
+export const PAGE = 50
 
 export function useHistory(slots: () => SlotSummary[], kind: Ref<'sent' | 'received'>, slotFilter: Ref<string>) {
   const sent = ref<HistoryPage<SentCheck> | null>(null)

@@ -185,7 +185,7 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Entrée séparée `/v2` et lien depuis la v1
 - [x] Thèmes Nuit et Plan (tokens, contraste AA testé) + ciel animé
 - [x] Tableau de bord Cartes et Focus, téléphone
-- [x] États des cartes et « Plus actif » avec Annuler
+- [x] Historique par jour (pages de 50, liste virtualisée, page suivante chargée en arrivant en bas : 2026-10-22)
 - [x] Historique par jour
 - [x] Objectifs
 - [x] Captures `test-output/screenshots/v2/` prises avec Firefox headless (puppeteer-core) ; `screenshot-v2.mjs` (Playwright) demande Chromium, absent ici
