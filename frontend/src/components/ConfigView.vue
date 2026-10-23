@@ -312,6 +312,23 @@ const selectClass =
       <AlertDescription>Impossible de lire la configuration : {{ loadError }}</AlertDescription>
     </Alert>
     <form v-else class="flex flex-col gap-4" novalidate @submit.prevent="onSave" @keydown.enter="onEnter">
+      <!-- Save (at the top so it is never lost below the slot list) -->
+      <div class="bg-card flex flex-col gap-2 rounded-xl border px-4 py-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <Button type="submit" :disabled="!canSave">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</Button>
+          <Button v-if="tracker.slots.length" type="button" variant="outline" @click="setView('dashboard')">Annuler</Button>
+          <p class="min-w-0 flex-1 px-1 text-sm">
+            <strong>{{ summary.count }}</strong> slot(s) suivi(s) · {{ summary.withLogic }} avec logique
+            <template v-if="summary.warnings"> · <span class="text-warn-foreground bg-warn rounded px-1">{{ summary.warnings }} avertissement(s)</span></template>
+            <template v-if="summary.errors"> · <span class="text-destructive">{{ summary.errors }} erreur(s)</span></template>
+          </p>
+          <Button v-if="cfg?.has_backup" type="button" variant="ghost" size="sm" :disabled="restoring" @click="onRestore">
+            <RotateCcw aria-hidden="true" /> Restaurer la configuration précédente
+          </Button>
+        </div>
+        <p v-if="saveError" class="text-destructive text-sm" role="alert">{{ saveError }}</p>
+      </div>
+
       <!-- 1. Room -->
       <Card class="gap-4 py-5">
         <CardHeader class="px-5">
@@ -486,44 +503,47 @@ const selectClass =
 
           <p v-if="!rows.length" class="text-muted-foreground text-sm">Aucun slot. Utilise « Découvrir les slots ».</p>
           <p v-else-if="!visible.length" class="text-muted-foreground text-sm">Aucun slot ne correspond au filtre.</p>
-          <ul v-else class="divide-y rounded-lg border">
+          <ul v-else class="divide-y rounded-lg border text-sm">
             <li
-              v-for="(r, i) in visible"
-              :key="r.name"
-              :class="cn('flex flex-col gap-2 px-3 py-2.5', !r.checked && 'opacity-75')"
+              class="text-muted-foreground hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)] sm:gap-2"
+              aria-hidden="true"
             >
-              <div class="flex items-start gap-2.5">
-                <Checkbox :id="`cfg-row-${i}`" v-model="r.checked" class="mt-0.5" :aria-label="`suivre ${r.name}`" />
-                <label :for="`cfg-row-${i}`" class="flex min-w-0 flex-1 cursor-pointer flex-col">
-                  <span class="font-medium break-words">{{ r.name }}</span>
-                  <span class="text-muted-foreground text-xs break-words">{{ r.game || 'jeu inconnu' }}</span>
-                </label>
-              </div>
-              <template v-if="r.checked">
-                <div class="grid grid-cols-1 gap-2 pl-6.5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                  <label class="text-muted-foreground flex flex-col gap-1 text-xs font-medium">
-                    yaml
-                    <select v-model="r.yaml" :class="selectClass" :aria-label="`yaml de ${r.name}`">
-                      <option value="">aucun</option>
-                      <option v-for="y in yamlPaths" :key="y" :value="y">{{ shortYaml(y) }}</option>
-                      <option v-if="r.yaml && !yamlPaths.includes(r.yaml)" :value="r.yaml">{{ r.yaml }}</option>
-                    </select>
-                  </label>
-                  <label class="text-muted-foreground flex flex-col gap-1 text-xs font-medium">
-                    joueur
-                    <Input v-model="r.owner" type="text" list="cfg-owners" placeholder="optionnel" class="h-9" :aria-label="`joueur de ${r.name}`" />
+              <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span>
+            </li>
+            <li v-for="(r, i) in visible" :key="r.name" :class="cn('flex flex-col gap-1 px-3 py-1.5', !r.checked && 'opacity-75')">
+              <div class="grid grid-cols-1 items-center gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)]">
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <Checkbox :id="`cfg-row-${i}`" v-model="r.checked" :aria-label="`suivre ${r.name}`" />
+                  <label :for="`cfg-row-${i}`" class="min-w-0 flex-1 cursor-pointer truncate" :title="`${r.name} · ${r.game || 'jeu inconnu'}`">
+                    <span class="font-medium">{{ r.name }}</span>
+                    <span class="text-muted-foreground text-xs"> · {{ r.game || 'jeu inconnu' }}</span>
                   </label>
                 </div>
-                <ul v-if="diags[r.name].length" class="flex flex-col gap-1 pl-6.5">
-                  <li
-                    v-for="(d, k) in diags[r.name]"
-                    :key="k"
-                    :class="cn('flex items-start gap-1.5 rounded px-1.5 py-0.5 text-xs', diagClass[d.level])"
-                  >
-                    <component :is="diagIcon[d.level]" class="mt-px size-3.5 shrink-0" aria-hidden="true" />{{ d.text }}
-                  </li>
-                </ul>
-              </template>
+                <div v-if="r.checked" class="flex gap-2 pl-6.5 sm:contents">
+                  <select v-model="r.yaml" :class="cn(selectClass, 'h-8 flex-1')" :aria-label="`yaml de ${r.name}`">
+                    <option value="">aucun yaml</option>
+                    <option v-for="y in yamlPaths" :key="y" :value="y">{{ shortYaml(y) }}</option>
+                    <option v-if="r.yaml && !yamlPaths.includes(r.yaml)" :value="r.yaml">{{ r.yaml }}</option>
+                  </select>
+                  <Input
+                    v-model="r.owner"
+                    type="text"
+                    list="cfg-owners"
+                    placeholder="joueur"
+                    class="h-8 w-20 shrink-0 sm:w-full"
+                    :aria-label="`joueur de ${r.name}`"
+                  />
+                </div>
+              </div>
+              <ul v-if="r.checked && diags[r.name].length" class="flex flex-col gap-0.5 pl-6.5">
+                <li
+                  v-for="(d, k) in diags[r.name]"
+                  :key="k"
+                  :class="cn('flex items-start gap-1.5 rounded px-1.5 py-0.5 text-xs', diagClass[d.level])"
+                >
+                  <component :is="diagIcon[d.level]" class="mt-px size-3.5 shrink-0" aria-hidden="true" />{{ d.text }}
+                </li>
+              </ul>
             </li>
           </ul>
           <datalist id="cfg-owners"><option v-for="o in owners" :key="o" :value="o" /></datalist>
@@ -549,24 +569,6 @@ const selectClass =
         </CardContent>
       </Card>
 
-      <!-- 5. Save -->
-      <Card class="gap-3 py-4">
-        <CardContent class="flex flex-col gap-3 px-5">
-          <p class="text-sm">
-            <strong>{{ summary.count }}</strong> slot(s) suivi(s) · {{ summary.withLogic }} avec logique
-            <template v-if="summary.warnings"> · <span class="text-warn-foreground bg-warn rounded px-1">{{ summary.warnings }} avertissement(s)</span></template>
-            <template v-if="summary.errors"> · <span class="text-destructive">{{ summary.errors }} erreur(s)</span></template>
-          </p>
-          <p v-if="saveError" class="text-destructive text-sm" role="alert">{{ saveError }}</p>
-          <div class="flex flex-wrap gap-2">
-            <Button type="submit" :disabled="!canSave">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</Button>
-            <Button v-if="tracker.slots.length" type="button" variant="outline" @click="setView('dashboard')">Annuler</Button>
-            <Button v-if="cfg?.has_backup" type="button" variant="ghost" :disabled="restoring" class="sm:ml-auto" @click="onRestore">
-              <RotateCcw aria-hidden="true" /> Restaurer la configuration précédente
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </form>
   </section>
 </template>
