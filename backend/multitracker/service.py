@@ -13,6 +13,7 @@ from .datapackage import DataPackageCache
 from .goals import GoalContext, describe as describe_goal, yaml_options
 from .history import History
 from .logic import LogicEngine, LogicRequest, LogicResult, NullLogicEngine
+from .roomfeed.feed import RoomFeed
 from .store import Store
 
 log = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ class Service:
         self.publish_debounce = publish_debounce
         self.reconnect_delays = reconnect_delays
         self.trackers: dict[str, SlotTracker] = {}
+        self.roomfeed: RoomFeed | None = None  # room-wide dashboard, only when config.room_dashboard
         self.slot_configs: dict[str, SlotConfig] = {s.name: s for s in config.slots}
         self.logic: dict[str, LogicResult] = {}
         self._logic_tasks: dict[str, asyncio.Task] = {}
@@ -75,8 +77,31 @@ class Service:
             self.trackers[slot.name] = tracker
             self.logic[slot.name] = LogicResult("pending")
             tracker.start()
+        if self.config.room_dashboard:
+            self.roomfeed = RoomFeed(
+                server=lambda: self.current_server, password=self.config.password,
+                slot_name=self.config.slots[0].name if self.config.slots else None, room_url=self.config.room_url,
+                tracked={s.name for s in self.config.slots}, datapackage=self.datapackage, publish=self._broadcast,
+                bk_of=self._bk_of, room_sleeping=lambda: self.room_sleeping,
+                reconnect_delays=self.reconnect_delays)
+            self.roomfeed.start()
+
+    def _bk_of(self, name: str) -> bool | None:
+        """Whether a tracked slot is BK (logic computed, nothing in logic, not finished); None if not tracked."""
+        tracker = self.trackers.get(name)
+        if tracker is None:
+            return None
+        logic = self.logic.get(name)
+        return bool(logic is not None and logic.state == "ok" and not logic.in_logic
+                    and not tracker.state.goal_reached and tracker.state.missing)
 
     async def _stop_trackers(self) -> None:
+        if self.roomfeed is not None:
+            feed, self.roomfeed = self.roomfeed, None
+            try:
+                await feed.stop()
+            except Exception:
+                log.exception("room feed did not stop cleanly")
         # Trackers first (stopping them may still schedule logic/publish tasks), then every task.
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
         self.history.flush()

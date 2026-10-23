@@ -1,14 +1,15 @@
-"""Room listener against a local test server: live broadcasts are heard, and nothing is replayed after a gap."""
+"""Room feed against a local test server: live broadcasts are heard, nothing is replayed after a gap, and the catch-up fills it."""
 from __future__ import annotations
 
 import asyncio
+import json
 import random
 import time
 from pathlib import Path
 
 import pytest
 
-from test_backend_level1 import eventually
+from test_backend_level1 import SLOTS, eventually
 from testenv_helpers import generated_seed, start_server, stop_server
 
 PORT = 38283
@@ -90,3 +91,92 @@ async def test_no_replay_after_a_gap(server, tmp_path):
         assert not {c[3] for c in checks} & set(missed)
     finally:
         await second.stop()
+
+
+ROOM_URL = "https://archipelago.gg/room/AAAAAAAAAAAA"
+
+
+async def test_catchup_finds_the_checks_missed_while_the_feed_was_stopped(server, tmp_path):
+    """Test C: 3 checks heard live, feed stopped, 4 more checks: the next feed's first poll finds exactly those 4."""
+    from bot import GameBot
+    from multitracker.ap.tracker import SlotTracker
+    from multitracker.datapackage import DataPackageCache
+    from multitracker.room import RoomInfo
+    from multitracker.roomfeed.feed import RoomFeed
+    from multitracker.roomfeed.log import RoomLog
+    from multitracker.store import Store
+
+    datapackage = DataPackageCache(Store(tmp_path / "db.sqlite3"))
+    trackers = {name: SlotTracker(lambda: f"127.0.0.1:{PORT}", "test", name, game, datapackage, min_delay=0.3, max_delay=1.0)
+                for name, game in SLOTS.items()}
+    polls = {"tracker": 0}
+
+    def fetch(url):  # the WebHost tracker API, built from what read-only trackers see on the local server
+        if "static_tracker" in url:
+            return {"player_locations_total": [], "player_game": []}
+        polls["tracker"] += 1
+        rows = [(t.state.slot, list(t.state.items), sorted(t.state.checked)) for t in trackers.values()]
+        return {"player_items_received": [{"team": 0, "player": slot, "items": [
+                    [i["item"], i["location"], i["player"], i.get("flags") or 0] for i in items]}
+                    for slot, items, _checked in rows],
+                "player_checks_done": [{"team": 0, "player": slot, "locations": checked} for slot, _i, checked in rows]}
+
+    def fetch_room(url):
+        return RoomInfo(url=url, host="archipelago.gg", port=None, players=[], tracker="BBBBBBBBBBBB")
+
+    def make_feed():
+        return RoomFeed(server=lambda: f"127.0.0.1:{PORT}", password="test", slot_name="Celeste", room_url=ROOM_URL,
+                        tracked={"Celeste"}, datapackage=datapackage, publish=lambda event: None,
+                        bk_of=lambda name: None, root=tmp_path / "room_feed", overrides_path=tmp_path / "players.yaml",
+                        fetch=fetch, fetch_room=fetch_room, poll_interval=3600, static_interval=3600, heartbeat=0.2,
+                        reconnect_delays=(0.3, 1.0))
+
+    def heard_by_trackers(slot, locations):  # the checks of `slot` that some tracker has seen as a received item
+        return {i["location"] for t in trackers.values() for i in t.state.items
+                if i["player"] == slot and i["location"] in locations}
+
+    for tracker in trackers.values():
+        tracker.start()
+    first = second = None
+    try:
+        await eventually(lambda: all(t.state.status == "connected" and t.state.synced for t in trackers.values()),
+                         what="all slots tracked")
+        first = make_feed()
+        first.start()
+        await eventually(lambda: first.status()["state"] == "listening" and polls["tracker"] >= 2,
+                         what="feed listening, start and session polls done")
+        async with GameBot(server, "KH2", "Kingdom Hearts 2") as bot:
+            live = await bot.check_random(3, random.Random(1))
+            await eventually(lambda: len(first.log.entries) == 3, what="3 live checks")
+            await asyncio.sleep(0.5)  # a few heartbeats
+            await first.stop()
+            saved = RoomLog(tmp_path / "room_feed")
+            saved.open_seed(first.log.seed)
+            last_live = saved.load_state()["last_live_at"]
+            assert last_live >= max(e.at for e in first.log.entries)
+            missed = await bot.check_random(4, random.Random(2))
+            assert len(live) == 3 and len(missed) == 4 and not set(live) & set(missed)
+            await eventually(lambda: heard_by_trackers(bot.slot, set(live) | set(missed)) == set(live) | set(missed),
+                             what="the trackers saw the 7 checks")
+            polled = time.time()
+            second = make_feed()
+            second.start()
+            await eventually(lambda: len(second.log.entries) == 7, what="catch-up of the missed checks")
+            await asyncio.sleep(0.5)  # later polls and live hearing must not add or duplicate anything
+            await second.poll_now()
+            entries = second.log.entries
+            assert len(entries) == 7 and {e.key for e in entries} == {(bot.slot, loc) for loc in [*live, *missed]}
+            by_loc = {e.location: e for e in entries}
+            assert all(by_loc[loc].src == "live" and by_loc[loc].after is None for loc in live)
+            for loc in missed:
+                entry = by_loc[loc]
+                assert entry.src == "catchup" and entry.at is None
+                assert entry.after == last_live and entry.before >= polled and entry.before > entry.after
+            rows = [row for path in (tmp_path / "room_feed" / second.log.seed).glob("checks-*.jsonl")
+                    for row in map(json.loads, path.read_text().splitlines())]
+            assert len(rows) == 7 and len({(r["sender"], r["location"]) for r in rows}) == 7
+    finally:
+        for feed in (first, second):
+            if feed is not None:
+                await feed.stop()
+        await asyncio.gather(*(t.stop() for t in trackers.values()), return_exceptions=True)
