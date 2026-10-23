@@ -20,6 +20,8 @@ export const tracker = reactive({
   /** room link from "#config?room=..." (pre-fills the Configuration page) */
   prefillRoom: typeof location !== 'undefined' ? roomFromLocation(location.hash, location.search) : '',
   roomSleeping: false,
+  /** the room-wide dashboard is enabled (Configuration): shows « Room complète » in the menu */
+  roomDashboard: false,
   /** ticks every 30 s: "active" slots and relative times expire on their own */
   nowMs: Date.now(),
   /** a slot is "active" when it checked a location in the last N minutes (setting of this device) */
@@ -83,13 +85,14 @@ export function restoreActivity(prev: ActivityOverrides): void {
   saveActivity()
 }
 
-export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history'
+export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history' | 'room'
 
 function viewFromHash(): View {
   if (typeof location === 'undefined') return 'dashboard'
   if (/^#config(\?|$)/.test(location.hash)) return 'config'
   if (location.hash === '#goals') return 'goals'
   if (location.hash === '#history') return 'history'
+  if (location.hash === '#room') return 'room'
   return location.hash === '#logs' ? 'logs' : 'dashboard'
 }
 if (typeof window !== 'undefined') {
@@ -149,6 +152,7 @@ export async function refreshMeta(): Promise<void> {
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
     tracker.roomSleeping = !!r.room_sleeping
+    tracker.roomDashboard = !!r.room_dashboard
     syncClock(r.now)
   } catch {
     /* ignore */
@@ -240,6 +244,9 @@ export async function markSeen(name: string): Promise<void> {
   if (isOpen(name)) void loadDetail(name)
 }
 
+/** Room-wide dashboard: handlers of the `roomfeed_check` / `roomfeed` SSE events (registered by v2/lib/roomfeed.ts). */
+export const roomfeedListeners = { check: new Set<(d: any) => void>(), state: new Set<(d: any) => void>() }
+
 let es: EventSource | null = null
 let retryTimer: ReturnType<typeof setTimeout> | undefined
 let backoff = 3000
@@ -292,6 +299,12 @@ export function connect(): void {
     const d = parse(e)
     if (d && d.slot) dispatch({ type: 'slot', slot: d.slot })
   })
+  for (const [name, handlers] of [['roomfeed_check', roomfeedListeners.check], ['roomfeed', roomfeedListeners.state]] as const) {
+    cur.addEventListener(name, (e) => {
+      const d = parse(e)
+      if (d) for (const fn of [...handlers]) fn(d)
+    })
+  }
 }
 
 let clock: ReturnType<typeof setInterval> | undefined
@@ -316,6 +329,7 @@ export async function start(): Promise<void> {
     tracker.roomUrl = r.room_url ?? ''
     tracker.roomError = r.room_error ?? ''
     tracker.roomSleeping = !!r.room_sleeping
+    tracker.roomDashboard = !!r.room_dashboard
     syncClock(r.now)
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)

@@ -1,5 +1,8 @@
 import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
-import type { HistoryPage, ReceivedEntry, RecentItem, SentCheck, SlotDetail, SlotSummary } from './types'
+import type {
+  HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
+  SentCheck, SlotDetail, SlotSummary,
+} from './types'
 
 export interface SlotsResponse {
   server: string
@@ -10,6 +13,8 @@ export interface SlotsResponse {
   /** server clock, epoch seconds */
   now?: number
   wake_room?: boolean
+  /** the room-wide dashboard is enabled (Configuration) */
+  room_dashboard?: boolean
 }
 
 export class HttpError extends Error {
@@ -43,6 +48,10 @@ export interface MockApi {
   getConfig?(): Promise<ConfigResponse>
   discover?(url: string, wake?: boolean): Promise<DiscoverResponse>
   putConfig?(b: PutConfigBody): Promise<unknown>
+  getRoomFeed?(): Promise<RoomFeedStatus>
+  getRoomFeedSummary?(): Promise<RoomFeedSummary>
+  getRoomFeedChecks?(params: RoomFeedChecksParams): Promise<RoomFeedChecksPage>
+  getRoomFeedActivity?(bucket: 'hour' | 'day', player?: string): Promise<RoomFeedActivity>
 }
 let mock: MockApi | null = null
 export function installMock(m: MockApi): void {
@@ -101,3 +110,37 @@ export const wakeRoom = () =>
 
 export const putConfig = (b: PutConfigBody) =>
   mock?.putConfig ? mock.putConfig(b) : fetch('/api/config', jsonInit('PUT', b)).then((r) => json<unknown>(r))
+
+export interface RoomFeedChecksParams {
+  limit?: number
+  offset?: number
+  /** grouped player */
+  player?: string
+  /** name of the slot that did the check */
+  slot?: string
+  game?: string
+}
+
+export const getRoomFeed = () =>
+  mock?.getRoomFeed ? mock.getRoomFeed() : fetch('/api/roomfeed').then((r) => json<RoomFeedStatus>(r))
+
+export const getRoomFeedSummary = () =>
+  mock?.getRoomFeedSummary ? mock.getRoomFeedSummary() : fetch('/api/roomfeed/summary').then((r) => json<RoomFeedSummary>(r))
+
+export function getRoomFeedChecks(params: RoomFeedChecksParams = {}): Promise<RoomFeedChecksPage> {
+  if (mock?.getRoomFeedChecks) return mock.getRoomFeedChecks(params)
+  const q = new URLSearchParams()
+  if (params.limit !== undefined) q.set('limit', String(params.limit))
+  if (params.offset !== undefined) q.set('offset', String(params.offset))
+  if (params.player) q.set('player', params.player)
+  if (params.slot) q.set('slot', params.slot)
+  if (params.game) q.set('game', params.game)
+  return fetch(`/api/roomfeed/checks?${q}`).then((r) => json<RoomFeedChecksPage>(r))
+}
+
+export function getRoomFeedActivity(bucket: 'hour' | 'day', player?: string): Promise<RoomFeedActivity> {
+  if (mock?.getRoomFeedActivity) return mock.getRoomFeedActivity(bucket, player)
+  const q = new URLSearchParams({ bucket })
+  if (player) q.set('player', player)
+  return fetch(`/api/roomfeed/activity?${q}`).then((r) => json<RoomFeedActivity>(r))
+}

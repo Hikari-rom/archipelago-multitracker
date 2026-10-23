@@ -25,6 +25,7 @@ export interface ConfigResponse {
   has_password: boolean
   wake_room?: boolean
   scout_checked?: boolean
+  room_dashboard?: boolean
   has_backup?: boolean
   slots: ConfigSlot[]
   player_yamls: string[]
@@ -55,6 +56,7 @@ export interface PutConfigBody {
   password?: string | null
   wake_room?: boolean
   scout_checked?: boolean
+  room_dashboard?: boolean
   slots: { name: string; game: string; owner: string | null; yaml: string | null }[]
 }
 
@@ -116,11 +118,13 @@ export function buildPutBody(opts: {
   rows: SlotRow[]
   wakeRoom?: boolean
   scoutChecked?: boolean
+  roomDashboard?: boolean
 }): PutConfigBody {
   const body: PutConfigBody = {
     password: passwordPayload(opts.password),
     ...(opts.wakeRoom === undefined ? {} : { wake_room: opts.wakeRoom }),
     ...(opts.scoutChecked === undefined ? {} : { scout_checked: opts.scoutChecked }),
+    ...(opts.roomDashboard === undefined ? {} : { room_dashboard: opts.roomDashboard }),
     slots: opts.rows
       .filter((r) => r.checked)
       .map((r) => ({ name: r.name, game: r.game, owner: r.owner.trim() || null, yaml: r.yaml || null })),

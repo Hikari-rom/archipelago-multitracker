@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuSeparator, DropdownMenuTrigger } from 'reka-ui'
 import { v1Href } from '../../lib/v2path'
-import { setView } from '../../stores/tracker'
+import { setView, tracker } from '../../stores/tracker'
 
 const props = defineProps<{ compact?: boolean }>()
 const hash = () => globalThis.location.hash
@@ -23,6 +23,7 @@ const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-lg px-3 py
       <DropdownMenuContent align="end" :side="props.compact ? 'top' : 'bottom'" :side-offset="6" class="z-50 min-w-64 max-w-[calc(100vw-32px)] rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-xl">
         <DropdownMenuItem :class="item" @select="setView('logs')">Journal</DropdownMenuItem>
         <DropdownMenuItem :class="item" @select="setView('config')">Configuration</DropdownMenuItem>
+        <DropdownMenuItem v-if="tracker.roomDashboard" :class="item" @select="setView('room')">Room complète</DropdownMenuItem>
         <DropdownMenuSeparator class="my-1 h-px bg-border" />
         <DropdownMenuItem as-child :class="item">
           <a :href="v1Href(hash())">Revenir à la v1</a>

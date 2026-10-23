@@ -66,6 +66,12 @@ describe('PUT payload', () => {
     const b = buildPutBody({ roomUrl: '', server: ' h:38281 ', password: { value: 'p', clear: false }, rows: [] })
     expect(b).toEqual({ server: 'h:38281', password: 'p', slots: [] })
   })
+  it('room_dashboard only when given', () => {
+    const base = { roomUrl: '', server: 'h:1', password: { value: '', clear: false }, rows: [] }
+    expect(buildPutBody({ ...base, roomDashboard: true }).room_dashboard).toBe(true)
+    expect(buildPutBody({ ...base, roomDashboard: false }).room_dashboard).toBe(false)
+    expect('room_dashboard' in buildPutBody(base)).toBe(false)
+  })
 })
 
 describe('owner filter', () => {

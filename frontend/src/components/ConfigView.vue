@@ -41,6 +41,7 @@ const password = ref('')
 const clearPassword = ref(false)
 const wakeRoom = ref(false)
 const scoutChecked = ref(true)
+const roomDashboard = ref(false)
 const rows = ref<SlotRow[]>([])
 const loading = ref(true)
 const loadError = ref('')
@@ -114,6 +115,7 @@ onMounted(async () => {
     advanced.value = !c.room_url && !!c.server
     wakeRoom.value = !!c.wake_room
     scoutChecked.value = c.scout_checked !== false
+    roomDashboard.value = !!c.room_dashboard
     rows.value = autoAssociate(mergeRows(c.slots, null), yamls.value).rows
   } catch (e) {
     loadError.value = errText(e)
@@ -266,6 +268,7 @@ async function onSave(): Promise<void> {
         rows: rows.value,
         wakeRoom: wakeRoom.value,
         scoutChecked: scoutChecked.value,
+        roomDashboard: roomDashboard.value,
       }),
     )
     password.value = ''
@@ -407,6 +410,18 @@ const selectClass =
                 Pour l'Historique : quel item était dans chacun de tes checks faits, et pour qui. Seulement des checks
                 déjà faits, sans créer de hint : rien n'est dévoilé. Désactivé : l'item n'est connu que s'il est parti
                 vers un slot suivi par l'app.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-2">
+            <Checkbox id="cfg-roomdash" v-model="roomDashboard" class="mt-0.5" />
+            <div class="flex flex-col gap-0.5">
+              <Label for="cfg-roomdash" class="font-normal">Tableau de bord de la room complète</Label>
+              <p class="text-muted-foreground text-xs">
+                Ajoute une page « Room complète » (menu Plus de la v2) : classement, fil des checks et activité de toute
+                la room. Une connexion d'écoute en plus, en lecture seule ; les checks sont écrits dans
+                <code class="bg-muted rounded px-1">data/room_feed/</code>. Désactivé par défaut.
               </p>
             </div>
           </div>

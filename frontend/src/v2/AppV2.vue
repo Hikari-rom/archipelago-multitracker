@@ -15,6 +15,7 @@ import UndoToast from './components/UndoToast.vue'
 import DashboardV2 from './views/DashboardV2.vue'
 import GoalsV2 from './views/GoalsV2.vue'
 import HistoryV2 from './views/HistoryV2.vue'
+import RoomV2 from './views/RoomV2.vue'
 import { loadSkyAnimated, loadThemeChoice, saveSkyAnimated, saveThemeChoice, type ThemeChoice } from './lib/prefs'
 import { applyV2Theme, resolveTheme } from './lib/tokens'
 
@@ -92,6 +93,7 @@ const TABS: { key: View; label: string }[] = [
     <ConfigView v-else-if="view === 'config'" />
     <LogsView v-else-if="view === 'logs'" />
     <HistoryV2 v-else-if="view === 'history'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
+    <RoomV2 v-else-if="view === 'room'" />
     <GoalsV2 v-else-if="view === 'goals'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
     <DashboardV2 v-else :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
   </main>

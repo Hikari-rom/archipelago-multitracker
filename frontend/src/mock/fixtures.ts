@@ -1,5 +1,9 @@
 import type { ConfigResponse, DiscoverResponse } from '../lib/config'
-import type { Hint, HistoryPage, HistorySlot, ReceivedEntry, RecentItem, SentCheck, SlotDetail, SlotSummary } from '../lib/types'
+import type { RoomFeedChecksParams } from '../lib/api'
+import type {
+  Hint, HistoryPage, HistorySlot, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedCheck, RoomFeedChecksPage,
+  RoomFeedPlayer, RoomFeedSlot, RoomFeedStatus, RoomFeedSummary, SentCheck, SlotDetail, SlotSummary,
+} from '../lib/types'
 
 function slot(p: Partial<SlotSummary> & { name: string; game: string }): SlotSummary {
   const total = p.checks?.total ?? 100
@@ -154,4 +158,136 @@ export const mockDiscover: DiscoverResponse = {
     { name: 'Alice_Hades', game: 'Hades' },
     { name: 'Alice_A Link to the Past with a very long slot name', game: 'A Link to the Past' },
   ],
+}
+
+// -- Room-wide dashboard (GET /api/roomfeed/*) ---------------------------------------------------------------------
+const FEED_PLAYERS: { player: string; me: boolean; slots: [string, string][] }[] = [
+  { player: 'toi', me: true, slots: [['Romain_Celeste', 'Celeste (Open World)'], ['Romain_TWW', 'The Wind Waker HD'], ['Romain_KH2', 'Kingdom Hearts 2']] },
+  { player: 'Alice', me: false, slots: [['Alice_Hades', 'Hades'], ['Alice_LttP', 'A Link to the Past'], ['Alice_SM64', 'Super Mario 64'], ['Alice_Stardew', 'Stardew Valley'], ['Alice_Celeste', 'Celeste (Open World)'], ['Alice_Sonic', 'Sonic Adventure 2: Battle']] },
+  { player: 'Bob', me: false, slots: [['Bob_OoT', 'Ocarina of Time'], ['Bob_Hollow', 'Hollow Knight'], ['Bob_Pokemon', 'Pokemon Emerald'], ['Bob_Factorio', 'Factorio'], ['Bob_Dino', 'Dinosaur Planet']] },
+  { player: 'Carol', me: false, slots: [['Carol_SoR', 'Shadow of the Colossus'], ['Carol_Hades', 'Hades'], ['Carol_Terraria', 'Terraria'], ['Carol_Minecraft', 'Minecraft'], ['Carol_Zelda', 'A Link to the Past'], ['Carol_SM', 'Super Metroid']] },
+  { player: 'Dave', me: false, slots: [['Dave_Stardew', 'Stardew Valley'], ['Dave_Celeste', 'Celeste (Open World)'], ['Dave_Rogue', 'Risk of Rain 2'], ['Dave_Undertale', 'Undertale'], ['Dave_DS3', 'Dark Souls III']] },
+  { player: 'Eve', me: false, slots: [['Eve_Hollow', 'Hollow Knight'], ['Eve_Pokemon', 'Pokemon Emerald'], ['Eve_Terraria', 'Terraria'], ['Eve_Sonic', 'Sonic Adventure 2: Battle'], ['Eve_KH2', 'Kingdom Hearts 2']] },
+]
+
+/** Small deterministic generator: the mock data must not change between reloads. */
+function lcg(seed: number): () => number {
+  let x = seed
+  return () => {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0
+    return x / 2 ** 32
+  }
+}
+
+const PRESENCES = ['playing', 'connected', 'connected', 'offline', 'unknown', 'offline'] as const
+const FEED_ITEMS = ['Hookshot', 'Dash Refill', 'Strawberry', 'Bomb Trap', 'Rupee (50)', 'Progressive Sword', 'Heart Container', 'Key', 'Fire']
+
+export function mockRoomFeedStatus(): RoomFeedStatus {
+  const now = Date.now() / 1000
+  return {
+    enabled: true, state: 'listening', error: null, seed: 'MockSeed42', listening_since: now - 2 * 3600,
+    last_poll_at: now - 90, poll_error: null, catchup_available: true, unreadable_lines: 0,
+    dir: 'data/room_feed/MockSeed42', write_error: null,
+  }
+}
+
+export function mockRoomFeedSummary(): RoomFeedSummary {
+  const rnd = lcg(7)
+  const now = Date.now() / 1000
+  const players: RoomFeedPlayer[] = FEED_PLAYERS.map((p, pi) => {
+    const slots: RoomFeedSlot[] = p.slots.map(([name, game], si) => {
+      const total = 80 + Math.floor(rnd() * 400)
+      const goal = !p.me && rnd() < 0.08
+      const done = goal ? total : Math.floor(total * rnd() * (0.9 - pi * 0.1))
+      const tracked = p.me
+      return {
+        name, game, done, total, goal, presence: PRESENCES[(pi + si) % PRESENCES.length],
+        last_check_at: done ? now - Math.floor(rnd() * 20 * 3600) : null,
+        bk: tracked ? name === 'Romain_KH2' : null,
+      }
+    })
+    slots.sort((a, b) => b.done / b.total - a.done / a.total || String(a.name).localeCompare(String(b.name)))
+    const last = slots.map((s) => s.last_check_at).filter((t): t is number => t !== null)
+    return {
+      player: p.player, me: p.me, done: slots.reduce((n, s) => n + s.done, 0), total: slots.reduce((n, s) => n + s.total, 0),
+      goals: slots.filter((s) => s.goal).length, playing: slots.filter((s) => s.presence === 'playing').length,
+      last_check_at: last.length ? Math.max(...last) : null, slots,
+    }
+  })
+  players.sort((a, b) => b.done / b.total - a.done / a.total)
+  return {
+    room: {
+      done: players.reduce((n, p) => n + p.done, 0), total: players.reduce((n, p) => n + p.total, 0),
+      slots: players.reduce((n, p) => n + p.slots.length, 0), goals: players.reduce((n, p) => n + p.goals, 0),
+      playing: players.reduce((n, p) => n + p.playing, 0),
+    },
+    players,
+  }
+}
+
+/** 300 checks over 3 days, newest first; 20 of them are catch-up entries, 5 of which have no time window. */
+function buildRoomChecks(): RoomFeedCheck[] {
+  const rnd = lcg(11)
+  const now = Date.now() / 1000
+  const flat = FEED_PLAYERS.flatMap((p) => p.slots.map(([name, game]) => ({ name, game, player: p.player, me: p.me })))
+  const out: RoomFeedCheck[] = []
+  for (let i = 0; i < 300; i++) {
+    const sender = flat[Math.floor(rnd() * flat.length)]
+    const selfSend = rnd() < 0.3
+    const receiver = selfSend ? sender : flat[Math.floor(rnd() * flat.length)]
+    const when = now - 30 - i * (3 * 86400 / 300) * (0.6 + rnd() * 0.8)
+    const roll = rnd()
+    const base = {
+      key: `${flat.indexOf(sender) + 1}:${4000 + i}`, sender: sender.name, sender_game: sender.game, sender_player: sender.player,
+      receiver: receiver.name, receiver_game: receiver.game, receiver_player: receiver.player,
+      item: FEED_ITEMS[Math.floor(rnd() * FEED_ITEMS.length)], location: `${sender.game.split(' ')[0]} - Location ${i + 1}`,
+      category: roll < 0.2 ? ('PROG' as const) : roll < 0.3 ? ('UTILE' as const) : roll < 0.35 ? ('PIÈGE' as const) : null,
+      mine: receiver.me, self: selfSend,
+    }
+    if (i < 20) {
+      // catch-up: the first 5 have no usable time window (undated), the others one of 10 to 70 minutes
+      const width = 600 + Math.floor(rnd() * 3600)
+      out.push({ ...base, src: 'catchup', at: null, after: i < 5 ? null : when - width / 2, before: i < 5 ? null : when + width / 2 })
+    } else {
+      out.push({ ...base, src: 'live', at: when, after: null, before: null })
+    }
+  }
+  return out
+}
+
+const checkWhen = (c: RoomFeedCheck): number | null =>
+  c.at ?? (c.after !== null && c.before !== null ? (c.after + c.before) / 2 : null)
+
+export function mockRoomFeedChecks(params: RoomFeedChecksParams = {}): RoomFeedChecksPage {
+  const limit = Math.min(Math.max(params.limit ?? 50, 1), 500)
+  const offset = Math.max(params.offset ?? 0, 0)
+  const rows = buildRoomChecks()
+    .filter((c) => (!params.player || c.sender_player === params.player) && (!params.slot || c.sender === params.slot)
+      && (!params.game || c.sender_game === params.game))
+    .sort((a, b) => (checkWhen(b) ?? -Infinity) - (checkWhen(a) ?? -Infinity))
+  return { total: rows.length, offset, items: rows.slice(offset, offset + limit) }
+}
+
+export function mockRoomFeedActivity(bucket: 'hour' | 'day', player?: string): RoomFeedActivity {
+  const d = new Date()
+  const count = bucket === 'hour' ? 48 : 30
+  const at = (k: number) =>
+    (bucket === 'hour' ? new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours() + k) : new Date(d.getFullYear(), d.getMonth(), d.getDate() + k)).getTime() / 1000
+  const starts = Array.from({ length: count }, (_, i) => at(i + 1 - count))
+  const end = at(1)
+  const buckets = starts.map((start) => ({ start, count: 0, by_player: {} as Record<string, number> }))
+  let undated = 0
+  for (const c of buildRoomChecks()) {
+    if (player && c.sender_player !== player) continue
+    const t = checkWhen(c)
+    const wide = c.src === 'catchup' && c.after !== null && c.before !== null && c.before - c.after > 7200
+    if (t === null || wide) { undated++; continue }
+    if (t < starts[0] || t >= end) continue
+    let k = starts.length - 1
+    while (starts[k] > t) k--
+    buckets[k].count++
+    const who = c.sender_player ?? '?'
+    buckets[k].by_player[who] = (buckets[k].by_player[who] ?? 0) + 1
+  }
+  return { bucket, buckets, undated }
 }

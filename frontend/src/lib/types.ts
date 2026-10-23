@@ -157,3 +157,100 @@ export interface HistoryPage<T> {
   slots: HistorySlot[]
   scout_checked: boolean
 }
+
+/** GET /api/roomfeed: state of the room-wide listener (docs/API.md, « Tableau de bord de la room complète »). */
+export type RoomFeedState = 'starting' | 'listening' | 'disconnected' | 'error'
+export interface RoomFeedStatus {
+  /** false: the dashboard is disabled, nothing else is sent */
+  enabled: boolean
+  state?: RoomFeedState
+  error?: string | null
+  seed?: string | null
+  /** epoch seconds */
+  listening_since?: number | null
+  last_poll_at?: number | null
+  poll_error?: string | null
+  /** the room publishes a tracker id: catch-up is possible */
+  catchup_available?: boolean
+  unreadable_lines?: number
+  dir?: string | null
+  write_error?: string | null
+}
+
+export type RoomPresence = 'playing' | 'connected' | 'offline' | 'unknown'
+
+export interface RoomFeedSlot {
+  name: string | null
+  game: string | null
+  done: number
+  total: number
+  goal: boolean
+  presence: RoomPresence
+  last_check_at: number | null
+  /** BK slot; null for the slots the app does not track */
+  bk: boolean | null
+}
+
+export interface RoomFeedPlayer {
+  player: string
+  /** a slot of this player is tracked by the app */
+  me: boolean
+  done: number
+  total: number
+  goals: number
+  playing: number
+  last_check_at: number | null
+  slots: RoomFeedSlot[]
+}
+
+/** GET /api/roomfeed/summary */
+export interface RoomFeedSummary {
+  room: { done: number; total: number; slots: number; goals: number; playing: number }
+  players: RoomFeedPlayer[]
+}
+
+/** A check done in the room (GET /api/roomfeed/checks items, SSE `roomfeed_check` payload). Names, never ids. */
+export interface RoomFeedCheck {
+  /** `<sender slot>:<location>`, unique */
+  key: string
+  /** exact time (live checks); null for catch-up entries */
+  at: number | null
+  /** catch-up entries: done between `after` and `before` */
+  after: number | null
+  before: number | null
+  src: 'live' | 'catchup'
+  sender: string | null
+  sender_game: string | null
+  sender_player: string | null
+  receiver: string | null
+  receiver_game: string | null
+  receiver_player: string | null
+  item: string | null
+  location: string | null
+  category: 'PROG' | 'UTILE' | 'PIÈGE' | null
+  /** the item is for a slot tracked by the app */
+  mine: boolean
+  /** the slot sent the item to itself */
+  self: boolean
+}
+
+export interface RoomFeedChecksPage {
+  total: number
+  offset: number
+  items: RoomFeedCheck[]
+}
+
+export interface RoomFeedBucket {
+  /** epoch seconds, local-time boundary */
+  start: number
+  count: number
+  by_player: Record<string, number>
+}
+
+/** GET /api/roomfeed/activity */
+export interface RoomFeedActivity {
+  bucket: 'hour' | 'day'
+  buckets: RoomFeedBucket[]
+  /** catch-up checks whose interval is too wide to be dated */
+  undated: number
+}
