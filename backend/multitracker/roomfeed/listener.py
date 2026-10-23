@@ -59,6 +59,7 @@ class RoomListener:
         self._sock = None
         self._task: asyncio.Task | None = None
         self._stopping = False
+        self._had_session = False  # a Connected was received on the current connection
 
     def start(self) -> None:
         if self._task is None or self._task.done():
@@ -90,7 +91,12 @@ class RoomListener:
                     await asyncio.sleep(self.max_delay)
                     continue
                 self._sock, _ = await net.open_socket(address)
-                await self._session()
+                self._had_session = False
+                try:
+                    await self._session()
+                finally:
+                    if self._had_session:  # also when the session ends by exception (abnormal close)
+                        delay = self.min_delay
                 if self._stopping:
                     break
                 self._set_status("disconnected", "connexion fermée par le serveur")
@@ -167,7 +173,8 @@ class RoomListener:
         self.statuses = {}
         self._status_keys = {f"{STATUS_KEY_PREFIX}{self.team}_{sid}": sid for sid in players}
         self.listening_since = time.time()
-        self._set_status("listening")
+        self._had_session = True
+        self._set_status("listening", notify=False)  # on_state fires once, below
         keys = list(self._status_keys)
         await self._send({"cmd": "Get", "keys": keys})
         await self._send({"cmd": "SetNotify", "keys": keys})
@@ -207,10 +214,11 @@ class RoomListener:
             return None
         return sender, receiver, item, location, flags
 
-    def _set_status(self, status: str, error: str | None = None) -> None:
+    def _set_status(self, status: str, error: str | None = None, notify: bool = True) -> None:
         if (self.status, self.error) != (status, error):
             self.status, self.error = status, error
-            self._call(self.on_state, self)
+            if notify:
+                self._call(self.on_state, self)
 
     def _call(self, callback: Callable | None, *args: Any) -> None:
         if callback is None:

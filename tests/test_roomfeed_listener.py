@@ -135,7 +135,7 @@ async def test_connected_sends_get_and_setnotify_per_status_key(play):
         assert lst.players == {1: {"name": "Alice", "game": "A"}, 2: {"name": "Bob", "game": "B"},
                                3: {"name": "Links", "game": "A"}}
         assert lst.listening_since is not None and lst.error is None
-        assert rec.sessions == [lst] and rec.states[-1] == "listening"
+        assert rec.sessions == [lst] and rec.states.count("listening") == 1
     finally:
         await lst.stop()
 
@@ -274,3 +274,60 @@ async def test_reconnects_after_the_server_closes(monkeypatch):
     finally:
         await lst.stop()
     assert lst.status in ("disconnected", "listening")
+
+
+@pytest.fixture
+def sleeps(monkeypatch):
+    """Record the listener's waits (>= 1 s: the test helpers only sleep for tenths) without really waiting."""
+    real_sleep, waits = asyncio.sleep, []
+
+    async def fake_sleep(delay, *a):
+        if delay >= 1:
+            waits.append(delay)
+            delay = 0.001
+        await real_sleep(delay, *a)
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+    return waits
+
+
+def backoff_listener(**kwargs):
+    return RoomListener(lambda: "host:1", "", "Spy", Cache(), min_delay=2.0, max_delay=20.0, **kwargs)
+
+
+async def test_backoff_resets_after_a_session_that_ends_by_exception(monkeypatch, sleeps):
+    attempts = []
+
+    class DroppedSocket(FakeSocket):
+        async def _iterate(self):
+            for frame in self.frames:
+                yield frame
+            raise ConnectionError("abnormal close")
+
+    async def open_socket(address):
+        attempts.append(address)
+        if len(attempts) == 3:
+            return DroppedSocket([ROOM_INFO, CONNECTED]), address
+        raise ConnectionError("down")
+    monkeypatch.setattr(net, "open_socket", open_socket)
+    lst = backoff_listener()
+    lst.start()
+    try:
+        await until(lambda: len(attempts) >= 5)
+    finally:
+        await lst.stop()
+    assert sleeps[:4] == [2.0, 4.0, 2.0, 4.0]  # grows while down, back to min_delay after the dropped session
+
+
+async def test_refusals_back_off_and_a_fatal_one_waits_max_delay(monkeypatch, sleeps):
+    errors = [["Whatever"], ["Whatever"], ["InvalidSlot"]]
+
+    async def open_socket(address):
+        return FakeSocket([ROOM_INFO, {"cmd": "ConnectionRefused", "errors": errors.pop(0)}]), address
+    monkeypatch.setattr(net, "open_socket", open_socket)
+    lst = backoff_listener()
+    lst.start()
+    try:
+        await until(lambda: len(sleeps) >= 3)
+    finally:
+        await lst.stop()
+    assert sleeps[:3] == [2.0, 4.0, 20.0]  # other refusals back off; a fatal one waits max_delay
