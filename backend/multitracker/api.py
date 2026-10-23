@@ -265,6 +265,35 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             require_slot(service, name)
         return service.history_page(kind, slot or None, max(1, min(limit, 1000)), max(0, offset))
 
+    def require_roomfeed(request: Request) -> Any:
+        feed = get_service(request).roomfeed
+        if feed is None:
+            raise HTTPException(404, "tableau de bord de la room désactivé")
+        return feed
+
+    @app.get("/api/roomfeed")
+    def roomfeed_status(request: Request) -> dict[str, Any]:
+        feed = get_service(request).roomfeed
+        return {"enabled": False} if feed is None else feed.status()
+
+    @app.get("/api/roomfeed/summary")
+    def roomfeed_summary(request: Request) -> dict[str, Any]:
+        return require_roomfeed(request).summary()
+
+    @app.get("/api/roomfeed/checks")
+    def roomfeed_checks(request: Request, limit: int = 50, offset: int = 0, player: str | None = None,
+                        slot: str | None = None, game: str | None = None) -> dict[str, Any]:
+        """Checks made in the whole room, newest first (`player`, `slot`, `game`: optional filters)."""
+        feed = require_roomfeed(request)
+        return feed.checks(max(1, min(limit, 500)), max(0, offset), player or None, slot or None, game or None)
+
+    @app.get("/api/roomfeed/activity")
+    def roomfeed_activity(request: Request, bucket: str = "hour", player: str | None = None) -> dict[str, Any]:
+        feed = require_roomfeed(request)
+        if bucket not in ("hour", "day"):
+            raise HTTPException(400, "bucket : hour ou day")
+        return feed.activity(bucket, player or None)
+
     @app.get("/api/slots/{name:path}")
     async def slot_detail(name: str, request: Request) -> dict[str, Any]:
         service = get_service(request)

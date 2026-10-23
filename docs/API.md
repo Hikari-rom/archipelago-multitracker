@@ -198,3 +198,83 @@ juste après le `snapshot` puis à chaque changement.
 
 ### Lien direct
 `http://<pi>:42753/#config?room=<lien de la room encodé>` ouvre la page Configuration pré-remplie et lance la découverte.
+
+## Tableau de bord de la room complète
+
+Optionnel, **désactivé par défaut** (`room_dashboard: false` dans `config/room.yaml`, réglable depuis la page
+Configuration). Une fois activé, l'app écoute en lecture seule les annonces de toute la room (checks faits, connexions,
+statuts) et en garde un journal. Rien n'est lu en dehors de ce que la room annonce déjà : pas de spoiler, pas de hint,
+pas de `LocationScouts`, et la room endormie n'est jamais réveillée par cette fonction.
+
+Les noms (`sender`, `receiver`, `item`, `location`, joueurs) sont des chaînes ou `null` quand le nom n'est pas encore
+connu ; les identifiants numériques n'apparaissent que dans `key`.
+
+### `GET /api/roomfeed`
+Toujours 200. Désactivé : `{"enabled": false}`. Activé : l'état de l'écoute.
+```json
+{"enabled": true, "state": "listening", "error": null, "seed": "AbC123",
+ "listening_since": 1790000000.0, "last_poll_at": 1790000300.0, "poll_error": null,
+ "catchup_available": true, "unreadable_lines": 0, "dir": "data/room_feed/AbC123", "write_error": null}
+```
+`state` : `starting`, `listening`, `disconnected` ou `error` (alors `error` explique pourquoi). `last_poll_at` et
+`listening_since` sont des secondes epoch ; `catchup_available` indique si la room publie un identifiant de tracker
+(rattrapage possible) ; `write_error` est non nul si le journal n'a pas pu être écrit.
+
+Les trois endpoints suivants répondent **404** `{"detail": "tableau de bord de la room désactivé"}` quand la
+fonction est désactivée.
+
+### `GET /api/roomfeed/summary`
+Progression de la room, regroupée par joueur (les slots d'un même joueur sont réunis, les groupes d'item-link sont
+exclus), du plus avancé au moins avancé.
+```json
+{"room": {"done": 412, "total": 2300, "slots": 24, "goals": 1, "playing": 3},
+ "players": [{"player": "Romain", "me": true, "done": 120, "total": 500, "goals": 0, "playing": 1,
+              "last_check_at": 1790000200.0,
+              "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "done": 80, "total": 300, "goal": false,
+                         "presence": "playing", "last_check_at": 1790000200.0, "bk": false}]}]}
+```
+`presence` : état de présence du slot (`playing` = joue ou a fait un check récemment, `connected`, `offline` ou `unknown`). `bk` : le slot est en BK (logique calculée, plus rien en logique, pas terminé) pour les
+slots suivis par l'app, `null` pour les autres.
+
+### `GET /api/roomfeed/checks?limit=50&offset=0&player=&slot=&game=`
+Checks faits dans la room, du plus récent au plus ancien. `limit` est borné à 1–500, `offset` ≥ 0 ; `player`
+(joueur regroupé), `slot` (nom du slot qui a fait le check) et `game` filtrent, vides ou omis = pas de filtre.
+```json
+{"total": 812, "offset": 0,
+ "items": [{"key": "17:4521", "at": 1790000200.0, "after": null, "before": null, "src": "live",
+            "sender": "Romain_KH2", "sender_game": "Kingdom Hearts 2", "sender_player": "Romain",
+            "receiver": "Alice_Celeste", "receiver_game": "Celeste (Open World)", "receiver_player": "Alice",
+            "item": "Strawberry", "location": "Chapter 1 Berry", "category": "PROG",
+            "mine": false, "self": false}]}
+```
+`key` (`<slot émetteur>:<location>`) identifie un check de façon unique. `category` : `PROG`, `UTILE`, `PIÈGE` ou
+`null`. `src` : `live` (vu en direct, `at` = heure exacte) ou `catchup` (rattrapé : `at` est `null` et le check est
+situé dans l'intervalle `after`–`before`). `mine` : l'item est pour un slot suivi par l'app ; `self` : le slot
+s'envoie l'item à lui-même.
+
+### `GET /api/roomfeed/activity?bucket=hour|day&player=`
+Nombre de checks par tranche : 48 heures ou 30 jours, aux frontières de l'heure locale du serveur, de la plus
+ancienne à la plus récente. `player` restreint à un joueur. Un autre `bucket` donne **400**.
+```json
+{"bucket": "hour", "undated": 3,
+ "buckets": [{"start": 1789999200.0, "count": 5, "by_player": {"Romain": 3, "Alice": 2}}]}
+```
+`undated` compte les checks rattrapés dont l'intervalle est trop large pour être daté.
+
+### Événements SSE (sur `/api/events`)
+Aucune modification du flux : ces événements passent comme les autres, uniquement quand la fonction est activée.
+- `event: roomfeed_check` — `{"type": "roomfeed_check", "checks": [Check, ...]}` : nouveaux checks (même forme
+  que `items` ci-dessus), regroupés en lots (200 au plus), du plus récent au plus ancien.
+- `event: roomfeed` — `{"type": "roomfeed", "status": {...}}` : le même objet que `GET /api/roomfeed`, à chaque
+  changement d'état ou de progression (au plus un toutes les quelques secondes). Le front en profite pour
+  rafraîchir `summary`.
+
+**Pas de rejeu** : à la connexion (ou à la reconnexion) du flux, rien n'est renvoyé. Le client doit rattraper en
+appelant `GET /api/roomfeed`, `/summary` et `/checks` puis appliquer les événements suivants (en dédoublonnant
+sur `key`).
+
+### Fichiers écrits
+Dans `data/room_feed/<seed>/` (un dossier par seed, créé seulement quand la fonction est activée) :
+`checks-AAAA-MM-JJ.jsonl` (un check par ligne, journal en ajout seul), `presence.jsonl` (connexions et
+déconnexions) et `state.json`. Les regroupements de slots par joueur peuvent être forcés dans
+`config/room_players.yaml`.
