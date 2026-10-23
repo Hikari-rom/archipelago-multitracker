@@ -30,6 +30,9 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   Factorio impossible (slot_data vide).
 - `config/room.yaml` (gitignoré) pointe sur la **vraie room** de Romain depuis le 2026-10-11 (elle dort souvent :
   `curl localhost:42753/api/slots` → `room_sleeping`) ; ne jamais y connecter le bot ni les tests.
+- 2026-10-23 : tableau de bord de la room complète (M21, D22), désactivé par défaut (`room_dashboard`) :
+  `backend/multitracker/roomfeed/` (une connexion d'écoute en lecture seule, `LISTENER_COMMANDS`), checks écrits
+  dans `data/room_feed/<seed>/`, joueurs corrigés dans `config/room_players.yaml` (gitignoré).
 
 ## Règles du projet (non négociables)
 - **Zéro spoiler** : le code de l'app (`backend/`, `frontend/`) n'utilise que items reçus, checks, hints, yamls du
@@ -53,7 +56,7 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - Captures de l'app qui tourne : `cd frontend && node scripts/screenshot.mjs` (→ `test-output/screenshots/live/`,
   utilise `/usr/bin/chromium`).
 - Ports de test déjà pris par les tests pytest : 38281 (démo), 38284 (all22), 38285/38286 (découverte de room),
-  38287 (e2e), 38288 (niveau 1), 38289 (testenv). Prendre 38283 ou 38290 pour du nouveau.
+  38287 (e2e), 38288 (niveau 1), 38289 (testenv), 38283 (`test_roomfeed_live.py`). Prendre 38290 pour du nouveau.
 
 ## Valider la logique d'un jeu (procédure qui a marché)
 1. `.venv/bin/python scripts/testenv/validate_logic.py "<nom exact du jeu>" --runs 5 [--first-run K] [--default-options]`

@@ -189,3 +189,15 @@ Pas de « slot_data prioritaire » générique : un nom d'option peut avoir un a
 
 ## D21 — v2 « Observatoire » servie à côté de la v1 sous /v2 (2026-10-15, demandé par Romain)
 v2 servie à côté de la v1 sous `/v2` : un seul point d'entrée qui charge l'une ou l'autre (code et CSS séparés), mêmes store et API, préférences `amt-v2-*` séparées, choix du jeu actif partagé. Thèmes définis en TS (`src/v2/lib/tokens.ts`) et appliqués en variables CSS pour tester le contraste.
+
+## D22 — Tableau de bord de la room complète (2026-10-23, demandé par Romain)
+Une seule connexion d'écoute en plus, sur un des slots configurés (tags `Tracker`, `items_handling` 0, liste blanche
+`LISTENER_COMMANDS` : GetDataPackage, Connect, Get, SetNotify) : le serveur envoie à chaque client de l'équipe les
+ItemSend, Join/Part et statuts de toute la room. Il ne rejoue jamais les messages manqués : après une coupure, les
+checks sont rattrapés depuis l'API du site (`/api/tracker/<id>`, `player_items_received`, sans heure), avec une
+fenêtre « entre … et … » (début de la coupure ou dernier `last_live_at` enregistré). Stockage en ajout seul :
+`data/room_feed/<seed>/checks-AAAA-MM-JJ.jsonl`, `presence.jsonl`, `state.json` (nettoyage plus tard). Joueurs :
+regroupement automatique par les 3 premières lettres du nom de slot, corrections dans `config/room_players.yaml`.
+« En jeu » : client de jeu connecté (Join sans tag outil, statut 10/20 pour les slots que l'app ne suit pas) ou check
+depuis moins de 10 min ; pour les slots suivis, le statut serveur est faussé par nos propres connexions. Les groupes
+d'item links ne comptent pas comme joueurs. Désactivé par défaut (`room_dashboard`), activé pour Romain.

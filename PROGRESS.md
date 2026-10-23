@@ -2,6 +2,7 @@
 
 ## État actuel (5 lignes)
 0. 2026-10-15 : v2 Observatoire testable sur `/v2` (M20).
+   2026-10-23 : tableau de bord de la room complète (M21, D22) : v2, menu Plus → « Room complète ».
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
@@ -119,6 +120,12 @@
   yaml, sinon de la présence de la location « All Cup Tour Gold ». Les 22 slots ont maintenant un objectif.
 - Yamls de `config/players/romain/` reliés aux 22 slots dans `config/room.yaml` (10 slots n'ont pas le même nom que
   leur yaml, « Associer automatiquement » ne les trouve pas) : logique OK pour les 22 jeux.
+
+### 2026-10-23 — Tableau de bord de la room complète (M21)
+- Module `backend/multitracker/roomfeed/` : écoute de la room (une connexion, lecture seule), journal JSONL,
+  rattrapage par l'API du site, joueurs, présence. API `/api/roomfeed*` (docs/API.md), page v2 « Room complète ».
+- Test réel sur serveur local (`tests/test_roomfeed_live.py`, port 38283) : checks entendus en direct, le serveur ne
+  rejoue rien, et les checks faits pendant une coupure sont rattrapés une fois chacun.
 
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de

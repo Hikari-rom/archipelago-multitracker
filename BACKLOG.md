@@ -192,3 +192,12 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [ ] 3e/4e thème
 - [ ] Refonte Journal/Configuration
 - [ ] Retrait de la v1 quand la v2 est validée
+
+## M21 — Tableau de bord de la room complète (demandé par Romain le 2026-10-23)
+- [x] Connexion d'écoute en lecture seule, journal JSONL par seed dans `data/room_feed/`
+- [x] Rattrapage des checks manqués depuis l'API du site (testé : checks manqués retrouvés une fois chacun)
+- [x] Joueurs (auto + `config/room_players.yaml`), qui joue, classement, activité 48 h / 30 jours, fil des checks
+- [x] Réglage dans Configuration (désactivé par défaut), page « Room complète » dans le menu Plus de la v2
+- [ ] Nettoyage des fichiers `data/room_feed/`
+- [ ] BK des autres joueurs
+- [ ] Page v1
