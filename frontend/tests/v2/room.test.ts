@@ -1,5 +1,5 @@
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { installMock } from '../../src/lib/api'
 import type { MockApi } from '../../src/lib/api'
 import type {
@@ -13,6 +13,16 @@ import RoomHeader from '../../src/v2/components/room/RoomHeader.vue'
 import RoomLeaderboard from '../../src/v2/components/room/RoomLeaderboard.vue'
 import RoomPlaying from '../../src/v2/components/room/RoomPlaying.vue'
 import RoomV2 from '../../src/v2/views/RoomV2.vue'
+
+// happy-dom lays nothing out: give the feed's scroll box the height it has in a browser so the virtualizer mounts rows.
+const FEED_BOX = 640
+beforeAll(() => {
+  const base = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')!
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get(this: HTMLElement) { return this.hasAttribute('data-feed-scroll') ? FEED_BOX : base.get!.call(this) },
+  })
+})
 
 const slot = (over: Partial<RoomFeedSlot> = {}): RoomFeedSlot => ({
   name: 'S', game: 'G', done: 0, total: 10, goal: false, presence: 'offline', last_check_at: null, active_at: null, bk: null, ...over,
@@ -246,8 +256,6 @@ describe('RoomFeedList', () => {
     tracker.nowMs = new Date(2026, 9, 23, 15, 0).getTime()
     return mount(RoomFeedList, { props: { players } })
   }
-
-  afterEach(() => window.scrollTo(0, 0))
 
   it('rows: time, sender, location, category, item, receiver wording, catch-up mentions, day headings', async () => {
     const w = setup(async () => feedPage(feedChecks))
@@ -501,8 +509,9 @@ describe('RoomFeedList', () => {
     await flushPromises()
     expect(calls).toEqual([{ limit: 50, offset: 0 }])
     expect(w.findAll('li[data-index]').length).toBeLessThan(51)
-    window.scrollTo(0, 50 * 40)
-    window.dispatchEvent(new Event('scroll'))
+    const box = w.find('[data-feed-scroll]').element as HTMLElement
+    box.scrollTop = 50 * 56
+    box.dispatchEvent(new Event('scroll'))
     await flushPromises()
     expect(calls.map((c) => c.offset)).toEqual([0, 50])
     w.unmount()

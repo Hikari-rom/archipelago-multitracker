@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
-import { useWindowVirtualizer } from '@tanstack/vue-virtual'
-import { useResizeObserver } from '@vueuse/core'
+import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import * as api from '../../../lib/api'
 import type { RoomFeedCheck, RoomFeedPlayer } from '../../../lib/types'
 import { tracker } from '../../../stores/tracker'
@@ -24,6 +23,8 @@ const total = ref(0)
 const loaded = ref(false)
 const loading = ref(false)
 const error = ref('')
+// The list scrolls inside a box of fixed height: the page stays short however many checks the room has.
+const scrollEl = ref<HTMLElement | null>(null)
 
 const playerNames = computed(() => [...new Set(props.players.map((p) => p.player))])
 const games = computed(() =>
@@ -119,7 +120,10 @@ async function load(reset: boolean): Promise<number | null> {
     if (mine === seq) loading.value = false
   }
 }
-watch([player, game], () => void load(true), { immediate: true })
+watch([player, game], () => {
+  if (scrollEl.value) scrollEl.value.scrollTop = 0
+  void load(true)
+}, { immediate: true })
 
 // Live checks (catch-up entries too): insert those matching the filters, once each, at their place in that order.
 onRoomCheck((data) => {
@@ -189,22 +193,12 @@ const rows = computed<Row[]>(() =>
     ...g.rows.map((r) => ({ kind: 'check' as const, key: r.entry.key, check: r.entry })),
   ]))
 
-const listEl = ref<HTMLElement | null>(null)
-const rootEl = ref<HTMLElement | null>(null)
-const scrollMargin = ref(0)
-const measureMargin = () => {
-  if (listEl.value) scrollMargin.value = listEl.value.getBoundingClientRect().top + window.scrollY
-}
-// Anything above the list (the activity chart, the filters wrapping) moves it: re-measure on resize.
-useResizeObserver(rootEl, measureMargin)
-onMounted(measureMargin)
-
-const virtualizer = useWindowVirtualizer<HTMLElement>(computed(() => ({
+const virtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
   count: rows.value.length,
+  getScrollElement: () => scrollEl.value,
   estimateSize: (i: number) => (rows.value[i]?.kind === 'day' ? 37 : 56),
   getItemKey: (i: number) => rows.value[i]?.key ?? i,
   overscan: 12,
-  scrollMargin: scrollMargin.value,
 })))
 const visible = computed(() => virtualizer.value.getVirtualItems().map((v) => ({ v, r: rows.value[v.index] })).filter((x) => x.r))
 const measure = (el: Element | ComponentPublicInstance | null) => {
@@ -226,7 +220,7 @@ const select = 'h-9 min-w-0 max-w-full rounded-lg border bg-card px-2 text-sm te
 </script>
 
 <template>
-  <section ref="rootEl" class="flex min-w-0 flex-col gap-2" aria-labelledby="room-feed-title">
+  <section class="flex min-w-0 flex-col gap-2" aria-labelledby="room-feed-title">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
       <h3 id="room-feed-title" class="text-base font-semibold">Fil des checks</h3>
       <label class="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
@@ -248,40 +242,45 @@ const select = 'h-9 min-w-0 max-w-full rounded-lg border bg-card px-2 text-sm te
 
     <p v-if="error" role="alert" class="break-words rounded-xl bg-warn p-3 text-sm text-warn-foreground"><span class="text-error">! </span>{{ error }}</p>
 
-    <div class="min-w-0 rounded-xl border bg-card px-4 py-3">
-      <p v-if="!loaded && loading" class="text-sm text-muted-foreground">Chargement…</p>
-      <p v-else-if="loaded && !total" class="text-sm text-muted-foreground">Aucun check pour ces filtres.</p>
+    <div class="min-w-0 rounded-xl border bg-card py-3">
+      <p v-if="!loaded && loading" class="px-4 text-sm text-muted-foreground">Chargement…</p>
+      <p v-else-if="loaded && !total" class="px-4 text-sm text-muted-foreground">Aucun check pour ces filtres.</p>
 
-      <ul ref="listEl" class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
-        <li
-          v-for="{ v, r } in visible" :key="r.key" :ref="measure" :data-index="v.index"
-          class="absolute inset-x-0 top-0 min-w-0" :style="{ transform: `translateY(${v.start - scrollMargin}px)` }"
-        >
-          <h4 v-if="r.kind === 'day'" :data-day="r.label" class="border-b py-1 text-sm font-semibold" :class="v.index > 0 && 'mt-3'">
-            {{ r.label }} · {{ r.count }} check{{ r.count > 1 ? 's' : '' }}
-          </h4>
-          <div v-else class="flex min-w-0 gap-2.5 border-b py-1.5 text-sm">
-            <span class="w-12 shrink-0 font-mono text-xs text-muted-foreground tabular-nums" :data-time-none="when(r.check) === null ? '' : undefined">{{ time(r.check) }}</span>
-            <div class="min-w-0 flex-1">
-              <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span class="min-w-0 break-words font-semibold">{{ r.check.sender_player ?? r.check.sender ?? '?' }} · {{ r.check.sender_game ?? '?' }}</span>
-                <span class="min-w-0 break-words font-mono text-xs">{{ r.check.location ?? '?' }}</span>
+      <div
+        v-show="rows.length" ref="scrollEl" data-feed-scroll tabindex="0" aria-label="Fil des checks"
+        class="max-h-[min(65vh,40rem)] overflow-y-auto overscroll-contain px-4"
+      >
+        <ul class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
+          <li
+            v-for="{ v, r } in visible" :key="r.key" :ref="measure" :data-index="v.index"
+            class="absolute inset-x-0 top-0 min-w-0" :style="{ transform: `translateY(${v.start}px)` }"
+          >
+            <h4 v-if="r.kind === 'day'" :data-day="r.label" class="border-b py-1 text-sm font-semibold" :class="v.index > 0 && 'mt-3'">
+              {{ r.label }} · {{ r.count }} check{{ r.count > 1 ? 's' : '' }}
+            </h4>
+            <div v-else class="flex min-w-0 gap-2.5 border-b py-1.5 text-sm">
+              <span class="w-12 shrink-0 font-mono text-xs text-muted-foreground tabular-nums" :data-time-none="when(r.check) === null ? '' : undefined">{{ time(r.check) }}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span class="min-w-0 break-words font-semibold">{{ r.check.sender_player ?? r.check.sender ?? '?' }} · {{ r.check.sender_game ?? '?' }}</span>
+                  <span class="min-w-0 break-words font-mono text-xs">{{ r.check.location ?? '?' }}</span>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span v-if="r.check.category" class="rounded px-1 font-mono text-[11px]" :class="CATEGORY_CLASS[r.check.category]">{{ r.check.category }}</span>
+                  <span v-if="r.check.item === null" class="italic text-muted-foreground">contenu inconnu</span>
+                  <span v-else class="min-w-0 break-words">{{ r.check.item }}</span>
+                  <span v-if="r.check.mine" data-for="me" class="font-semibold text-logic">pour toi</span>
+                  <span v-else-if="r.check.self" class="text-muted-foreground">pour lui-même</span>
+                  <span v-else class="min-w-0 break-words text-muted-foreground">{{ target(r.check) }}</span>
+                </div>
+                <p v-if="r.check.src === 'catchup'" class="text-xs text-muted-foreground">{{ catchup(r.check) }}</p>
               </div>
-              <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span v-if="r.check.category" class="rounded px-1 font-mono text-[11px]" :class="CATEGORY_CLASS[r.check.category]">{{ r.check.category }}</span>
-                <span v-if="r.check.item === null" class="italic text-muted-foreground">contenu inconnu</span>
-                <span v-else class="min-w-0 break-words">{{ r.check.item }}</span>
-                <span v-if="r.check.mine" data-for="me" class="font-semibold text-logic">pour toi</span>
-                <span v-else-if="r.check.self" class="text-muted-foreground">pour lui-même</span>
-                <span v-else class="min-w-0 break-words text-muted-foreground">{{ target(r.check) }}</span>
-              </div>
-              <p v-if="r.check.src === 'catchup'" class="text-xs text-muted-foreground">{{ catchup(r.check) }}</p>
             </div>
-          </div>
-        </li>
-      </ul>
+          </li>
+        </ul>
+      </div>
 
-      <button v-if="hasMore" type="button" class="mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="void more()">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
+      <button v-if="hasMore" type="button" class="mx-4 mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="void more()">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
     </div>
   </section>
 </template>

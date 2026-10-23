@@ -190,6 +190,7 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Objectifs
 - [x] Captures `test-output/screenshots/v2/` prises avec Firefox headless (puppeteer-core) ; `screenshot-v2.mjs` (Playwright) demande Chromium, absent ici
 - [ ] 3e/4e thème
+- [x] Configuration : barre « Enregistrer » en haut, une ligne compacte par slot (2026-10-24)
 - [ ] Refonte Journal/Configuration
 - [ ] Retrait de la v1 quand la v2 est validée
 
@@ -198,6 +199,7 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Rattrapage des checks manqués depuis l'API du site (testé : checks manqués retrouvés une fois chacun)
 - [x] Joueurs (auto + `config/room_players.yaml`), qui joue, classement, activité 48 h / 30 jours, fil des checks
 - [x] Réglage dans Configuration (désactivé par défaut), page « Room complète » dans le menu Plus de la v2
+- [x] Fil des checks dans un cadre de hauteur fixe (défilement virtuel dans le cadre, la page ne s'allonge plus) : 2026-10-24
 - [ ] Nettoyage des fichiers `data/room_feed/`
 - [ ] BK des autres joueurs
 - [ ] Page v1
