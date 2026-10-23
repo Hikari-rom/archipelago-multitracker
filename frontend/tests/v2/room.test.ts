@@ -113,6 +113,14 @@ describe('RoomHeader', () => {
     expect(w.text()).toContain('HTTP 500')
     expect(w.text()).toContain('disque plein')
   })
+
+  it('before the first connection (no seed yet): an information line, not an error', () => {
+    const w = mountHeader({ enabled: true, state: 'disconnected', seed: null, catchup_available: true, poll_error: 'en attente du seed',
+      error: 'adresse du serveur inconnue (room endormie ?)' })
+    expect(w.find('[data-state-line]').text()).toBe('Déconnecté — adresse du serveur inconnue (room endormie ?)')
+    expect(w.find('[role="alert"]').exists()).toBe(false)
+    expect(w.find('[data-waiting-seed]').text()).toBe('L\'historique de la room sera importé à son réveil (dès qu\'un joueur se connecte).')
+  })
 })
 
 describe('RoomPlaying', () => {
