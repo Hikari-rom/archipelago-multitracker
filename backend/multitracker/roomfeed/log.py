@@ -91,7 +91,7 @@ class RoomLog:
         except OSError as exc:
             log.warning("room feed: cannot read %s: %s", path, exc)
             return
-        for line in text.splitlines():
+        for line in text.split("\n"):  # not splitlines(): names may hold U+2028 and friends, left unescaped
             if not line.strip():
                 continue
             try:
@@ -155,11 +155,15 @@ class RoomLog:
         log.warning("room feed: disk write failed: %s", self.write_error)
 
     def _append(self, path: Path, row: dict) -> None:
-        line = json.dumps(row, ensure_ascii=False, separators=(",", ":"))
+        data = (json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as fh:
-                fh.write(line + "\n")
+            with path.open("a+b") as fh:
+                if fh.seek(0, 2):  # a crash mid-write may have left a partial line: start a fresh one
+                    fh.seek(-1, 2)
+                    if fh.read(1) != b"\n":
+                        data = b"\n" + data
+                fh.write(data)
                 fh.flush()
         except OSError as exc:
             self._fail(exc)

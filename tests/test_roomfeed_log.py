@@ -2,6 +2,8 @@ import json
 import os
 import time
 
+import pytest
+
 from multitracker.roomfeed.log import CheckEntry, RoomLog, safe_dir_name
 
 NAMES = {"sender_name": "Alice", "sender_game": "Tunic", "receiver_name": "Bob", "receiver_game": "Celeste",
@@ -136,6 +138,7 @@ def test_remember_room(tmp_path):
     assert RoomLog(tmp_path).seed_for_room("other") is None
 
 
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores directory permissions")
 def test_write_failure_keeps_memory(tmp_path):
     log = RoomLog(tmp_path)
     log.open_seed("s")
@@ -152,3 +155,17 @@ def test_write_failure_keeps_memory(tmp_path):
         os.chmod(d, 0o700)
     assert log.add(entry(location=3), NAMES) is True
     assert log.write_error is None
+
+
+def test_line_separators_in_names_and_partial_last_line(tmp_path):
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    log.add(entry(location=1), {**NAMES, "item_name": "Odd\u2028Name\u0085"})
+    day_file = next((tmp_path / "s").glob("checks-*.jsonl"))
+    with day_file.open("a", encoding="utf-8") as fh:
+        fh.write('{"truncated":')  # crash mid-write
+    log.add(entry(location=2), NAMES)
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    assert [e.location for e in again.entries] == [1, 2]
+    assert again.unreadable_lines == 1
