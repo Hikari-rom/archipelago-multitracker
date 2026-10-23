@@ -85,7 +85,7 @@ describe('RoomHeader', () => {
     expect(w.text()).toContain('42 %')
     expect(w.text()).toContain('1 / 5 buts')
     expect(w.text()).toContain('1 en jeu')
-    expect(w.text()).toContain('« En jeu » : client de jeu connecté ou check il y a moins de 10 min.')
+    expect(w.text()).toContain('« En jeu » : client prêt (statut Ready/Playing) ou check il y a moins de 10 min ; pastille grise : client connecté sans signe d’activité.')
   })
 
   it('disconnected, starting, error', () => {

@@ -54,7 +54,7 @@ const pollLine = computed(() => {
       <span><strong class="text-done">{{ room.playing }}</strong> en jeu</span>
     </div>
     <p class="text-xs text-muted-foreground">
-      « En jeu » : client de jeu connecté ou check il y a moins de 10 min. Les checks faits pendant une coupure sont rattrapés depuis le site, à la minute près ou sans heure.
+      « En jeu » : client prêt (statut Ready/Playing) ou check il y a moins de 10 min ; pastille grise : client connecté sans signe d’activité. Les checks faits pendant une coupure sont rattrapés depuis le site, à la minute près ou sans heure.
     </p>
   </div>
 </template>
