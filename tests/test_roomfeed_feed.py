@@ -277,20 +277,35 @@ async def test_gap_window_opens_on_disconnect_and_closes_after_two_polls(env):
         gap = time.time()
         await asyncio.sleep(0.02)
         e.tracker_data = payload(received={3: [(1, 1, 1, 0)]})
-        await e.feed.poll_now()  # gap open: its start, not the old heartbeat
-        assert abs(e.lines()[-1]["after"] - gap) < 0.5 and e.lines()[-1]["after"] > 100.0
-        assert e.log_state()["last_live_at"] == pytest.approx(e.lines()[-1]["after"])
+        await e.feed.poll_now()  # gap open: the earliest of the old heartbeat and the drop (the app was down before)
+        assert e.lines()[-1]["after"] == 100.0
+        assert e.log_state()["last_live_at"] == pytest.approx(gap, abs=0.5)
         e.listener.session()
         await asyncio.sleep(0.02)
         e.tracker_data = payload(received={3: [(1, 1, 1, 0), (2, 2, 1, 0)]})
         await e.feed.poll_now()  # first poll after the reconnection: the API lags, the window stays open
-        assert e.lines()[-1]["location"] == 2 and e.lines()[-1]["after"] == pytest.approx(gap, abs=0.5)
+        assert e.lines()[-1]["location"] == 2 and e.lines()[-1]["after"] == 100.0
         e.tracker_data = payload(received={3: [(1, 1, 1, 0), (2, 2, 1, 0), (3, 3, 1, 0)]})
         await e.feed.poll_now()  # second one: still merged with the window, which closes afterwards
-        assert e.lines()[-1]["location"] == 3 and e.lines()[-1]["after"] == pytest.approx(gap, abs=0.5)
+        assert e.lines()[-1]["location"] == 3 and e.lines()[-1]["after"] == 100.0
         e.tracker_data = payload(received={3: [(1, 1, 1, 0), (2, 2, 1, 0), (3, 3, 1, 0), (4, 4, 1, 0)]})
         await e.feed.poll_now()
         assert e.lines()[-1]["location"] == 4 and e.lines()[-1]["after"] is None
+    finally:
+        await e.feed.stop()
+
+
+async def test_gap_window_without_a_prior_run_starts_at_the_drop(env):
+    e = env()
+    e.preset_seed()
+    await started(e)
+    try:
+        e.listener.session()
+        e.listener.drop()
+        gap = time.time()
+        e.tracker_data = payload(received={3: [(1, 1, 1, 0)]})
+        await e.feed.poll_now()
+        assert e.lines()[-1]["after"] == pytest.approx(gap, abs=0.5)
     finally:
         await e.feed.stop()
 
@@ -518,7 +533,8 @@ async def test_summary_groups_players_marks_me_and_sorts(env):
         assert romain["me"] is True and romain["done"] == 10 and romain["total"] == 30 and romain["goals"] == 0
         assert [s["name"] for s in romain["slots"]] == ["romain_a", "romain_b"]  # 5/10 beats 5/20
         assert romain["slots"][0] == {"name": "romain_a", "game": "GameA", "done": 5, "total": 10, "goal": False,
-                                      "presence": "unknown", "last_check_at": None, "bk": True}
+                                      "presence": "unknown", "last_check_at": None, "active_at": None,
+                                      "bk": True}
         assert romain["slots"][1]["bk"] is None  # not tracked
         assert bob["me"] is False and bob["done"] == 13 and bob["total"] == 50 and bob["goals"] == 1
         assert [(s["name"], s["goal"], s["total"], s["bk"]) for s in bob["slots"]] == \
@@ -836,5 +852,103 @@ async def test_live_check_without_a_seed_is_dropped_with_one_warning(env, monkey
         e.listener.check(1, 3, 1, 2, 0, at=2.0)
         assert warnings == ["roomfeed: live check heard while no seed is open: not recorded"]
         assert e.feed.checks()["total"] == 0
+    finally:
+        await e.feed.stop()
+
+
+# -- final review fixes -----------------------------------------------------------------------------------------------
+async def test_a_large_release_is_published_in_chunks_of_at_most_200(env):
+    e = env()
+    await started(e)
+    try:
+        e.listener.session()
+        for location in range(1, 451):
+            e.listener.check(1, 3, 5, location, 0, at=1000.0 + location)
+        await until(lambda: sum(len(b["checks"]) for b in e.events("roomfeed_check")) >= 450)
+        await asyncio.sleep(0.1)
+        sizes = [len(b["checks"]) for b in e.events("roomfeed_check")]
+        assert sizes == [200, 200, 50]
+        keys = [c["key"] for b in e.events("roomfeed_check") for c in b["checks"]]
+        assert len(set(keys)) == 450 and keys[0] == "1:450"  # newest first across the chunks
+    finally:
+        await e.feed.stop()
+
+
+async def test_presence_is_rebuilt_when_the_listener_drops(env):
+    e = env()
+    await started(e)
+    try:
+        e.listener.session()
+        summary = lambda: {s["name"]: s["presence"] for p in e.feed.summary()["players"] for s in p["slots"]}  # noqa: E731
+        e.listener.send_status(2, 5)
+        e.listener.send_status(3, 20)
+        e.listener.kw["on_join"](4, ["AP"])
+        e.listener.check(2, 3, 1, 1, 0)  # a live check just now
+        assert summary() == {"romain_a": "unknown", "romain_b": "playing", "bob": "playing", "bobby_z": "playing"}
+        e.listener.drop()  # the room went to sleep without a Part
+        assert summary() == {"romain_a": "unknown", "romain_b": "playing", "bob": "unknown", "bobby_z": "unknown"}
+        e.listener.session()  # the next session's statuses seed it again
+        e.listener.send_status(3, 20)
+        assert summary()["bob"] == "playing"
+    finally:
+        await e.feed.stop()
+
+
+def write_rows(e: Env, *rows):
+    log = RoomLog(e.root)
+    log.open_seed("SEED1")
+    for entry, names in rows:
+        log.add(entry, names)
+
+
+async def test_stored_names_are_used_when_the_slot_table_is_unknown(env):
+    e = env(fetch_room=lambda url: (_ for _ in ()).throw(RoomError("endormie")),
+            fetch=lambda url: (_ for _ in ()).throw(RoomError("endormie")))
+    e.preset_seed()
+    names = {"sender_name": "bob", "sender_game": "GameA", "receiver_name": "romain_b", "receiver_game": "GameB",
+             "item_name": "Stored item", "location_name": "Stored loc"}
+    write_rows(e, (CheckEntry(recorded_at=1000.0, at=1000.0, after=None, before=None, src="live", sender=3,
+                              receiver=2, item=9, location=8, flags=0), names))
+    await started(e)
+    try:
+        (item,) = e.feed.checks()["items"]
+        assert (item["sender"], item["sender_game"], item["receiver"], item["receiver_game"]) == \
+            ("bob", "GameA", "romain_b", "GameB")
+        assert item["sender_player"] == "bob" and item["receiver_player"] == "romain"
+        assert item["item"] == "GameB/item9" and item["location"] == "GameA/loc8"  # datapackage via the stored games
+        assert e.feed.checks(player="bob")["total"] == 1 and e.feed.checks(game="GameB")["total"] == 0
+        # the live slot table wins as soon as it is known
+        e.listener.session(players={3: {"name": "bob_live", "game": "GameA"}})
+        assert e.feed.checks()["items"][0]["sender"] == "bob_live"
+    finally:
+        await e.feed.stop()
+
+
+async def test_catchup_merge_writes_one_batch_per_day_file(env):
+    e = env()
+    e.preset_seed()
+    await started(e)
+    try:
+        e.tracker_data = payload(received={3: [(i, 100 + i, 1, 0) for i in range(30)]})
+        await e.feed.poll_now()
+        assert len(e.lines()) == 30
+        assert len(e.feed.log.entries) == 30 and len(e.feed.log.keys) == 30
+    finally:
+        await e.feed.stop()
+
+
+async def test_summary_active_at_is_the_last_live_check_only(env):
+    e = env()
+    e.preset_seed()
+    await started(e)
+    try:
+        e.listener.session()
+        e.listener.check(3, 1, 5, 6, 0, at=1000.0)
+        e.listener.check(3, 1, 5, 7, 0, at=1500.0)
+        e.tracker_data = payload(received={3: [(1, 1, 1, 0)]})  # a caught-up check of slot 1: not live activity
+        await e.feed.poll_now()
+        slots = {s["name"]: s for p in e.feed.summary()["players"] for s in p["slots"]}
+        assert slots["bob"]["active_at"] == 1500.0
+        assert slots["romain_a"]["active_at"] is None and slots["romain_a"]["last_check_at"] is not None
     finally:
         await e.feed.stop()

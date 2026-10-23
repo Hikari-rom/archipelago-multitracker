@@ -150,6 +150,7 @@ class RoomFeed:
             seed = self.log.seed_for_room(self._room_id)
             if seed:
                 self._open_seed(seed)
+                self._refresh_slots()  # names stored with the checks, until the room's table is known
         self._tasks = [asyncio.create_task(self._poll_loop(), name="roomfeed:poll"),
                        asyncio.create_task(self._heartbeat_loop(), name="roomfeed:heartbeat")]
         if self.slot_name:
@@ -179,7 +180,7 @@ class RoomFeed:
             return
         if self.log.seed is not None:  # another seed: nothing of the previous one may leak
             self._live_check_at = {}
-            self.presence = Presence(self._tracked_ids)
+            self._reset_presence()
         self.log.open_seed(seed)
         saved = self.log.load_state().get("last_live_at")
         self._prior_live = float(saved) if isinstance(saved, (int, float)) and not isinstance(saved, bool) else None
@@ -187,6 +188,12 @@ class RoomFeed:
         self._counts, self._last_when = {}, {}
         for entry in self.log.entries:
             self._index(entry)
+
+    def _reset_presence(self) -> None:
+        """Forget the statuses/joins (back to `unknown`); the latest live checks still count as recent activity."""
+        self.presence = Presence(self._tracked_ids)
+        for sid, at in self._live_check_at.items():
+            self.presence.check(sid, at)
 
     def _index(self, entry: CheckEntry) -> None:
         self._counts[entry.sender] = self._counts.get(entry.sender, 0) + 1
@@ -206,15 +213,16 @@ class RoomFeed:
                     table[sid]["game"] = game
         # Item-link groups are not players: left out of the grouping (and of summary()), kept to resolve names.
         names = [s["name"] for s in table.values() if s["name"] and s["type"] != GROUP_TYPE]
-        groups = group_players(names, load_overrides(self._overrides_path))
+        # Slots the table does not know (room asleep, WebHost down) keep the names stored with their checks.
+        stored = {sid: name for sid, (name, _game) in self.log.slot_names.items() if sid not in table and name}
+        groups = group_players([*names, *stored.values()], load_overrides(self._overrides_path))
         self._slots = table
         self._player_of = {sid: groups.get(s["name"]) or s["name"] or f"Slot {sid}" for sid, s in table.items()}
+        self._player_of.update({sid: groups.get(name) or name for sid, name in stored.items()})
         ids = {sid for sid, s in table.items() if s["name"] in self.tracked}
         if ids != self._tracked_ids:
             self._tracked_ids = ids
-            self.presence = Presence(ids)
-            for sid, at in self._live_check_at.items():
-                self.presence.check(sid, at)
+            self._reset_presence()
         self._me = {self._player_of[sid] for sid in ids}
 
     # -- listener callbacks ------------------------------------------------------------------------
@@ -242,6 +250,9 @@ class RoomFeed:
             if self._gap_start is None:
                 self._gap_start = now
             self.log.save_state(last_live_at=now)
+            # The room may sleep without sending a Part (archipelago.gg shuts idle rooms down): the statuses and
+            # joins we hold are stale. The next session's statuses seed them again.
+            self._reset_presence()
         self._was_listening = listening
         self._notify()
 
@@ -288,20 +299,32 @@ class RoomFeed:
             return None
         return getattr(self.datapackage, kind)(game, ident)
 
+    def _slot(self, slot: int) -> dict:
+        """The slot's name and game: the room's table, else what the log stored for it."""
+        known = self._slots.get(slot)
+        if known is not None:
+            return known
+        stored = self.log.slot_names.get(slot)
+        return {"name": stored[0], "game": stored[1]} if stored is not None else {}
+
+    def _names(self, entry: CheckEntry) -> dict[str, str | None]:
+        sender, receiver = self._slot(entry.sender), self._slot(entry.receiver)
+        return {"sender_name": sender.get("name"), "sender_game": sender.get("game"),
+                "receiver_name": receiver.get("name"), "receiver_game": receiver.get("game"),
+                "item_name": self._lookup_name("item_name", receiver.get("game"), entry.item),
+                "location_name": self._lookup_name("location_name", sender.get("game"), entry.location)}
+
     def _record(self, entry: CheckEntry) -> bool:
-        sender, receiver = self._slots.get(entry.sender, {}), self._slots.get(entry.receiver, {})
-        names = {"sender_name": sender.get("name"), "sender_game": sender.get("game"),
-                 "receiver_name": receiver.get("name"), "receiver_game": receiver.get("game"),
-                 "item_name": self._lookup_name("item_name", receiver.get("game"), entry.item),
-                 "location_name": self._lookup_name("location_name", sender.get("game"), entry.location)}
-        added = self.log.add(entry, names)
+        added = self.log.add(entry, self._names(entry))
         if added:
             self._index(entry)
         return added
 
     # -- polls and catch-up -------------------------------------------------------------------------------
     def _after(self) -> float | None:
-        return self._gap_start if self._gap_start is not None else self._prior_live
+        """Start of the unobserved period: the earliest of the previous run's last heartbeat and this run's drop."""
+        known = [t for t in (self._prior_live, self._gap_start) if t is not None]
+        return min(known) if known else None
 
     async def _poll_loop(self) -> None:
         while True:
@@ -372,8 +395,10 @@ class RoomFeed:
         if self.log.seed is None:
             errors.append(WAITING_SEED)
             return
-        for entry in catchup.missing_entries(snapshot, self.log.keys, polled_at, self._after()):
-            if self._record(entry) and entry.after is not None:  # no news flash for the history import
+        missing = catchup.missing_entries(snapshot, self.log.keys, polled_at, self._after())
+        for entry in self.log.add_many([(e, self._names(e)) for e in missing]):
+            self._index(entry)
+            if entry.after is not None:  # no news flash for the history import
                 self._queue(entry)
 
     def _close_gap(self, started: float) -> None:
@@ -411,7 +436,9 @@ class RoomFeed:
             return
         batch.sort(key=lambda e: e.when, reverse=True)
         try:
-            self._publish({"type": "roomfeed_check", "checks": [self._item_json(e) for e in batch[:SSE_BATCH_MAX]]})
+            for i in range(0, len(batch), SSE_BATCH_MAX):
+                self._publish({"type": "roomfeed_check",
+                               "checks": [self._item_json(e) for e in batch[i:i + SSE_BATCH_MAX]]})
         except Exception:
             log.exception("roomfeed: could not publish checks")
 
@@ -484,6 +511,7 @@ class RoomFeed:
                 "name": name, "game": slot["game"], "done": done,
                 "total": static.totals.get(sid, 0) if static is not None else 0, "goal": goal,
                 "presence": self.presence.state(sid, now), "last_check_at": self._last_when.get(sid),
+                "active_at": self.presence.last_check(sid),
                 "bk": self._bk_of(name) if name in self.tracked else None})
 
         def ratio(done: int, total: int) -> float:
@@ -505,7 +533,7 @@ class RoomFeed:
                 "players": players}
 
     def _item_json(self, e: CheckEntry) -> dict:
-        s, r = self._slots.get(e.sender, {}), self._slots.get(e.receiver, {})
+        s, r = self._slot(e.sender), self._slot(e.receiver)
         return {"key": f"{e.sender}:{e.location}", "at": e.at, "after": e.after, "before": e.before, "src": e.src,
                 "sender": s.get("name"), "sender_game": s.get("game"), "sender_player": self._player_of.get(e.sender),
                 "receiver": r.get("name"), "receiver_game": r.get("game"),
@@ -518,7 +546,7 @@ class RoomFeed:
     def checks(self, limit: int = 50, offset: int = 0, player: str | None = None, slot: str | None = None,
                game: str | None = None) -> dict:
         def wanted(e: CheckEntry) -> bool:
-            s = self._slots.get(e.sender, {})
+            s = self._slot(e.sender)
             return ((player is None or self._player_of.get(e.sender) == player)
                     and (slot is None or s.get("name") == slot) and (game is None or s.get("game") == game))
 

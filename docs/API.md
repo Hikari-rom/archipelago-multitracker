@@ -231,9 +231,11 @@ exclus), du plus avancé au moins avancé.
  "players": [{"player": "Romain", "me": true, "done": 120, "total": 500, "goals": 0, "playing": 1,
               "last_check_at": 1790000200.0,
               "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "done": 80, "total": 300, "goal": false,
-                         "presence": "playing", "last_check_at": 1790000200.0, "bk": false}]}]}
+                         "presence": "playing", "last_check_at": 1790000200.0, "active_at": 1790000200.0,
+                         "bk": false}]}]}
 ```
-`presence` : état de présence du slot (`playing` = joue ou a fait un check récemment, `connected`, `offline` ou `unknown`). `bk` : le slot est en BK (logique calculée, plus rien en logique, pas terminé) pour les
+`presence` : état de présence du slot (`playing` = joue ou a fait un check récemment, `connected`, `offline` ou `unknown`). `active_at` : heure (epoch) du dernier check vu **en direct** pour ce slot, ou `null` (les checks rattrapés
+n'y comptent pas) ; la page affiche « actif il y a N min » quand il date de moins de 10 min. `bk` : le slot est en BK (logique calculée, plus rien en logique, pas terminé) pour les
 slots suivis par l'app, `null` pour les autres.
 
 ### `GET /api/roomfeed/checks?limit=50&offset=0&player=&slot=&game=`
@@ -264,7 +266,7 @@ ancienne à la plus récente. `player` restreint à un joueur. Un autre `bucket`
 ### Événements SSE (sur `/api/events`)
 Aucune modification du flux : ces événements passent comme les autres, uniquement quand la fonction est activée.
 - `event: roomfeed_check` — `{"type": "roomfeed_check", "checks": [Check, ...]}` : nouveaux checks (même forme
-  que `items` ci-dessus), regroupés en lots (200 au plus), du plus récent au plus ancien.
+  que `items` ci-dessus), regroupés en lots de 200 au plus (un lot plus gros est envoyé en plusieurs événements), du plus récent au plus ancien.
 - `event: roomfeed` — `{"type": "roomfeed", "status": {...}}` : le même objet que `GET /api/roomfeed`, à chaque
   changement d'état ou de progression (au plus un toutes les quelques secondes). Le front en profite pour
   rafraîchir `summary`.

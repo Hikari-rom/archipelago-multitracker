@@ -65,6 +65,8 @@ class RoomLog:
         self.seed: str | None = None
         self.entries: list[CheckEntry] = []
         self.keys: set[tuple[int, int]] = set()
+        # slot id -> (name, game) as stored in the rows: the fallback when the room's slot table is unknown
+        self.slot_names: dict[int, tuple[str | None, str | None]] = {}
         self.unreadable_lines = 0
         self.write_error: str | None = None
 
@@ -78,6 +80,7 @@ class RoomLog:
         self.seed = seed
         self.entries = []
         self.keys = set()
+        self.slot_names = {}
         self.unreadable_lines = 0
         d = self.dir
         if d is None or not d.is_dir():
@@ -95,14 +98,32 @@ class RoomLog:
             if not line.strip():
                 continue
             try:
-                entry = _parse_entry(json.loads(line))
+                row = json.loads(line)
+                entry = _parse_entry(row)
             except (ValueError, KeyError, TypeError, AttributeError):
                 self.unreadable_lines += 1
                 continue
+            self._remember_slots(entry, row)
             if entry.key in self.keys:
                 continue
             self.keys.add(entry.key)
             self.entries.append(entry)
+
+    def _remember_slots(self, entry: CheckEntry, names: dict) -> None:
+        for slot, role in ((entry.sender, "sender"), (entry.receiver, "receiver")):
+            name, game = names.get(f"{role}_name"), names.get(f"{role}_game")
+            if isinstance(name, str) and name:
+                self.slot_names[slot] = (name, game if isinstance(game, str) else None)
+
+    def _row(self, entry: CheckEntry, names: dict[str, str | None]) -> dict:
+        row = asdict(entry)
+        for field in NAME_FIELDS:
+            row[field] = names.get(field)
+        return row
+
+    @staticmethod
+    def _day_file(d: Path, entry: CheckEntry) -> Path:
+        return d / f"checks-{time.strftime('%Y-%m-%d', time.localtime(entry.recorded_at))}.jsonl"
 
     def add(self, entry: CheckEntry, names: dict[str, str | None]) -> bool:
         d = self.dir
@@ -110,12 +131,30 @@ class RoomLog:
             return False
         self.entries.append(entry)
         self.keys.add(entry.key)
-        row = asdict(entry)
-        for field in NAME_FIELDS:
-            row[field] = names.get(field)
-        day = time.strftime("%Y-%m-%d", time.localtime(entry.recorded_at))
-        self._append(d / f"checks-{day}.jsonl", row)
+        row = self._row(entry, names)
+        self._remember_slots(entry, row)
+        self._append(self._day_file(d, entry), row)
         return True
+
+    def add_many(self, batch: list[tuple[CheckEntry, dict[str, str | None]]]) -> list[CheckEntry]:
+        """`add` for many entries at once (history import): one write per day file. Returns the entries added."""
+        d = self.dir
+        if d is None:
+            return []
+        added: list[CheckEntry] = []
+        per_file: dict[Path, list[dict]] = {}
+        for entry, names in batch:
+            if entry.key in self.keys:
+                continue
+            self.entries.append(entry)
+            self.keys.add(entry.key)
+            row = self._row(entry, names)
+            self._remember_slots(entry, row)
+            per_file.setdefault(self._day_file(d, entry), []).append(row)
+            added.append(entry)
+        for path, rows in per_file.items():
+            self._append(path, *rows)
+        return added
 
     def add_presence(self, at: float, slot: int, event: str, tags: list[str]) -> None:
         d = self.dir
@@ -154,8 +193,8 @@ class RoomLog:
         self.write_error = f"{type(exc).__name__}: {exc}"[:300]
         log.warning("room feed: disk write failed: %s", self.write_error)
 
-    def _append(self, path: Path, row: dict) -> None:
-        data = (json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    def _append(self, path: Path, *rows: dict) -> None:
+        data = "".join(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n" for row in rows).encode("utf-8")
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("a+b") as fh:

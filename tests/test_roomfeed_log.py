@@ -169,3 +169,56 @@ def test_line_separators_in_names_and_partial_last_line(tmp_path):
     again.open_seed("s")
     assert [e.location for e in again.entries] == [1, 2]
     assert again.unreadable_lines == 1
+
+
+def test_add_many_opens_each_day_file_once(tmp_path, monkeypatch):
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    day1, day2 = local_noon(2026, 10, 22), local_noon(2026, 10, 23)
+    batch = [(entry(location=1, recorded_at=day1), NAMES), (entry(location=2, recorded_at=day2), NAMES),
+             (entry(location=3, recorded_at=day1), NAMES), (entry(location=1, recorded_at=day2), NAMES),  # dup of 1
+             (entry(location=4, recorded_at=day2), NAMES)]
+    opened: list[str] = []
+    original = type(tmp_path).open
+
+    def counting(self, *args, **kwargs):
+        opened.append(self.name)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(type(tmp_path), "open", counting)
+    added = log.add_many(batch)
+    monkeypatch.undo()
+    assert [e.location for e in added] == [1, 2, 3, 4]
+    assert sorted(opened) == ["checks-2026-10-22.jsonl", "checks-2026-10-23.jsonl"]
+    assert log.keys == {(1, 1), (1, 2), (1, 3), (1, 4)} and len(log.entries) == 4
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    assert [e.location for e in again.entries] == [1, 3, 2, 4]  # files load in day order
+    assert json.loads(next((tmp_path / "s").glob("checks-2026-10-22.jsonl")).read_text().splitlines()[0])["sender_name"] == "Alice"
+    assert log.write_error is None
+    assert log.add_many([]) == []
+
+
+def test_add_many_before_open_seed_and_after_partial_line(tmp_path):
+    assert RoomLog(tmp_path).add_many([(entry(), NAMES)]) == []
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    log.add(entry(location=1), NAMES)
+    day_file = next((tmp_path / "s").glob("checks-*.jsonl"))
+    with day_file.open("a", encoding="utf-8") as fh:
+        fh.write('{"truncated":')
+    log.add_many([(entry(location=2), NAMES), (entry(location=3), NAMES)])
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    assert [e.location for e in again.entries] == [1, 2, 3] and again.unreadable_lines == 1
+
+
+def test_stored_slot_names_are_kept_from_disk_and_adds(tmp_path):
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    log.add(entry(location=1, sender=1), NAMES)
+    log.add(entry(location=2, sender=5), {"sender_name": None})
+    assert log.slot_names == {1: ("Alice", "Tunic"), 2: ("Bob", "Celeste")}
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    assert again.slot_names == {1: ("Alice", "Tunic"), 2: ("Bob", "Celeste")}
