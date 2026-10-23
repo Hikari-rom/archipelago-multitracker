@@ -156,15 +156,10 @@ async def until(predicate, timeout=3.0):
 
 @pytest.fixture
 def env(tmp_path):
-    made: list[Env] = []
-
     def make(**overrides):
-        e = Env(tmp_path, **overrides)
-        made.append(e)
-        return e
+        return Env(tmp_path, **overrides)  # every test stops its own feed
 
-    yield make
-    # every test must stop its feed (an unfinished one would leak tasks into the next test)
+    return make
 
 
 async def started(e: Env, poll_loop: bool = False) -> Env:
@@ -792,3 +787,54 @@ async def test_service_bk_of(tmp_path):
         assert service._bk_of("a") is False
     finally:
         await service.stop()
+
+
+GROUP_PLAYERS = {**PLAYERS, 5: {"name": "Links", "game": "GameA", "type": 2}}
+
+
+async def test_item_link_groups_are_not_players(env):
+    e = env()
+    await started(e)
+    try:
+        e.listener.session(players=GROUP_PLAYERS)
+        e.tracker_data = payload(done={1: 1, 5: 7}, status={5: 30})
+        summary = e.feed.summary()
+        assert summary["room"]["slots"] == 4 and summary["room"]["done"] == 0
+        assert {s["name"] for p in summary["players"] for s in p["slots"]} == {"romain_a", "romain_b", "bob", "bobby_z"}
+        assert "Links" not in {p["player"] for p in summary["players"]}
+        # a group's name still resolves in the checks (it can receive items)
+        e.listener.check(1, 5, 7, 70, 0, at=10.0)
+        item = e.feed.checks()["items"][0]
+        assert item["receiver"] == "Links" and item["receiver_game"] == "GameA" and item["item"] == "GameA/item7"
+        assert e.feed.summary()["room"]["slots"] == 4
+    finally:
+        await e.feed.stop()
+
+
+async def test_a_new_seed_resets_presence_and_live_times(env):
+    e = env()
+    await started(e)
+    try:
+        e.listener.session()
+        e.listener.check(3, 1, 1, 1, 0)
+        assert e.feed.presence.last_check(3) is not None
+        e.listener.session(seed="SEED2")
+        assert e.feed.presence.last_check(3) is None and e.feed._live_check_at == {}
+        assert e.feed.checks()["total"] == 0 and e.feed.log.seed == "SEED2"
+    finally:
+        await e.feed.stop()
+
+
+async def test_live_check_without_a_seed_is_dropped_with_one_warning(env, monkeypatch):
+    from multitracker.roomfeed import feed as feed_module
+    warnings = []
+    monkeypatch.setattr(feed_module.log, "warning", lambda msg, *args: warnings.append(msg % args))
+    e = env()
+    await started(e)
+    try:
+        e.listener.check(1, 3, 1, 1, 0, at=1.0)
+        e.listener.check(1, 3, 1, 2, 0, at=2.0)
+        assert warnings == ["roomfeed: live check heard while no seed is open: not recorded"]
+        assert e.feed.checks()["total"] == 0
+    finally:
+        await e.feed.stop()

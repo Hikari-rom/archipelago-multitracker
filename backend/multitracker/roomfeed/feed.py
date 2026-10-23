@@ -28,6 +28,7 @@ NO_SLOT = "aucun slot configuré pour écouter"
 WAITING_SEED = "en attente du seed"
 NO_TRACKER = "la room ne publie pas d'identifiant de tracker"
 GOAL_STATUS = 30
+GROUP_TYPE = 2  # AP slot_info type of an item-link group
 WINDOW_MAX = 7200  # a catch-up window up to this wide is dated by its midpoint (activity)
 HOURS, DAYS = 48, 30
 SSE_BATCH_MAX = 200
@@ -115,6 +116,7 @@ class RoomFeed:
         self.presence = Presence(set())
         self._live_check_at: dict[int, float] = {}
         self._awaiting_statuses = False
+        self._warned_no_seed = False
         # log indexes (sender slot -> count / latest time)
         self._counts: dict[int, int] = {}
         self._last_when: dict[int, float] = {}
@@ -175,6 +177,9 @@ class RoomFeed:
     def _open_seed(self, seed: str) -> None:
         if seed == self.log.seed:
             return
+        if self.log.seed is not None:  # another seed: nothing of the previous one may leak
+            self._live_check_at = {}
+            self.presence = Presence(self._tracked_ids)
         self.log.open_seed(seed)
         saved = self.log.load_state().get("last_live_at")
         self._prior_live = float(saved) if isinstance(saved, (int, float)) and not isinstance(saved, bool) else None
@@ -191,17 +196,19 @@ class RoomFeed:
     def _refresh_slots(self) -> None:
         lst = self._listener
         if lst is not None and lst.players:
-            table = {sid: {"name": p.get("name"), "game": p.get("game")} for sid, p in lst.players.items()}
+            table = {sid: {"name": p.get("name"), "game": p.get("game"), "type": p.get("type", 1)}
+                     for sid, p in lst.players.items()}
         else:
-            table = {i + 1: {"name": n, "game": g} for i, (n, g) in enumerate(self._room_players)}
+            table = {i + 1: {"name": n, "game": g, "type": 1} for i, (n, g) in enumerate(self._room_players)}
         if self._static is not None:
             for sid, game in self._static.games.items():
                 if sid in table and not table[sid]["game"]:
                     table[sid]["game"] = game
-        names = [s["name"] for s in table.values() if s["name"]]
+        # Item-link groups are not players: left out of the grouping (and of summary()), kept to resolve names.
+        names = [s["name"] for s in table.values() if s["name"] and s["type"] != GROUP_TYPE]
         groups = group_players(names, load_overrides(self._overrides_path))
         self._slots = table
-        self._player_of = {sid: groups[s["name"]] if s["name"] else f"Slot {sid}" for sid, s in table.items()}
+        self._player_of = {sid: groups.get(s["name"]) or s["name"] or f"Slot {sid}" for sid, s in table.items()}
         ids = {sid for sid, s in table.items() if s["name"] in self.tracked}
         if ids != self._tracked_ids:
             self._tracked_ids = ids
@@ -245,6 +252,9 @@ class RoomFeed:
                            receiver=receiver, item=item, location=location, flags=flags)
         self._live_check_at[sender] = max(at, self._live_check_at.get(sender, at))
         self.presence.check(sender, at)
+        if self.log.seed is None and not self._warned_no_seed:
+            self._warned_no_seed = True
+            log.warning("roomfeed: live check heard while no seed is open: not recorded")
         if self._record(entry):
             self._queue(entry)
             self._notify()
@@ -463,6 +473,8 @@ class RoomFeed:
         live = self._listener.statuses if self._listener is not None else {}
         grouped: dict[str, list[dict]] = {}
         for sid, slot in sorted(self._slots.items()):
+            if slot["type"] == GROUP_TYPE:
+                continue
             name = slot["name"]
             done = self._counts.get(sid, 0)
             if snap is not None:
@@ -488,7 +500,7 @@ class RoomFeed:
                             "last_check_at": max(last) if last else None, "slots": slots})
         players.sort(key=lambda p: (-ratio(p["done"], p["total"]), p["player"]))
         return {"room": {"done": sum(p["done"] for p in players), "total": sum(p["total"] for p in players),
-                         "slots": len(self._slots), "goals": sum(p["goals"] for p in players),
+                         "slots": sum(len(p["slots"]) for p in players), "goals": sum(p["goals"] for p in players),
                          "playing": sum(p["playing"] for p in players)},
                 "players": players}
 

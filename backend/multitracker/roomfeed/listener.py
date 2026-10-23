@@ -51,7 +51,7 @@ class RoomListener:
         self.seed_name: str | None = None
         self.team: int | None = None
         self.slot: int | None = None
-        self.players: dict[int, dict[str, str | None]] = {}
+        self.players: dict[int, dict[str, Any]] = {}  # slot -> {"name", "game", "type"} (type 1 player, 2 item-link group)
         self.listening_since: float | None = None
         self.statuses: dict[int, int] = {}
         self._status_keys: dict[str, int] = {}  # data storage key -> slot
@@ -164,11 +164,12 @@ class RoomListener:
     async def _connected_packet(self, msg: dict[str, Any]) -> None:
         self.team, self.slot = msg["team"], msg["slot"]
         slot_info = {int(k): v for k, v in (msg.get("slot_info") or {}).items()}
-        players: dict[int, dict[str, str | None]] = {}
+        players: dict[int, dict[str, Any]] = {}
         for p in msg.get("players", []):
-            players[p["slot"]] = {"name": p.get("name"), "game": slot_info.get(p["slot"], {}).get("game")}
+            info = slot_info.get(p["slot"], {})
+            players[p["slot"]] = {"name": p.get("name"), "game": info.get("game"), "type": info.get("type", 1)}
         for sid, info in slot_info.items():  # item link groups are not in `players`
-            players.setdefault(sid, {"name": info.get("name"), "game": info.get("game")})
+            players.setdefault(sid, {"name": info.get("name"), "game": info.get("game"), "type": info.get("type", 1)})
         self.players = players
         self.statuses = {}
         self._status_keys = {f"{STATUS_KEY_PREFIX}{self.team}_{sid}": sid for sid in players}

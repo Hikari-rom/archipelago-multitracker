@@ -132,8 +132,8 @@ async def test_connected_sends_get_and_setnotify_per_status_key(play):
         assert sock.sent[1] == {"cmd": "Get", "keys": keys}
         assert sock.sent[2] == {"cmd": "SetNotify", "keys": keys}
         assert (lst.team, lst.slot) == (0, 1)
-        assert lst.players == {1: {"name": "Alice", "game": "A"}, 2: {"name": "Bob", "game": "B"},
-                               3: {"name": "Links", "game": "A"}}
+        assert lst.players == {1: {"name": "Alice", "game": "A", "type": 1}, 2: {"name": "Bob", "game": "B", "type": 1},
+                               3: {"name": "Links", "game": "A", "type": 2}}
         assert lst.listening_since is not None and lst.error is None
         assert rec.sessions == [lst] and rec.states.count("listening") == 1
     finally:
