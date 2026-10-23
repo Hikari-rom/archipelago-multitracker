@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { setView, tracker } from '../../stores/tracker'
+import RoomActivity from '../components/room/RoomActivity.vue'
+import RoomFeedList from '../components/room/RoomFeedList.vue'
 import RoomHeader from '../components/room/RoomHeader.vue'
 import RoomLeaderboard from '../components/room/RoomLeaderboard.vue'
 import RoomPlaying from '../components/room/RoomPlaying.vue'
@@ -23,8 +25,10 @@ const { status, summary, error } = useRoomFeed()
           <RoomPlaying :players="summary.players" />
           <div class="grid min-w-0 gap-4 min-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <RoomLeaderboard :players="summary.players" />
-            <!-- Right column: « Activité » and « Fil des checks » (Task 11) -->
-            <div data-room-side class="flex min-w-0 flex-col gap-4" />
+            <div data-room-side class="flex min-w-0 flex-col gap-4">
+              <RoomActivity :players="summary.players" />
+              <RoomFeedList :players="summary.players" />
+            </div>
           </div>
         </template>
       </template>

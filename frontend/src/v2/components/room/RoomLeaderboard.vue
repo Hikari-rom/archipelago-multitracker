@@ -18,7 +18,7 @@ function toggle(name: string): void {
   if (!next.delete(name)) next.add(name)
   open.value = next
 }
-const id = (name: string) => `room-slots-${name.replace(/\W+/g, '_')}`
+const id = (i: number) => `room-slots-${i}`
 const seg = 'inline-flex rounded-lg border p-0.5'
 const segBtn = (on: boolean) => ['min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11', on ? 'bg-accent font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground']
 // Row grid: rank | player | checks | % | bar | goals | dot (phone: rank | player | % on the first line, the rest below).
@@ -40,7 +40,7 @@ const grid = 'grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 ga
     <ol class="divide-y rounded-xl border bg-card text-sm">
       <li v-for="(p, i) in ranked" :key="p.player" data-row class="min-w-0">
         <button
-          type="button" :aria-expanded="open.has(p.player)" :aria-controls="id(p.player)"
+          type="button" :aria-expanded="open.has(p.player)" :aria-controls="id(i)"
           class="w-full px-3 py-2 text-left hover:bg-accent max-[699px]:min-h-11" :class="grid"
           @click="toggle(p.player)"
         >
@@ -60,7 +60,7 @@ const grid = 'grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 ga
             <span v-if="p.playing > 0" data-playing-dot class="block size-2 rounded-full bg-done" title="Au moins un slot en jeu" role="img" aria-label="Au moins un slot en jeu" />
           </span>
         </button>
-        <ul v-if="open.has(p.player)" :id="id(p.player)" data-slots class="divide-y border-t bg-background/40 text-sm">
+        <ul v-if="open.has(p.player)" :id="id(i)" data-slots class="divide-y border-t bg-background/40 text-sm">
           <li v-for="(s, k) in p.slots" :key="s.name ?? k" class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-1.5 pl-11">
             <span class="min-w-0 max-w-full flex-1 basis-40 truncate" :title="`${s.game ?? '?'} · ${s.name ?? '?'}`">{{ s.game ?? '?' }} <span class="text-muted-foreground">· {{ s.name ?? '?' }}</span></span>
             <span class="whitespace-nowrap font-mono text-xs tabular-nums">{{ s.done }} / {{ s.total }}</span>

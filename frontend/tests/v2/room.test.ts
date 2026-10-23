@@ -2,9 +2,13 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import { installMock } from '../../src/lib/api'
 import type { MockApi } from '../../src/lib/api'
-import type { RoomFeedPlayer, RoomFeedSlot, RoomFeedStatus, RoomFeedSummary } from '../../src/lib/types'
-import { setView, tracker } from '../../src/stores/tracker'
+import type {
+  RoomFeedActivity, RoomFeedCheck, RoomFeedChecksPage, RoomFeedPlayer, RoomFeedSlot, RoomFeedStatus, RoomFeedSummary,
+} from '../../src/lib/types'
+import { roomfeedListeners, setView, tracker } from '../../src/stores/tracker'
 import { hhmm } from '../../src/v2/lib/card'
+import RoomActivity from '../../src/v2/components/room/RoomActivity.vue'
+import RoomFeedList from '../../src/v2/components/room/RoomFeedList.vue'
 import RoomHeader from '../../src/v2/components/room/RoomHeader.vue'
 import RoomLeaderboard from '../../src/v2/components/room/RoomLeaderboard.vue'
 import RoomPlaying from '../../src/v2/components/room/RoomPlaying.vue'
@@ -51,16 +55,20 @@ describe('RoomV2', () => {
     w.unmount()
   })
 
-  it('enabled: header, playing, leaderboard sections in order, with a right column left for the next sections', async () => {
+  it('enabled: header, playing, leaderboard sections in order, activity and feed in the right column', async () => {
     const st: RoomFeedStatus = { enabled: true, state: 'listening', listening_since: 1_700_000_000, catchup_available: true, last_poll_at: 1_700_000_300 }
-    mockFeed({ getRoomFeed: async () => st, getRoomFeedSummary: async () => summary })
+    mockFeed({
+      getRoomFeed: async () => st, getRoomFeedSummary: async () => summary,
+      getRoomFeedChecks: async () => ({ total: 0, offset: 0, items: [] }),
+      getRoomFeedActivity: async (bucket) => ({ bucket, buckets: [], undated: 0 }),
+    })
     tracker.roomDashboard = true
     const w = mount(RoomV2)
     await flushPromises()
     const heads = w.findAll('h3').map((h) => h.text())
-    expect(heads).toEqual(['En jeu maintenant', 'Classement'])
+    expect(heads).toEqual(['En jeu maintenant', 'Classement', 'Activité', 'Fil des checks'])
     expect(w.text()).toContain('En écoute depuis')
-    expect(w.find('[data-room-side]').exists()).toBe(true)
+    expect(w.find('[data-room-side]').findAll('h3').map((h) => h.text())).toEqual(['Activité', 'Fil des checks'])
     w.unmount()
   })
 })
@@ -175,5 +183,199 @@ describe('RoomLeaderboard', () => {
     const n = w.find('[data-player-name]')
     expect(n.classes()).toContain('truncate')
     expect(n.attributes('title')).toBe('P'.repeat(60))
+  })
+})
+
+const T = (d: number, h: number, m: number) => new Date(2026, 9, d, h, m).getTime() / 1000
+const chk = (over: Partial<RoomFeedCheck>): RoomFeedCheck => ({
+  key: '1:1', at: T(23, 14, 5), after: null, before: null, src: 'live', sender: 'Alice_Hades', sender_game: 'Hades', sender_player: 'Alice',
+  receiver: 'Bob_OoT', receiver_game: 'Ocarina of Time', receiver_player: 'Bob', item: 'Boomerang', location: 'Chamber 1',
+  category: null, mine: false, self: false, ...over,
+})
+const feedChecks: RoomFeedCheck[] = [
+  chk({ key: '1:1', category: 'PROG', mine: true, receiver: 'Romain_KH2', receiver_game: 'Kingdom Hearts 2', receiver_player: 'toi' }),
+  chk({ key: '1:2', at: T(23, 13, 40), self: true, receiver: 'Alice_Hades', receiver_game: 'Hades', receiver_player: 'Alice', item: 'Hammer', location: 'Chamber 2' }),
+  chk({ key: '2:3', at: null, after: T(23, 12, 2), before: T(23, 12, 20), src: 'catchup', sender_player: 'Bob', sender_game: 'Ocarina of Time', category: 'PIÈGE', item: 'Trap', location: 'Deku Tree' }),
+  chk({ key: '2:4', at: null, src: 'catchup', sender_player: 'Bob', sender_game: 'Ocarina of Time', category: 'UTILE', item: 'Bombs', location: 'Kokiri' }),
+  chk({ key: '1:5', at: T(22, 23, 50), item: 'Old', location: 'Chamber 9' }),
+]
+const feedPage = (items: RoomFeedCheck[], total = items.length): RoomFeedChecksPage => ({ total, offset: 0, items })
+const lastCheck = <T,>(xs: T[]): T => xs[xs.length - 1]
+
+describe('RoomFeedList', () => {
+  const setup = (getRoomFeedChecks: (p: any) => Promise<RoomFeedChecksPage>) => {
+    mockFeed({ getRoomFeedChecks })
+    tracker.nowMs = new Date(2026, 9, 23, 15, 0).getTime()
+    return mount(RoomFeedList, { props: { players } })
+  }
+
+  afterEach(() => window.scrollTo(0, 0))
+
+  it('rows: time, sender, location, category, item, receiver wording, catch-up mentions, day headings', async () => {
+    const w = setup(async () => feedPage(feedChecks))
+    await flushPromises()
+    const rows = w.findAll('li[data-index]')
+    const text = (k: number) => rows.find((r) => r.attributes('data-index') === String(k))!.text()
+    expect(w.findAll('[data-day]').map((d) => d.attributes('data-day'))).toEqual(["Aujourd'hui", 'Hier', 'Heure inconnue'])
+    expect(text(1)).toContain(hhmm(T(23, 14, 5)))
+    expect(text(1)).toContain('Alice · Hades')
+    expect(text(1)).toContain('Chamber 1')
+    expect(text(1)).toContain('PROG')
+    expect(text(1)).toContain('Boomerang')
+    expect(text(1)).toContain('pour toi')
+    expect(w.find('[data-for="me"]').classes()).toContain('text-logic')
+    expect(text(2)).toContain('pour lui-même')
+    expect(text(3)).toContain(`~${hhmm((T(23, 12, 2) + T(23, 12, 20)) / 2)}`)
+    expect(text(3)).toContain(`rattrapé · entre ${hhmm(T(23, 12, 2))} et ${hhmm(T(23, 12, 20))}`)
+    expect(text(3)).toContain('pour Bob · Ocarina of Time')
+    expect(text(3)).toContain('PIÈGE')
+    const unknown = w.text()
+    expect(unknown).toContain('rattrapé · heure inconnue')
+    expect(w.find('[data-time-none]').text()).toBe('—')
+  })
+
+  it('filters: the player / game selects list the room and refetch page 1 with player / game', async () => {
+    const calls: any[] = []
+    const w = setup(async (p) => (calls.push(p), feedPage(feedChecks)))
+    await flushPromises()
+    expect(calls).toEqual([{ limit: 50, offset: 0 }])
+    const [pl, gm] = w.findAll('select')
+    expect(pl.findAll('option').map((o) => o.text())).toEqual(['tous', 'Alice', 'Bob', 'Carol', 'toi'])
+    expect(gm.findAll('option').map((o) => o.text())).toContain('Hades')
+    await pl.setValue('Bob')
+    await flushPromises()
+    expect(lastCheck(calls)).toEqual({ limit: 50, offset: 0, player: 'Bob' })
+    await gm.setValue('Ocarina of Time')
+    await flushPromises()
+    expect(lastCheck(calls)).toEqual({ limit: 50, offset: 0, player: 'Bob', game: 'Ocarina of Time' })
+  })
+
+  it('live: an incoming check is prepended once (dedup by key), only if it matches the filters, and bumps the total', async () => {
+    const listeners = roomfeedListeners.check.size
+    const w = setup(async () => feedPage([feedChecks[4]]))
+    await flushPromises()
+    expect(w.text()).toContain('1 check')
+    const live = chk({ key: '3:99', at: T(23, 14, 59), item: 'Fresh item', location: 'Fresh loc' })
+    expect(roomfeedListeners.check.size).toBe(listeners + 1)
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [live] })
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [live] })
+    await flushPromises()
+    expect(w.text().match(/Fresh item/g)).toHaveLength(1)
+    expect(w.text()).toContain('2 checks')
+    const rows = w.findAll('li[data-index]').filter((r) => !r.find('[data-day]').exists())
+    expect(rows[0].text()).toContain('Fresh item')
+    // filtered on Bob: Alice's live check does not match
+    await w.findAll('select')[0].setValue('Bob')
+    await flushPromises()
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [chk({ key: '3:100', item: 'Not for Bob' })] })
+    await flushPromises()
+    expect(w.text()).not.toContain('Not for Bob')
+    w.unmount()
+    expect(roomfeedListeners.check.size).toBe(listeners)
+  })
+
+  it('loads 50 checks per page and fetches the next page when the end of the list comes into view', async () => {
+    const all = Array.from({ length: 120 }, (_, i) => chk({ key: `1:${i}`, at: T(23, 14, 0) - i * 60, location: `L${i}` }))
+    const calls: any[] = []
+    const w = setup(async (p) => (calls.push(p), { total: all.length, offset: p.offset, items: all.slice(p.offset, p.offset + p.limit) }))
+    await flushPromises()
+    expect(calls).toEqual([{ limit: 50, offset: 0 }])
+    expect(w.findAll('li[data-index]').length).toBeLessThan(51)
+    window.scrollTo(0, 50 * 40)
+    window.dispatchEvent(new Event('scroll'))
+    await flushPromises()
+    expect(calls.map((c) => c.offset)).toEqual([0, 50])
+    w.unmount()
+  })
+
+  it('empty feed and error message', async () => {
+    const w = setup(async () => feedPage([]))
+    await flushPromises()
+    expect(w.text()).toContain('Aucun check pour ces filtres.')
+    w.unmount()
+    const e = setup(async () => { throw new Error('boom') })
+    await flushPromises()
+    expect(e.find('[role="alert"]').text()).toContain('boom')
+    e.unmount()
+  })
+})
+
+describe('RoomActivity', () => {
+  const act = (bucket: 'hour' | 'day', n: number, undated = 0): RoomFeedActivity => ({
+    bucket, undated,
+    buckets: Array.from({ length: n }, (_, i) => ({
+      start: bucket === 'hour' ? new Date(2026, 9, 22, 14 + i).getTime() / 1000 : new Date(2026, 8, 24 + i).getTime() / 1000,
+      count: i === 1 ? 23 : i === 2 ? 1 : 0, by_player: {},
+    })),
+  })
+  const setup = (calls: any[], undated = 3) => {
+    mockFeed({ getRoomFeedActivity: async (b, p) => (calls.push([b, p]), act(b, b === 'hour' ? 48 : 30, undated)) })
+    return mount(RoomActivity, { props: { players } })
+  }
+
+  it('one bar per bucket with its title, scaled to the max; max label; undated line', async () => {
+    const calls: any[] = []
+    const w = setup(calls)
+    await flushPromises()
+    expect(calls).toEqual([['hour', undefined]])
+    const bars = w.findAll('svg rect')
+    expect(bars).toHaveLength(48)
+    expect(w.find('svg').attributes('viewBox')).toBe('0 0 480 100')
+    expect(bars[1].find('title').text()).toBe(`${hhmm(new Date(2026, 9, 22, 15).getTime() / 1000)} · 23 checks`)
+    expect(bars[2].find('title').text()).toContain('· 1 check')
+    expect(bars[2].find('title').text()).not.toContain('checks')
+    expect(Number(bars[1].attributes('height'))).toBe(100)
+    expect(Number(bars[2].attributes('height'))).toBeLessThan(10)
+    expect(w.find('g').classes()).toContain('text-logic')
+    expect(w.find('[data-max]').text()).toContain('23')
+    expect(w.text()).toContain('3 checks sans heure')
+    expect(w.findAll('[data-xlabel]').length).toBe(8)
+  })
+
+  it('no undated line when undated is 0', async () => {
+    const w = setup([], 0)
+    await flushPromises()
+    expect(w.text()).not.toContain('sans heure')
+  })
+
+  it('toggle 48 h / 30 jours and the player select refetch', async () => {
+    const calls: any[] = []
+    const w = setup(calls)
+    await flushPromises()
+    const days = w.findAll('button').find((b) => b.text() === '30 jours')!
+    const hours = w.findAll('button').find((b) => b.text() === '48 h')!
+    expect(hours.attributes('aria-pressed')).toBe('true')
+    await days.trigger('click')
+    await flushPromises()
+    expect(days.attributes('aria-pressed')).toBe('true')
+    expect(lastCheck(calls)).toEqual(['day', undefined])
+    expect(w.findAll('svg rect')).toHaveLength(30)
+    expect(w.find('svg').attributes('viewBox')).toBe('0 0 300 100')
+    const sel = w.find('select')
+    expect(sel.findAll('option').map((o) => o.text())).toEqual(['toute la room', 'Alice', 'Bob', 'Carol', 'toi'])
+    await sel.setValue('Carol')
+    await flushPromises()
+    expect(lastCheck(calls)).toEqual(['day', 'Carol'])
+  })
+
+  it('refetches when the players (summary) are refreshed', async () => {
+    const calls: any[] = []
+    const w = setup(calls)
+    await flushPromises()
+    await w.setProps({ players: [...players] })
+    await flushPromises()
+    expect(calls).toHaveLength(2)
+  })
+})
+
+describe('Task 10 review fixes', () => {
+  it('header error spans wrap long tokens', () => {
+    const w = mount(RoomHeader, { props: { status: { enabled: true, state: 'error', error: 'x'.repeat(200), poll_error: 'y'.repeat(200), write_error: 'z'.repeat(200) }, room: null } })
+    for (const sel of ['[data-state-line]', '[role="alert"]']) for (const e of w.findAll(sel)) expect(e.classes().join(' ')).toMatch(/break-/)
+  })
+  it('leaderboard ids do not collide for non-ASCII names', async () => {
+    const w = mount(RoomLeaderboard, { props: { players: [player('日本', [slot()]), player('中文', [slot()])] } })
+    const ids = w.findAll('button[aria-controls]').map((b) => b.attributes('aria-controls'))
+    expect(new Set(ids).size).toBe(2)
   })
 })

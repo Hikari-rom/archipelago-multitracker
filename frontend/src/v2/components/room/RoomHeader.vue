@@ -26,15 +26,15 @@ const pollLine = computed(() => {
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
       <span
         data-state-line
-        class="inline-flex min-w-0 items-center gap-2"
+        class="inline-flex min-w-0 max-w-full items-center gap-2 break-words"
         :class="isError ? 'rounded-lg bg-warn px-2 py-0.5 text-warn-foreground' : 'font-medium'"
       >
         <span v-if="!isError" class="size-2 shrink-0 rounded-full" :class="status.state === 'listening' ? 'bg-done' : 'bg-new'" aria-hidden="true" />
-        <span class="min-w-0">{{ stateLine }}</span>
+        <span class="min-w-0 break-words">{{ stateLine }}</span>
       </span>
       <span v-if="pollLine" class="text-muted-foreground">{{ pollLine }}</span>
-      <span v-if="status.poll_error" role="alert" class="rounded-lg bg-warn px-2 py-0.5 text-warn-foreground">Relevé : {{ status.poll_error }}</span>
-      <span v-if="status.write_error" role="alert" class="rounded-lg bg-warn px-2 py-0.5 text-warn-foreground">Écriture : {{ status.write_error }}</span>
+      <span v-if="status.poll_error" role="alert" class="min-w-0 break-words rounded-lg bg-warn px-2 py-0.5 text-warn-foreground">Relevé : {{ status.poll_error }}</span>
+      <span v-if="status.write_error" role="alert" class="min-w-0 break-words rounded-lg bg-warn px-2 py-0.5 text-warn-foreground">Écriture : {{ status.write_error }}</span>
     </div>
     <div v-if="room" class="flex flex-wrap items-baseline gap-x-6 gap-y-1 font-mono text-sm">
       <span><strong>{{ room.done }} / {{ room.total }}</strong> checks · {{ pct(room.done, room.total) }} %</span>
