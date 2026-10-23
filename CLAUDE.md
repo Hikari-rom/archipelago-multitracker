@@ -56,7 +56,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - Captures de l'app qui tourne : `cd frontend && node scripts/screenshot.mjs` (→ `test-output/screenshots/live/`,
   utilise `/usr/bin/chromium`).
 - Ports de test déjà pris par les tests pytest : 38281 (démo), 38284 (all22), 38285/38286 (découverte de room),
-  38287 (e2e), 38288 (niveau 1), 38289 (testenv), 38283 (`test_roomfeed_live.py`). Prendre 38290 pour du nouveau.
+  38287 (e2e), 38288 (niveau 1), 38289 (testenv), 38283 (`test_roomfeed_live.py`), 38290 (`test_config_m9.py`).
+  Prendre 38291 ou plus pour du nouveau.
 
 ## Valider la logique d'un jeu (procédure qui a marché)
 1. `.venv/bin/python scripts/testenv/validate_logic.py "<nom exact du jeu>" --runs 5 [--first-run K] [--default-options]`
