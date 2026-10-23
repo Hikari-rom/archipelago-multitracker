@@ -80,6 +80,7 @@ class RoomInfo:
     players: list[tuple[str, str]]  # (slot name, game)
     last_activity: float | None = None  # epoch seconds
     timeout: int | None = None  # the room's server stops this long after the last activity
+    tracker: str | None = None  # WebHost tracker id (public tracker API)
 
     @property
     def server(self) -> str | None:
@@ -147,6 +148,8 @@ def fetch_room(url: str, timeout: float = 15.0, wake: bool = False) -> RoomInfo:
     port = data.get("last_port")
     port = int(port) if isinstance(port, int) and port > 0 else None
     timeout = data.get("timeout")
+    tracker = data.get("tracker")
     return RoomInfo(url=f"{base}/room/{room_id}", host=host, port=port, players=players,
                     last_activity=_parse_time(data.get("last_activity")),
-                    timeout=int(timeout) if isinstance(timeout, int) and timeout > 0 else None)
+                    timeout=int(timeout) if isinstance(timeout, int) and timeout > 0 else None,
+                    tracker=tracker if isinstance(tracker, str) and tracker else None)

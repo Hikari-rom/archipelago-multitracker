@@ -93,6 +93,43 @@ async def test_upload_api(players_dir, tmp_path):
             assert conf["wake_room"] is False and conf["has_backup"] is False
 
 
+# -- room_dashboard flag -----------------------------------------------------------------------------
+def test_room_dashboard_flag_is_off_by_default_and_round_trips(tmp_path):
+    from multitracker import config as config_mod
+    from multitracker.config import RoomConfig
+    path = tmp_path / "room.yaml"
+    path.write_text("server: 127.0.0.1:1\n")
+    assert config_mod.load(path).room_dashboard is False
+    path.write_text("server: 127.0.0.1:1\nroom_dashboard: true\n")
+    assert config_mod.load(path).room_dashboard is True
+    config_mod.save(RoomConfig(server="127.0.0.1:1", path=path))
+    assert "room_dashboard: false" in path.read_text()
+    assert config_mod.load(path).room_dashboard is False
+    config_mod.save(RoomConfig(server="127.0.0.1:1", path=path, room_dashboard=True))
+    assert "room_dashboard: true" in path.read_text()
+    assert config_mod.load(path).room_dashboard is True
+
+async def test_room_dashboard_flag_through_the_api(players_dir, tmp_path):
+    from multitracker import config as config_mod
+    from multitracker.config import RoomConfig
+    path = tmp_path / "room.yaml"
+    cfg = RoomConfig(server="127.0.0.1:1", path=path)
+    config_mod.save(cfg)
+    app, box = make_app(cfg, tmp_path)
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            assert (await client.get("/api/config")).json()["room_dashboard"] is False
+            assert (await client.get("/api/slots")).json()["room_dashboard"] is False
+            r = await client.put("/api/config", json={"server": "127.0.0.1:1", "room_dashboard": True, "slots": []})
+            assert r.status_code == 200, r.text
+            assert (await client.get("/api/config")).json()["room_dashboard"] is True
+            assert (await client.get("/api/slots")).json()["room_dashboard"] is True
+            assert config_mod.load(path).room_dashboard is True
+            r = await client.put("/api/config", json={"server": "127.0.0.1:1", "slots": []})  # field omitted: kept
+            assert r.status_code == 200, r.text
+            assert (await client.get("/api/config")).json()["room_dashboard"] is True
+            assert config_mod.load(path).room_dashboard is True
+
 # -- backup / restore ------------------------------------------------------------------------------
 async def test_save_keeps_a_backup_and_restore_swaps(players_dir, tmp_path):
     from multitracker import config as config_mod

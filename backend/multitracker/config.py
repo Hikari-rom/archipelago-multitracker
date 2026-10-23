@@ -33,6 +33,7 @@ class RoomConfig:
     room_url: str | None = None  # archipelago.gg room link: the port is refreshed from it
     wake_room: bool = False  # load the room page (which starts a sleeping room) when the server is unreachable
     scout_checked: bool = True  # ask the server what the checked locations held (History page; no spoiler)
+    room_dashboard: bool = False  # room-wide dashboard (roomfeed): extra listener + check log
 
     def slot(self, name: str) -> SlotConfig | None:
         return next((s for s in self.slots if s.name == name), None)
@@ -69,7 +70,8 @@ def load(path: Path | None = None) -> RoomConfig:
         slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner")))
     return RoomConfig(server=str(raw.get("server") or ""), password=str(raw.get("password") or ""), slots=slots,
                       path=path, room_url=raw.get("room_url") or None, wake_room=raw.get("wake_room") is True,
-                      scout_checked=raw.get("scout_checked") is not False)
+                      scout_checked=raw.get("scout_checked") is not False,
+                      room_dashboard=raw.get("room_dashboard") is True)
 
 
 PLAYERS_DIR = ROOT / "config" / "players"
@@ -99,6 +101,7 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
     data["password"] = cfg.password
     data["wake_room"] = cfg.wake_room
     data["scout_checked"] = cfg.scout_checked
+    data["room_dashboard"] = cfg.room_dashboard
     data["slots"] = []
     for slot in cfg.slots:
         entry: dict = {"name": slot.name}

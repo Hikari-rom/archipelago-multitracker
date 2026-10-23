@@ -138,6 +138,7 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
 {"room_url": "https://archipelago.gg/room/AbC...", "server": "", "has_password": true,
  "wake_room": false,                       // réveil automatique de la room (désactivé par défaut)
   "scout_checked": true,                    // contenu des checks faits demandé au serveur (Historique, D20)
+ "room_dashboard": false,                  // tableau de bord de la room complète (désactivé par défaut)
  "has_backup": true,                       // config/room.yaml.bak existe (bouton « Restaurer »)
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}],
  "player_yamls": ["config/players/kh2.yaml", "config/players/romain/romain_kh2.yaml"],
@@ -175,6 +176,7 @@ document avec `name` et `game`). Réponse `{"path": "...", "players": [...], "st
 {"room_url": "https://archipelago.gg/room/AbC...",   // ou "server": "host:port" (au moins l'un des deux)
  "password": "…",                                    // omis ou null = garder le mot de passe actuel
  "wake_room": false,                                 // omis = garder le réglage actuel
+ "room_dashboard": false,                            // omis = garder le réglage actuel
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}]}
 ```
 Écrit `config/room.yaml` (l'ancienne version va dans `config/room.yaml.bak`) et recharge les connexions (un `snapshot`
@@ -188,7 +190,7 @@ Réveille la room une fois (au plus toutes les 30 s), relit son port et relance 
 Réponse `{"ok": true, "server": "...", "room_error": null}`.
 
 ### Champs ajoutés à `GET /api/slots` et événement SSE `room`
-`room_url`, `room_error` (message si la room n'a pas pu être lue ou dort), `room_sleeping`, `wake_room`, `now` (horloge
+`room_url`, `room_error` (message si la room n'a pas pu être lue ou dort), `room_sleeping`, `wake_room`, `room_dashboard`, `now` (horloge
 du serveur en secondes epoch : le navigateur s'en sert pour corriger son horloge avant de calculer « actif » et
 « il y a 3 min »).
 Le flux `/api/events` envoie aussi `event: room` — `{"type": "room", "server", "room_url", "room_error", "room_sleeping"}` —

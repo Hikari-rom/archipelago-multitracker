@@ -66,6 +66,7 @@ class ConfigBody(BaseModel):
     password: str | None = None  # None = keep the current password
     wake_room: bool | None = None  # None = keep the current setting
     scout_checked: bool | None = None  # None = keep the current setting
+    room_dashboard: bool | None = None  # None = keep the current setting
     slots: list[SlotBody]
 
 
@@ -110,7 +111,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         service = get_service(request)
         return {"server": service.current_server, "room_url": service.config.room_url,
                 "room_error": service.room_error, "room_sleeping": service.room_sleeping,
-                "wake_room": service.config.wake_room,
+                "wake_room": service.config.wake_room, "room_dashboard": service.config.room_dashboard,
                 "now": time.time(),  # the browser corrects its clock with this (activity, item times)
                 "slots": [service.summary(n) for n in service.trackers]}
 
@@ -121,6 +122,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
                 "wake_room": cfg.wake_room, "scout_checked": cfg.scout_checked,
+                "room_dashboard": cfg.room_dashboard,
                 "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml)} for s in cfg.slots],
@@ -243,7 +245,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                          password=current.password if body.password is None else body.password,
                          room_url=(body.room_url or "").strip() or None,
                          wake_room=current.wake_room if body.wake_room is None else body.wake_room,
-                         scout_checked=current.scout_checked if body.scout_checked is None else body.scout_checked)
+                         scout_checked=current.scout_checked if body.scout_checked is None else body.scout_checked,
+                         room_dashboard=current.room_dashboard if body.room_dashboard is None else body.room_dashboard)
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 

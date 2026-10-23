@@ -22,6 +22,8 @@ class FakeWebHost:
         self.wakes = 0
         self.last_activity: str | None = None  # e.g. "Sat, 11 Oct 2026 00:00:00 GMT"
         self.timeout = 7200
+        self.tracker_value: object = "yQdtVUWGRFaaMCu14kdq8A"  # WebHost tracker id (a non-string/absent value is tested)
+        self.send_tracker = True
         fake = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -34,11 +36,14 @@ class FakeWebHost:
                     fake.last_activity = None  # loading the room page starts it
                     body, ctype = b"<html>room</html>", "text/html"
                 elif self.path == f"/api/room_status/{ROOM_ID}":
-                    body = json.dumps({"players": [["Celeste", "Celeste (Open World)"], ["KH2", "Kingdom Hearts 2"],
-                                                   ["Jak", "Jak and Daxter: The Precursor Legacy"],
-                                                   ["TWWHD", "The Wind Waker HD"], ["SM64", "Super Mario 64"]],
-                                       "last_port": fake.port_value, "tracker": "x", "downloads": [],
-                                       "last_activity": fake.last_activity, "timeout": fake.timeout}).encode()
+                    status = {"players": [["Celeste", "Celeste (Open World)"], ["KH2", "Kingdom Hearts 2"],
+                                          ["Jak", "Jak and Daxter: The Precursor Legacy"],
+                                          ["TWWHD", "The Wind Waker HD"], ["SM64", "Super Mario 64"]],
+                              "last_port": fake.port_value, "downloads": [],
+                              "last_activity": fake.last_activity, "timeout": fake.timeout}
+                    if fake.send_tracker:
+                        status["tracker"] = fake.tracker_value
+                    body = json.dumps(status).encode()
                     ctype = "application/json"
                 else:
                     self.send_response(404)
@@ -80,6 +85,17 @@ async def test_fetch_room_lists_slots_and_port(webhost):
     assert info.server == f"127.0.0.1:{PORT_A}"
     assert ("KH2", "Kingdom Hearts 2") in info.players
     assert webhost.wakes == 1
+
+
+async def test_fetch_room_parses_the_tracker_id(webhost):
+    from multitracker.room import fetch_room
+    info = await asyncio.to_thread(fetch_room, webhost.url, 5.0)
+    assert info.tracker == "yQdtVUWGRFaaMCu14kdq8A"
+    for bad in (None, 42, ""):  # not a usable id
+        webhost.tracker_value = bad
+        assert (await asyncio.to_thread(fetch_room, webhost.url, 5.0)).tracker is None
+    webhost.send_tracker = False  # key missing
+    assert (await asyncio.to_thread(fetch_room, webhost.url, 5.0)).tracker is None
 
 
 async def test_follows_room_port_change(webhost, tmp_path):

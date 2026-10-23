@@ -8,6 +8,7 @@ frontend/dist/
 config/room.yaml
 config/room.yaml.bak
 config/room.real.yaml
+config/room_players.yaml
 *.archipelago
 AP_*.zip
 *_Spoiler.txt
