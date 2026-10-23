@@ -47,25 +47,51 @@ async function load(reset: boolean): Promise<void> {
     loaded.value = true
     error.value = ''
   } catch (e) {
-    if (mine === seq) error.value = e instanceof Error ? e.message : String(e)
+    if (mine === seq) {
+      error.value = e instanceof Error ? e.message : String(e)
+      if (reset) {
+        // Do not leave the rows of the previous filters next to the error.
+        items.value = []
+        total.value = 0
+        loaded.value = true
+      }
+    }
   } finally {
     if (mine === seq) loading.value = false
   }
 }
 watch([player, game], () => void load(true), { immediate: true })
 
-// Live checks: prepend those matching the filters, once each.
+// Server order (feed.py `checks`): newest first by `at ?? before ?? recorded_at`, ties: the most recently logged first.
+// The recording time of a live check is "now".
+const sortKey = (c: RoomFeedCheck): number | null => c.at ?? c.before
+// Live checks (catch-up entries too): insert those matching the filters, once each, at their place in that order.
 onRoomCheck((data) => {
   const incoming: RoomFeedCheck[] = Array.isArray(data?.checks) ? data.checks : []
   const have = new Set(items.value.map((c) => c.key))
-  const fresh = incoming.filter((c) => {
-    if (have.has(c.key)) return false
+  const next = [...items.value]
+  let count = 0
+  for (const c of incoming) {
+    if (have.has(c.key)) continue
     have.add(c.key)
-    return (!player.value || c.sender_player === player.value) && (!game.value || c.sender_game === game.value)
-  })
-  if (!fresh.length) return
-  items.value = [...fresh, ...items.value]
-  total.value += fresh.length
+    if (!((!player.value || c.sender_player === player.value) && (!game.value || c.sender_game === game.value))) continue
+    count++
+    const key = sortKey(c) ?? Date.now() / 1000
+    // Rows without a known key (undated catch-up) cannot be compared: skip over them.
+    let at = next.findIndex((x) => {
+      const k = sortKey(x)
+      return k !== null && k <= key
+    })
+    if (at < 0) {
+      // Older than everything loaded: it belongs to a page not loaded yet when there is one (the total still counts it).
+      if (next.length < total.value) continue
+      at = next.length
+    }
+    next.splice(at, 0, c)
+  }
+  if (!count) return
+  items.value = next
+  total.value += count
 })
 
 // A catch-up entry is dated by the middle of its window when that window is narrow; otherwise it has no time.
@@ -83,8 +109,9 @@ const target = (c: RoomFeedCheck): string => `pour ${c.receiver_player ?? c.rece
 // One flat list (day headings + checks) so the window virtualizer only mounts the rows on screen.
 type Row = { kind: 'day'; key: string; label: string; count: number } | { kind: 'check'; key: string; check: RoomFeedCheck }
 const rows = computed<Row[]>(() =>
-  groupByDay(items.value, when, (c) => c.sender_game ?? '', tracker.nowMs).flatMap((g) => [
-    { kind: 'day' as const, key: `day:${g.key}`, label: g.key === 'before' ? UNKNOWN_DAY : g.label, count: g.rows.length },
+  groupByDay(items.value, when, (c) => c.sender_game ?? '', tracker.nowMs).flatMap((g, gi) => [
+    // The group index keeps heading keys unique when the server order interleaves two days around midnight.
+    { kind: 'day' as const, key: `day:${gi}:${g.key}`, label: g.key === 'before' ? UNKNOWN_DAY : g.label, count: g.rows.length },
     ...g.rows.map((r) => ({ kind: 'check' as const, key: r.entry.key, check: r.entry })),
   ]))
 

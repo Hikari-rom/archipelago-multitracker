@@ -1,5 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installMock } from '../../src/lib/api'
 import type { MockApi } from '../../src/lib/api'
 import type {
@@ -272,6 +272,48 @@ describe('RoomFeedList', () => {
     expect(w.text()).not.toContain('Not for Bob')
     w.unmount()
     expect(roomfeedListeners.check.size).toBe(listeners)
+  })
+
+  it('live: a catch-up check from an earlier day is inserted under that day, not on top (no duplicate heading key)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const w = setup(async () => feedPage([feedChecks[0], feedChecks[1], feedChecks[4]]))
+    await flushPromises()
+    const old = chk({
+      key: '9:1', at: null, after: T(22, 23, 55), before: T(23, 0, 5), src: 'catchup', item: 'Straddle', location: 'Midnight',
+    })
+    const yesterday = chk({ key: '9:2', at: null, after: T(22, 23, 0), before: T(22, 23, 20), src: 'catchup', item: 'Earlier', location: 'Yday' })
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [yesterday, old] })
+    await flushPromises()
+    const order = w.findAll('li[data-index]').map((r) => r.find('[data-day]').exists() ? `#${r.text().split(' ·')[0]}` : r.text().match(/Boomerang|Hammer|Straddle|Earlier|Old/)![0])
+    // Server order: by `at ?? before`, newest first.
+    expect(order).toEqual(['#Aujourd\'hui', 'Boomerang', 'Hammer', 'Straddle', '#Hier', 'Old', 'Earlier'])
+    expect(w.text()).toContain('5 checks')
+    expect(warn.mock.calls.filter((c) => String(c[0]).includes('Duplicate'))).toEqual([])
+    warn.mockRestore()
+    w.unmount()
+  })
+
+  it('live: a check older than everything loaded is left to the next page (only the total moves)', async () => {
+    const w = setup(async () => feedPage([feedChecks[0]], 5))
+    await flushPromises()
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [chk({ key: '9:3', at: T(20, 10, 0), item: 'Ancient' })] })
+    await flushPromises()
+    expect(w.text()).not.toContain('Ancient')
+    expect(w.text()).toContain('6 checks')
+    w.unmount()
+  })
+
+  it('a failed reload clears the rows of the previous filters', async () => {
+    let fail = false
+    const w = setup(async () => { if (fail) throw new Error('boom'); return feedPage([feedChecks[0]]) })
+    await flushPromises()
+    expect(w.text()).toContain('Boomerang')
+    fail = true
+    await w.findAll('select')[0].setValue('Bob')
+    await flushPromises()
+    expect(w.text()).not.toContain('Boomerang')
+    expect(w.find('[role="alert"]').text()).toContain('boom')
+    w.unmount()
   })
 
   it('loads 50 checks per page and fetches the next page when the end of the list comes into view', async () => {
