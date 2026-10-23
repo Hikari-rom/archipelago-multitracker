@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cardState, type CardCtx } from '../../src/v2/lib/card'
+import { cardState, stateClass, type CardCtx } from '../../src/v2/lib/card'
 import { mk } from '../helpers'
 
 const NOW = 1_800_000_000_000
@@ -52,5 +52,11 @@ describe('cardState', () => {
     expect(cardState(mk({ name: 'a', logic: zero, checks: { done: 10, total: 10, remaining: 0 } }), ctx()).bk).toBe(false)
     expect(cardState(mk({ name: 'a', logic: { state: 'pending', count: 0, message: null } }), ctx()).bk).toBe(false)
     expect(cardState(mk({ name: 'a', logic: { state: 'unavailable', count: 0, message: null } }), ctx()).bk).toBe(false)
+  })
+  it('card colour: gold once the goal is reached, red while BK, none otherwise', () => {
+    const zero = { state: 'ok' as const, count: 0, message: null }
+    expect(stateClass(cardState(mk({ name: 'a', goal: true }), ctx()))).toBe('v2-gold')
+    expect(stateClass(cardState(mk({ name: 'a', logic: zero }), ctx()))).toBe('v2-bk')
+    expect(stateClass(cardState(mk({ name: 'a', logic: { ...zero, count: 3 } }), ctx()))).toBe('')
   })
 })

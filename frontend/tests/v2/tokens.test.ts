@@ -26,13 +26,17 @@ describe('v2 tokens', () => {
     const t = TOKENS[theme]
     const card = rgb(CARD_OPAQUE[theme])
     it(`${theme}: text tokens reach AA on the card`, () => {
-      for (const k of ['foreground', 'muted-foreground', 'logic', 'done', 'hint', 'new', 'error', 'primary'] as const)
+      for (const k of ['foreground', 'muted-foreground', 'logic', 'done', 'hint', 'new', 'error', 'primary', 'bk', 'gold'] as const)
         expect(ratio(rgb(t[k]), card), k).toBeGreaterThanOrEqual(4.5)
     })
     it(`${theme}: tinted badges reach AA`, () => {
       for (const [fg, bg] of [['good-foreground', 'good'], ['warn-foreground', 'warn'], ['info-foreground', 'info']] as const)
         expect(ratio(rgb(t[fg]), rgb(t[bg], card)), fg).toBeGreaterThanOrEqual(4.5)
       expect(ratio(rgb(t['primary-foreground']), rgb(t.primary)), 'primary button').toBeGreaterThanOrEqual(4.5)
+      expect(ratio(rgb(t['bk-foreground']), rgb(t.bk)), 'BK badge').toBeGreaterThanOrEqual(4.5)
+      // A BK card is tinted red: its secondary text must stay readable on it.
+      expect(ratio(rgb(t['muted-foreground']), rgb(t['bk-tint'], card)), 'muted on BK card').toBeGreaterThanOrEqual(4.5)
+      expect(ratio(rgb(t.bk), rgb(t['bk-tint'], card)), 'BK number on BK card').toBeGreaterThanOrEqual(4.5)
     })
   }
   it('resolves auto from the system', () => {

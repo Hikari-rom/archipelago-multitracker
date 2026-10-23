@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import type { SlotSummary } from '../../lib/types'
 import { markSeen, tracker } from '../../stores/tracker'
-import { cardState, useCardCtx } from '../lib/card'
+import { cardState, stateClass, useCardCtx } from '../lib/card'
 import { regionsOf } from '../lib/regions'
 import { dismissWithUndo } from '../lib/undo'
 import BigNumber from './BigNumber.vue'
@@ -19,7 +19,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
 </script>
 
 <template>
-  <article :data-active-card="summary.name" class="rounded-[14px] border bg-card p-5">
+  <article :data-active-card="summary.name" class="rounded-[14px] border bg-card p-5" :class="stateClass(state)">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <StateChips :state="state" />
       <div class="flex items-center gap-2">

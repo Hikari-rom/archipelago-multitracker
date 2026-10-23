@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { formatWhen } from '../../lib/history'
 import type { SlotSummary } from '../../lib/types'
 import { tracker } from '../../stores/tracker'
-import { cardState, useCardCtx } from '../lib/card'
+import { cardState, stateClass, useCardCtx } from '../lib/card'
 import { dismissWithUndo } from '../lib/undo'
 import BigNumber from './BigNumber.vue'
 import DetailTabs from './DetailTabs.vue'
@@ -17,7 +17,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
 </script>
 
 <template>
-  <article :data-focus-panel="summary.name" class="rounded-[14px] border bg-card p-6">
+  <article :data-focus-panel="summary.name" class="rounded-[14px] border bg-card p-6" :class="stateClass(state)">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <StateChips :state="state" />
       <div class="flex flex-wrap items-center gap-3">

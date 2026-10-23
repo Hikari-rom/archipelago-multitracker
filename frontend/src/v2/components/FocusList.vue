@@ -6,11 +6,20 @@ import { pinActive } from '../../stores/tracker'
 import { cardState, useCardCtx } from '../lib/card'
 import BigNumber from './BigNumber.vue'
 
-defineProps<{ slots: SlotSummary[]; current: string | null }>()
+const props = defineProps<{ slots: SlotSummary[]; current: string | null }>()
 const phone = useMediaQuery('(max-width: 699px)')
 const ctx = useCardCtx()
 const st = (s: SlotSummary) => cardState(s, ctx.value)
 const logicOf = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
+// BK rows are red and finished games gold, the shown game included: its outline marks it as the current one.
+function rowClass(s: SlotSummary): string {
+  const now = s.name === props.current
+  const tint = st(s).goalReached ? 'bg-gold-tint' : st(s).bk ? 'bg-bk-tint' : now ? 'bg-logic/15' : ''
+  const ring = st(s).goalReached ? 'ring-gold-line' : st(s).bk ? 'ring-bk' : 'ring-logic/60'
+  return now ? `${tint} ring-2 ring-inset ${ring}` : tint
+}
+const barClass = (s: SlotSummary): string =>
+  st(s).goalReached ? 'bg-gold-line' : st(s).bk ? 'bg-bk' : s.name === props.current ? 'bg-logic' : ''
 </script>
 
 <template>
@@ -21,10 +30,10 @@ const logicOf = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
         <button
           type="button" :data-focus-row="s.name" :aria-current="s.name === current ? 'true' : undefined"
           class="relative flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left hover:bg-accent"
-          :class="s.name === current ? 'bg-logic/15' : ''"
+          :class="rowClass(s)" :data-state="st(s).goalReached ? 'goal' : st(s).bk ? 'bk' : undefined"
           @click="pinActive(s.name)"
         >
-          <span class="absolute inset-y-0 left-0 w-[3px]" :class="s.name === current ? 'bg-logic' : ''" aria-hidden="true" />
+          <span class="absolute inset-y-0 left-0 w-[3px]" :class="barClass(s)" aria-hidden="true" />
           <span class="w-12 shrink-0 text-right"><BigNumber :state="st(s)" size="md" /></span>
           <span class="min-w-0 flex-1">
             <span class="flex items-baseline gap-2">

@@ -27,6 +27,17 @@ describe('Focus', () => {
     expect(w.find('[data-focus-panel]').attributes('data-focus-panel')).toBe('ww')
     expect(w.find('[data-focus-row="ww"]').attributes('aria-current')).toBe('true')
   })
+  it('rows: BK in red, finished games in gold', () => {
+    const zero = { state: 'ok' as const, count: 0, message: null }
+    const w = mount(FocusList, { props: { slots: [mk({ name: 'bk', logic: zero }), mk({ name: 'won', goal: true }), mk({ name: 'x', logic: { ...zero, count: 3 } })], current: 'bk' } })
+    const row = (n: string) => w.find(`[data-focus-row="${n}"]`)
+    expect(row('bk').attributes('data-state')).toBe('bk')
+    expect(row('bk').classes()).toContain('bg-bk-tint')
+    expect(row('bk').classes()).toContain('ring-bk') // the shown game keeps its outline, in red
+    expect(row('won').attributes('data-state')).toBe('goal')
+    expect(row('won').classes()).toContain('bg-gold-tint')
+    expect(row('x').attributes('data-state')).toBeUndefined()
+  })
   it('rows: number, tags, remaining', () => {
     const s = [mk({ name: 'a', game: 'A', logic: { state: 'ok', count: 3, message: null }, items: { received: 2, new: 2 }, checks: { done: 1, total: 10, remaining: 9 } })]
     const t = mount(FocusList, { props: { slots: s, current: null } }).text()

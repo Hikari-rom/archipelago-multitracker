@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { SlotSummary } from '../../lib/types'
 import { isOpen, pinActive, toggleOpen } from '../../stores/tracker'
-import { cardState, useCardCtx } from '../lib/card'
+import { cardState, stateClass, useCardCtx } from '../lib/card'
 import BigNumber from './BigNumber.vue'
 import DetailTabs from './DetailTabs.vue'
 import StateChips from './StateChips.vue'
@@ -22,7 +22,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
   <article
     :data-tile="summary.name"
     class="flex flex-col gap-2 rounded-[14px] border bg-card p-4 transition motion-reduce:transition-none hover:border-logic/50 focus-within:ring-2 focus-within:ring-logic"
-    :class="{ 'min-[700px]:col-span-2': isOpen(summary.name) }"
+    :class="[stateClass(state), { 'min-[700px]:col-span-2': isOpen(summary.name) }]"
   >
     <BigNumber :state="state" size="lg" />
     <div class="min-w-0">

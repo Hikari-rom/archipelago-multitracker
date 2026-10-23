@@ -7,6 +7,12 @@
   --color-hint: var(--hint);
   --color-new: var(--new);
   --color-error: var(--error);
+  --color-bk: var(--bk);
+  --color-bk-foreground: var(--bk-foreground);
+  --color-bk-tint: var(--bk-tint);
+  --color-gold: var(--gold);
+  --color-gold-line: var(--gold-line);
+  --color-gold-tint: var(--gold-tint);
   --color-header: var(--header);
 }
 
@@ -32,4 +38,35 @@ html[data-v2='plan'] body {
 }
 @media (prefers-reduced-motion: reduce) {
   [data-sky], [data-star] { animation: none !important; }
+}
+
+/* Game states that colour a whole card (Cards, Focus): BK in red, goal reached in gold. */
+@layer components {
+  .v2-bk {
+    border-color: var(--bk);
+    background-image: linear-gradient(var(--bk-tint), var(--bk-tint));
+  }
+  /* Gold edge, inner fillet and a slowly breathing halo (the highlighted card of Enigmatik's home page). */
+  .v2-gold {
+    position: relative;
+    border-color: var(--gold-line);
+    background-image: linear-gradient(180deg, var(--gold-tint), transparent 75%);
+    box-shadow: 0 0 0 1px var(--gold-line), 0 0 24px -8px var(--gold-glow);
+    animation: v2-gold-glow 3.2s ease-in-out infinite;
+  }
+  .v2-gold::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px solid color-mix(in oklab, var(--gold-line) 35%, transparent);
+    border-radius: 10px;
+    pointer-events: none;
+  }
+}
+@keyframes v2-gold-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--gold-line), 0 0 22px -8px var(--gold-glow); }
+  50% { box-shadow: 0 0 0 1px var(--gold-line), 0 0 38px -2px var(--gold-glow); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-gold { animation: none; }
 }

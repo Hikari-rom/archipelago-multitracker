@@ -49,6 +49,9 @@ export function cardState(s: SlotSummary, c: CardCtx): CardState {
   return { activity: activityOf(s, c), logic, big, connection: connectionOf(s, c), goalReached: s.goal, bk: isBK(s) }
 }
 
+/** Class that colours a whole card by its state: gold once the goal is reached, red while BK (theme.css). */
+export const stateClass = (s: CardState): string => (s.goalReached ? 'v2-gold' : s.bk ? 'v2-bk' : '')
+
 export function useCardCtx(): ComputedRef<CardCtx> {
   return computed(() => ({ nowMs: tracker.nowMs, activeMinutes: tracker.activeMinutes, activity: tracker.activity, roomSleeping: tracker.roomSleeping }))
 }

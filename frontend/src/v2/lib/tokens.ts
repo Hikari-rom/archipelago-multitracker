@@ -41,6 +41,13 @@ const nuit = {
   hint: '#EEA2D4',
   new: '#EEC066',
   error: '#FE8B83',
+  bk: '#FF7A72',
+  'bk-foreground': '#2A0806',
+  'bk-tint': 'rgba(255,122,114,0.14)',
+  gold: '#EEC658',
+  'gold-line': '#EEC658',
+  'gold-tint': 'rgba(238,198,88,0.12)',
+  'gold-glow': 'rgba(238,198,88,0.5)',
   header: 'rgba(15,22,33,0.66)',
 }
 export type TokenName = keyof typeof nuit
@@ -82,6 +89,13 @@ const plan: Record<TokenName, string> = {
   hint: '#9E3081',
   new: '#8D5E00',
   error: '#B63132',
+  bk: '#C2262B',
+  'bk-foreground': '#FFFFFF',
+  'bk-tint': 'rgba(194,38,43,0.08)',
+  gold: '#835C00',
+  'gold-line': '#C9A227',
+  'gold-tint': 'rgba(214,170,40,0.12)',
+  'gold-glow': 'rgba(214,170,40,0.55)',
   header: 'rgba(234,238,243,0.86)',
 }
 

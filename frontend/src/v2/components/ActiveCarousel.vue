@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import type { SlotSummary } from '../../lib/types'
 import { tracker } from '../../stores/tracker'
-import { cardState, useCardCtx } from '../lib/card'
+import { cardState, stateClass, useCardCtx } from '../lib/card'
 import { dismissWithUndo } from '../lib/undo'
 import BigNumber from './BigNumber.vue'
 import GoalBlock from './GoalBlock.vue'
@@ -21,7 +21,7 @@ const btn = 'inline-flex min-h-11 items-center rounded-lg border px-3 text-sm ho
 
 <template>
   <div data-carousel class="flex snap-x snap-mandatory overflow-x-auto rounded-[14px] border bg-card" @scroll="onScroll">
-    <article v-for="s in slots" :key="s.name" :data-carousel-card="s.name" class="min-w-full snap-start p-4">
+    <article v-for="s in slots" :key="s.name" :data-carousel-card="s.name" class="min-w-full snap-start rounded-[14px] p-4" :class="stateClass(cardState(s, ctx))">
       <div class="flex items-start justify-between gap-2">
         <StateChips :state="cardState(s, ctx)" />
         <span v-if="slots.length > 1" class="shrink-0 font-mono text-xs text-muted-foreground" data-counter>{{ Math.min(index, slots.length - 1) + 1 }} / {{ slots.length }}</span>
