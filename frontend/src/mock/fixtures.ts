@@ -148,6 +148,7 @@ export const mockConfig: ConfigResponse = {
     { name: 'Romain_Celeste', game: 'Celeste (Open World)', owner: 'Romain', yaml: null },
   ],
   player_yamls: ['config/players/kh2.yaml', 'config/players/celeste.yaml'],
+  room_dashboard: true,
 }
 export const mockDiscover: DiscoverResponse = {
   room_url: mockConfig.room_url ?? '',
