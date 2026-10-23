@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
 import { percent } from '../lib/dashboard'
+import { isBK } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { pinActive } from '../stores/tracker'
 import ProgressSplit from './ProgressSplit.vue'
@@ -28,7 +29,7 @@ const logicText = (s: SlotSummary) =>
             <span
               :class="cn('shrink-0 text-sm tabular-nums whitespace-nowrap', inLogic(s) > 0 ? 'text-bar-logic font-semibold' : 'text-muted-foreground')"
             >
-              {{ logicText(s) }}
+              <span v-if="isBK(s)" data-bk class="bg-warn text-warn-foreground mr-1.5 rounded px-1 font-mono text-[11px] font-semibold" title="BK : aucun check en logique, en attente d'items des autres joueurs">BK</span>{{ logicText(s) }}
             </span>
           </span>
           <ProgressSplit

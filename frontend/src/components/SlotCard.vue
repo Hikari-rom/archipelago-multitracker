@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { percent } from '../lib/dashboard'
 import { counterText, mainCounter } from '../lib/goals'
 import { formatWhen } from '../lib/history'
-import { connectionMessage, isActive, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
+import { connectionMessage, isActive, isBK, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { isOpen, loadDetail, markSeen, pinActive, setInactive, toggleOpen, tracker } from '../stores/tracker'
 import ProgressSplit from './ProgressSplit.vue'
@@ -83,7 +83,7 @@ async function onSeen() {
     <div>
       <div class="mb-1.5 flex justify-between gap-2 text-sm">
         <span><strong>{{ summary.checks.done }}</strong> / {{ summary.checks.total }} checks</span>
-        <span class="text-muted-foreground">{{ pluralize(summary.checks.remaining, 'restant', 'restants') }}</span>
+        <span class="text-muted-foreground"><span v-if="isBK(summary)" data-bk class="bg-warn text-warn-foreground mr-1.5 rounded px-1 font-mono text-[11px] font-semibold" title="BK : aucun check en logique, en attente d'items des autres joueurs">BK</span>{{ pluralize(summary.checks.remaining, 'restant', 'restants') }}</span>
       </div>
       <ProgressSplit :done="summary.checks.done" :logic="logicCount" :total="summary.checks.total" :label="barLabel" />
     </div>

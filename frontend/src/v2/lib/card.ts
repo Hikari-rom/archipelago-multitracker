@@ -1,5 +1,6 @@
 // State of a game card in the v2: activity, logic, big number, connection.
-import { connectionMessage, isActive, statusLabel, type ActivityOverrides } from '../../lib/logic'
+import { connectionMessage, isActive, isBK, statusLabel, type ActivityOverrides } from '../../lib/logic'
+export { isBK }
 import type { SlotSummary } from '../../lib/types'
 import { computed, type ComputedRef } from 'vue'
 import { tracker } from '../../stores/tracker'
@@ -11,7 +12,8 @@ export type CardLogic =
   | { kind: 'unavailable'; message: string | null }
   | { kind: 'pending'; waiting: boolean }
 export type CardConnection = { kind: 'ok' } | { kind: 'connecting' } | { kind: 'sleeping'; since: string | null } | { kind: 'error'; message: string }
-export interface CardState { activity: CardActivity; logic: CardLogic; big: string; connection: CardConnection; goalReached: boolean }
+export interface CardState { activity: CardActivity; logic: CardLogic; big: string; connection: CardConnection; goalReached: boolean; bk: boolean }
+
 
 const two = (n: number) => String(n).padStart(2, '0')
 export function hhmm(epochSeconds: number): string {
@@ -44,7 +46,7 @@ function connectionOf(s: SlotSummary, c: CardCtx): CardConnection {
 export function cardState(s: SlotSummary, c: CardCtx): CardState {
   const logic = logicOf(s)
   const big = logic.kind === 'ok' ? String(logic.count) : logic.kind === 'pending' ? '··' : '—'
-  return { activity: activityOf(s, c), logic, big, connection: connectionOf(s, c), goalReached: s.goal }
+  return { activity: activityOf(s, c), logic, big, connection: connectionOf(s, c), goalReached: s.goal, bk: isBK(s) }
 }
 
 export function useCardCtx(): ComputedRef<CardCtx> {

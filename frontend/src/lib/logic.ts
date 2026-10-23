@@ -1,5 +1,9 @@
 import type { Hint, LogicLocation, SlotSummary } from './types'
 
+/** "BK" (stuck): logic computed, nothing in logic, game not finished. Waiting for items from the others. */
+export const isBK = (s: SlotSummary): boolean =>
+  s.logic.state === 'ok' && s.logic.count === 0 && !s.goal && s.checks.remaining > 0
+
 export type BadgeVariant = 'good' | 'neutral' | 'muted' | 'pending'
 export interface Badge {
   text: string

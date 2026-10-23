@@ -6,6 +6,7 @@ import { SORT_LABELS, totals, type SortMode } from '../../lib/dashboard'
 import type { SlotSummary } from '../../lib/types'
 import { tracker } from '../../stores/tracker'
 import type { V2Layout } from '../lib/prefs'
+import { isBK } from '../lib/card'
 import OwnerSelect from './OwnerSelect.vue'
 
 const props = defineProps<{
@@ -26,6 +27,7 @@ const emit = defineEmits<{
 
 const phone = useMediaQuery('(max-width: 699px)')
 const t = computed(() => totals(props.slots))
+const bk = computed(() => props.slots.filter(isBK).length)
 const sorts = Object.keys(SORT_LABELS) as SortMode[]
 const layouts: { key: V2Layout; label: string }[] = [
   { key: 'cards', label: 'Cartes' },
@@ -54,6 +56,7 @@ function onSort(e: Event) {
         <span><strong class="text-logic">{{ t.inLogic }}</strong> en logique</span>
         <span>{{ t.done }} / {{ t.total }} faits</span>
         <span v-if="t.newItems" class="text-new">★ {{ t.newItems }} nouveaux</span>
+        <span v-if="bk" data-bk-total><span class="rounded bg-warn px-1 text-warn-foreground">BK</span> {{ bk }} jeu{{ bk > 1 ? 'x' : '' }} sans check en logique</span>
         <span class="text-muted-foreground">{{ slots.length }} jeux</span>
       </div>
       <div class="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">

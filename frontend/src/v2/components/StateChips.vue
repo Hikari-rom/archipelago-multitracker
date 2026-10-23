@@ -25,6 +25,7 @@ const pill = 'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 t
     <span v-else-if="state.logic.kind === 'pending'" :class="pill" class="text-muted-foreground">{{ state.logic.waiting ? 'En attente de connexion' : 'Calcul de la logique…' }}</span>
     <span v-else-if="state.logic.approx && state.logic.message" :class="pill" class="border-transparent bg-warn text-error">! {{ state.logic.message }}</span>
 
+    <span v-if="state.bk" :class="pill" class="border-transparent bg-warn text-warn-foreground">BK · rien en logique, en attente d'items</span>
     <span v-if="state.goalReached" :class="pill" class="text-done">✓ But atteint</span>
   </div>
 </template>

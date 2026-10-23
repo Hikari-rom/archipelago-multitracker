@@ -44,4 +44,13 @@ describe('cardState', () => {
   it('goal reached', () => {
     expect(cardState(mk({ name: 'a', goal: true }), ctx()).goalReached).toBe(true)
   })
+  it('BK: logic says 0, game not finished', () => {
+    const zero = { state: 'ok' as const, count: 0, message: null }
+    expect(cardState(mk({ name: 'a', logic: zero }), ctx()).bk).toBe(true)
+    expect(cardState(mk({ name: 'a', logic: { ...zero, count: 3 } }), ctx()).bk).toBe(false)
+    expect(cardState(mk({ name: 'a', logic: zero, goal: true }), ctx()).bk).toBe(false)
+    expect(cardState(mk({ name: 'a', logic: zero, checks: { done: 10, total: 10, remaining: 0 } }), ctx()).bk).toBe(false)
+    expect(cardState(mk({ name: 'a', logic: { state: 'pending', count: 0, message: null } }), ctx()).bk).toBe(false)
+    expect(cardState(mk({ name: 'a', logic: { state: 'unavailable', count: 0, message: null } }), ctx()).bk).toBe(false)
+  })
 })
