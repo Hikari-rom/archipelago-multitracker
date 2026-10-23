@@ -187,6 +187,8 @@ export interface RoomFeedSlot {
   goal: boolean
   presence: RoomPresence
   last_check_at: number | null
+  /** last check seen live for this slot (epoch seconds); catch-up entries do not count */
+  active_at: number | null
   /** BK slot; null for the slots the app does not track */
   bk: boolean | null
 }

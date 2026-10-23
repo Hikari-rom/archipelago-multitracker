@@ -204,6 +204,7 @@ export function mockRoomFeedSummary(): RoomFeedSummary {
       return {
         name, game, done, total, goal, presence: PRESENCES[(pi + si) % PRESENCES.length],
         last_check_at: done ? now - Math.floor(rnd() * 20 * 3600) : null,
+        active_at: PRESENCES[(pi + si) % PRESENCES.length] === 'playing' ? now - (pi + si + 1) * 90 : null,
         bk: tracked ? name === 'Romain_KH2' : null,
       }
     })

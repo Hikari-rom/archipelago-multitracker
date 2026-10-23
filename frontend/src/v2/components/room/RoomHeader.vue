@@ -9,7 +9,11 @@ const props = defineProps<{ status: RoomFeedStatus; room: RoomFeedSummary['room'
 const stateLine = computed(() => {
   const s = props.status
   if (s.state === 'listening') return s.listening_since ? `En écoute depuis ${hhmm(s.listening_since)}` : 'En écoute'
-  if (s.state === 'disconnected') return 'Déconnecté — les checks manqués seront rattrapés'
+  if (s.state === 'disconnected') {
+    // Only promise the catch-up when it can happen (the room publishes a tracker id); otherwise say why we are out.
+    if (s.catchup_available === false) return s.error ? `Déconnecté — ${s.error}` : 'Déconnecté (room endormie ?)'
+    return s.error ? `Déconnecté — ${s.error} · les checks manqués seront rattrapés` : 'Déconnecté — les checks manqués seront rattrapés'
+  }
   if (s.state === 'error') return s.error || 'Erreur'
   return 'Démarrage…'
 })

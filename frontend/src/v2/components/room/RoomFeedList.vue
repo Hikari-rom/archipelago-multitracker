@@ -6,6 +6,7 @@ import * as api from '../../../lib/api'
 import type { RoomFeedCheck, RoomFeedPlayer } from '../../../lib/types'
 import { tracker } from '../../../stores/tracker'
 import { hhmm } from '../../lib/card'
+import { MONTHS } from '../../../lib/history'
 import { CATEGORY_CLASS, groupByDay } from '../../lib/days'
 import { onRoomCheck } from '../../lib/roomfeed'
 
@@ -28,54 +29,25 @@ const playerNames = computed(() => [...new Set(props.players.map((p) => p.player
 const games = computed(() =>
   [...new Set(props.players.flatMap((p) => p.slots.map((s) => s.game).filter((g): g is string => !!g)))].sort((a, b) => a.localeCompare(b)))
 
-let seq = 0
-async function load(reset: boolean): Promise<void> {
-  const mine = ++seq
-  loading.value = true
-  try {
-    const params: api.RoomFeedChecksParams = { limit: PAGE, offset: reset ? 0 : items.value.length }
-    if (player.value) params.player = player.value
-    if (game.value) params.game = game.value
-    const page = await api.getRoomFeedChecks(params)
-    if (mine !== seq) return
-    if (reset) items.value = page.items
-    else {
-      const have = new Set(items.value.map((c) => c.key))
-      items.value = [...items.value, ...page.items.filter((c) => !have.has(c.key))]
-    }
-    total.value = page.total
-    loaded.value = true
-    error.value = ''
-  } catch (e) {
-    if (mine === seq) {
-      error.value = e instanceof Error ? e.message : String(e)
-      if (reset) {
-        // Do not leave the rows of the previous filters next to the error.
-        items.value = []
-        total.value = 0
-        loaded.value = true
-      }
-    }
-  } finally {
-    if (mine === seq) loading.value = false
-  }
-}
-watch([player, game], () => void load(true), { immediate: true })
-
 // Server order (feed.py `checks`): newest first by `at ?? before ?? recorded_at`, ties: the most recently logged first.
 // The recording time of a live check is "now".
 const sortKey = (c: RoomFeedCheck): number | null => c.at ?? c.before
-// Live checks (catch-up entries too): insert those matching the filters, once each, at their place in that order.
-onRoomCheck((data) => {
-  const incoming: RoomFeedCheck[] = Array.isArray(data?.checks) ? data.checks : []
+const matches = (c: RoomFeedCheck): boolean =>
+  (!player.value || c.sender_player === player.value) && (!game.value || c.sender_game === game.value)
+
+/**
+ * Insert the rows whose key is new at their place in the server order; returns how many were added.
+ * Rows of a server page (`fetched`) older than everything loaded are appended. A live row older than everything loaded
+ * belongs to a page not loaded yet when the server has `unloaded` rows beyond the loaded ones: it is left to that page.
+ */
+function merge(incoming: RoomFeedCheck[], fetched: boolean, unloaded = 0): number {
   const have = new Set(items.value.map((c) => c.key))
   const next = [...items.value]
-  let count = 0
+  let added = 0
   for (const c of incoming) {
     if (have.has(c.key)) continue
     have.add(c.key)
-    if (!((!player.value || c.sender_player === player.value) && (!game.value || c.sender_game === game.value))) continue
-    count++
+    if (!matches(c)) continue
     const key = sortKey(c) ?? Date.now() / 1000
     // Rows without a known key (undated catch-up) cannot be compared: skip over them.
     let at = next.findIndex((x) => {
@@ -83,15 +55,105 @@ onRoomCheck((data) => {
       return k !== null && k <= key
     })
     if (at < 0) {
-      // Older than everything loaded: it belongs to a page not loaded yet when there is one (the total still counts it).
-      if (next.length < total.value) continue
+      if (!fetched && unloaded > 0) continue
       at = next.length
     }
     next.splice(at, 0, c)
+    added++
   }
-  if (!count) return
-  items.value = next
-  total.value += count
+  if (added) items.value = next
+  return added
+}
+
+const filterParams = (offset: number): api.RoomFeedChecksParams => {
+  const params: api.RoomFeedChecksParams = { limit: PAGE, offset }
+  if (player.value) params.player = player.value
+  if (game.value) params.game = game.value
+  return params
+}
+
+let seq = 0
+let generation = 0 // bumped by every filter change: answers of an older generation are dropped
+// Server cursor of the paging: how many rows of the server list were requested so far. It only moves forward with what
+// the server returned, so rows inserted locally (live) cannot make the next page a list of duplicates.
+const nextOffset = ref(0)
+
+/** Fetch a page; returns the number of rows added, or null when the answer is stale or failed. */
+async function load(reset: boolean): Promise<number | null> {
+  const mine = ++seq
+  if (reset) generation++
+  loading.value = true
+  try {
+    const page = await api.getRoomFeedChecks(filterParams(reset ? 0 : nextOffset.value))
+    if (mine !== seq) return null
+    let added: number
+    if (reset) {
+      items.value = page.items
+      added = page.items.length
+      nextOffset.value = page.items.length
+    } else {
+      added = merge(page.items, true)
+      // An empty page cannot move the cursor: the server has nothing more at this offset.
+      nextOffset.value = page.items.length ? nextOffset.value + page.items.length : Math.max(nextOffset.value, page.total)
+    }
+    total.value = page.total
+    loaded.value = true
+    error.value = ''
+    return added
+  } catch (e) {
+    if (mine === seq) {
+      error.value = e instanceof Error ? e.message : String(e)
+      if (reset) {
+        // Do not leave the rows of the previous filters next to the error.
+        items.value = []
+        total.value = 0
+        nextOffset.value = 0
+        loaded.value = true
+      }
+    }
+    return null
+  } finally {
+    if (mine === seq) loading.value = false
+  }
+}
+watch([player, game], () => void load(true), { immediate: true })
+
+// Live checks (catch-up entries too): insert those matching the filters, once each, at their place in that order.
+onRoomCheck((data) => {
+  const incoming: RoomFeedCheck[] = Array.isArray(data?.checks) ? data.checks : []
+  const have = new Set(items.value.map((c) => c.key))
+  let counted = 0
+  for (const c of incoming) {
+    if (have.has(c.key) || !matches(c)) continue
+    have.add(c.key)
+    // Server rows not loaded yet, this one aside: the total plus the rows counted earlier in this batch.
+    merge([c], false, total.value + counted - items.value.length)
+    counted++
+  }
+  total.value += counted
+})
+
+// Pushes are best effort (a stream reconnection, a history import, a gap): fetch the first page again and merge what is
+// new. Run when the summary was refreshed (after each `roomfeed` event) and when the event stream reopens.
+let syncing = 0
+async function resync(): Promise<void> {
+  if (!loaded.value) return // the first load is still on its way
+  const mine = ++syncing
+  const gen = generation
+  try {
+    const page = await api.getRoomFeedChecks(filterParams(0))
+    if (mine !== syncing || gen !== generation) return
+    merge(page.items, true)
+    nextOffset.value = Math.max(nextOffset.value, page.items.length)
+    total.value = Math.max(page.total, items.value.length)
+    error.value = ''
+  } catch {
+    // Silent: the rows on screen are still right, and the header shows the connection state.
+  }
+}
+watch(() => props.players, () => void resync())
+watch(() => tracker.sse, (now, prev) => {
+  if (now === 'open' && prev !== 'open') void resync()
 })
 
 // A catch-up entry is dated by the middle of its window when that window is narrow; otherwise it has no time.
@@ -102,8 +164,17 @@ function time(c: RoomFeedCheck): string {
   const t = when(c)
   return t === null ? '—' : `~${hhmm(t)}`
 }
-const catchup = (c: RoomFeedCheck): string =>
-  c.after !== null && c.before !== null ? `rattrapé · entre ${hhmm(c.after)} et ${hhmm(c.before)}` : 'rattrapé · heure inconnue'
+const sameDay = (a: number, b: number): boolean => new Date(a * 1000).toDateString() === new Date(b * 1000).toDateString()
+const dayAndTime = (t: number): string => `${new Date(t * 1000).getDate()} ${MONTHS[new Date(t * 1000).getMonth()]} ${hhmm(t)}`
+function catchup(c: RoomFeedCheck): string {
+  if (c.after === null || c.before === null) return 'rattrapé · heure inconnue'
+  if (sameDay(c.after, c.before)) return `rattrapé · entre ${hhmm(c.after)} et ${hhmm(c.before)}`
+  // Over midnight: the start gets its date; the end too unless it is the next day.
+  const nextDay = new Date(c.after * 1000)
+  nextDay.setDate(nextDay.getDate() + 1)
+  const end = sameDay(nextDay.getTime() / 1000, c.before) ? hhmm(c.before) : dayAndTime(c.before)
+  return `rattrapé · entre ${dayAndTime(c.after)} et ${end}`
+}
 const target = (c: RoomFeedCheck): string => `pour ${c.receiver_player ?? c.receiver ?? '?'} · ${c.receiver_game ?? '?'}`
 
 // One flat list (day headings + checks) so the window virtualizer only mounts the rows on screen.
@@ -138,12 +209,14 @@ const measure = (el: Element | ComponentPublicInstance | null) => {
 }
 
 // Load the next page once the end of the loaded rows comes into view.
-const hasMore = computed(() => items.value.length < total.value)
-function more(): void {
-  void load(false)
+// The cursor ends the paging even when the loaded rows and the total disagree (no stuck button).
+const hasMore = computed(() => items.value.length < total.value && nextOffset.value < total.value)
+async function more(): Promise<void> {
+  // A page of rows we already have (live inserts shift the server offsets) does not end the paging: go on.
+  while ((await load(false)) === 0 && hasMore.value && !loading.value) { /* next page */ }
 }
 watch(() => visible.value.at(-1)?.v.index ?? -1, (last) => {
-  if (last >= rows.value.length - 5 && hasMore.value && !loading.value && !error.value) more()
+  if (last >= rows.value.length - 5 && hasMore.value && !loading.value && !error.value) void more()
 })
 
 const select = 'h-9 min-w-0 max-w-full rounded-lg border bg-card px-2 text-sm text-foreground max-[699px]:h-11'
@@ -205,7 +278,7 @@ const select = 'h-9 min-w-0 max-w-full rounded-lg border bg-card px-2 text-sm te
         </li>
       </ul>
 
-      <button v-if="hasMore" type="button" class="mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="more">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
+      <button v-if="hasMore" type="button" class="mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="void more()">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
     </div>
   </section>
 </template>

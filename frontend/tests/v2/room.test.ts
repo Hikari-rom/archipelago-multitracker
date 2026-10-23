@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installMock } from '../../src/lib/api'
 import type { MockApi } from '../../src/lib/api'
@@ -15,7 +15,7 @@ import RoomPlaying from '../../src/v2/components/room/RoomPlaying.vue'
 import RoomV2 from '../../src/v2/views/RoomV2.vue'
 
 const slot = (over: Partial<RoomFeedSlot> = {}): RoomFeedSlot => ({
-  name: 'S', game: 'G', done: 0, total: 10, goal: false, presence: 'offline', last_check_at: null, bk: null, ...over,
+  name: 'S', game: 'G', done: 0, total: 10, goal: false, presence: 'offline', last_check_at: null, active_at: null, bk: null, ...over,
 })
 const player = (name: string, slots: RoomFeedSlot[], over: Partial<RoomFeedPlayer> = {}): RoomFeedPlayer => ({
   player: name, me: false, done: slots.reduce((n, s) => n + s.done, 0), total: slots.reduce((n, s) => n + s.total, 0),
@@ -95,6 +95,16 @@ describe('RoomHeader', () => {
     const err = mountHeader({ enabled: true, state: 'error', error: 'Connexion refusée', catchup_available: true })
     expect(err.text()).toContain('Connexion refusée')
     expect(err.find('.bg-warn').exists()).toBe(true)
+  })
+
+  it('disconnected only promises catch-up when it is available; otherwise says why', () => {
+    const text = (status: RoomFeedStatus) => mountHeader(status).find('[data-state-line]').text()
+    expect(text({ enabled: true, state: 'disconnected', catchup_available: false })).toBe('Déconnecté (room endormie ?)')
+    expect(text({ enabled: true, state: 'disconnected', catchup_available: false, error: 'adresse du serveur inconnue (room endormie ?)' }))
+      .toBe('Déconnecté — adresse du serveur inconnue (room endormie ?)')
+    expect(text({ enabled: true, state: 'disconnected', catchup_available: true, error: 'connexion perdue' }))
+      .toBe('Déconnecté — connexion perdue · les checks manqués seront rattrapés')
+    expect(text({ enabled: true, state: 'disconnected', catchup_available: false })).not.toContain('rattrapés')
   })
 
   it('no catch-up without a room link; poll and write errors', () => {
@@ -178,6 +188,25 @@ describe('RoomLeaderboard', () => {
     expect(w.findAll('[data-slots]')).toHaveLength(1)
   })
 
+  it('« actif il y a N min » for a recent live check only, muted, on the player row and the slot', async () => {
+    tracker.nowMs = 1_700_000_000_000
+    const ago = (min: number) => 1_700_000_000 - min * 60
+    const w = mount(RoomLeaderboard, { props: { players: [
+      player('Alice', [slot({ name: 'A1', presence: 'playing', active_at: ago(3) }), slot({ name: 'A2', presence: 'playing', active_at: ago(7) })]),
+      player('Bob', [slot({ name: 'B1', presence: 'playing', active_at: ago(30) })]),
+      player('Carol', [slot({ name: 'C1', presence: 'playing' })]),
+    ] } })
+    const rows = w.findAll('[data-row]')
+    expect(rows[0].find('[data-active]').text()).toBe('actif il y a 3 min')
+    expect(rows[0].find('[data-active]').classes()).toContain('text-muted-foreground')
+    expect(rows[1].find('[data-active]').exists()).toBe(false)
+    expect(rows[2].find('[data-active]').exists()).toBe(false)
+    await rows[0].find('button[aria-expanded]').trigger('click')
+    const slots = rows[0].findAll('[data-slots] li').map((li) => li.text())
+    expect(slots[0]).toContain('En jeu · actif il y a 3 min')
+    expect(slots[1]).toContain('En jeu · actif il y a 7 min')
+  })
+
   it('long names are truncated with a title', () => {
     const w = mount(RoomLeaderboard, { props: { players: [player('P'.repeat(60), [slot()])] } })
     const n = w.find('[data-player-name]')
@@ -203,6 +232,7 @@ const feedPage = (items: RoomFeedCheck[], total = items.length): RoomFeedChecksP
 const lastCheck = <T,>(xs: T[]): T => xs[xs.length - 1]
 
 describe('RoomFeedList', () => {
+  enableAutoUnmount(afterEach) // a leaked list would react to the stream state of the next test
   const setup = (getRoomFeedChecks: (p: any) => Promise<RoomFeedChecksPage>) => {
     mockFeed({ getRoomFeedChecks })
     tracker.nowMs = new Date(2026, 9, 23, 15, 0).getTime()
@@ -300,6 +330,127 @@ describe('RoomFeedList', () => {
     await flushPromises()
     expect(w.text()).not.toContain('Ancient')
     expect(w.text()).toContain('6 checks')
+    w.unmount()
+  })
+
+  it('live: within one batch the unloaded rows are counted with the batch (an older row waits for its page)', async () => {
+    let calls = 0
+    // The next page (asked for by the auto-load) never answers: only the live decision is under test.
+    const w = setup(async () => (++calls === 1 ? feedPage([feedChecks[0], feedChecks[1]], 3) : new Promise<RoomFeedChecksPage>(() => {})))
+    await flushPromises()
+    const newer = chk({ key: '9:1', at: T(23, 14, 59), item: 'Newer one', location: 'N' })
+    const older = chk({ key: '9:2', at: T(20, 10, 0), item: 'Older one', location: 'O' })
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [newer, older] })
+    await flushPromises()
+    expect(w.text()).toContain('Newer one')
+    expect(w.text()).not.toContain('Older one')
+    expect(w.text()).toContain('5 checks')
+    w.unmount()
+  })
+
+  it('resync: a refreshed summary refetches the first page and merges the new rows in order, total from the server', async () => {
+    let page = feedPage([feedChecks[0], feedChecks[1]])
+    const calls: any[] = []
+    const w = setup(async (p) => (calls.push(p), page))
+    await flushPromises()
+    expect(w.text()).toContain('2 checks')
+    const fresh = [chk({ key: '7:1', at: T(23, 13, 50), item: 'Missed A', location: 'MA' }), chk({ key: '7:2', at: T(23, 13, 30), item: 'Missed B', location: 'MB' })]
+    page = feedPage([feedChecks[0], fresh[0], feedChecks[1], fresh[1]], 4)
+    await w.setProps({ players: [...players] })
+    await flushPromises()
+    expect(calls).toEqual([{ limit: 50, offset: 0 }, { limit: 50, offset: 0 }])
+    const order = w.findAll('li[data-index]').filter((r) => !r.find('[data-day]').exists()).map((r) => r.text().match(/Boomerang|Hammer|Missed A|Missed B/)![0])
+    expect(order).toEqual(['Boomerang', 'Missed A', 'Hammer', 'Missed B'])
+    expect(w.text()).toContain('4 checks')
+    w.unmount()
+  })
+
+  it('resync: an empty feed fills in once the room has rows (history import)', async () => {
+    let page = feedPage([])
+    const w = setup(async () => page)
+    await flushPromises()
+    expect(w.text()).toContain('Aucun check pour ces filtres.')
+    page = feedPage([feedChecks[0], feedChecks[1]])
+    await w.setProps({ players: [...players] })
+    await flushPromises()
+    expect(w.text()).toContain('Boomerang')
+    expect(w.text()).not.toContain('Aucun check')
+    w.unmount()
+  })
+
+  it('resync: when the event stream reconnects', async () => {
+    const calls: any[] = []
+    tracker.sse = 'open'
+    const w = setup(async (p) => (calls.push(p), feedPage([feedChecks[0]])))
+    await flushPromises()
+    tracker.sse = 'reconnecting'
+    await flushPromises()
+    expect(calls).toHaveLength(1)
+    tracker.sse = 'open'
+    await flushPromises()
+    expect(calls).toHaveLength(2)
+    w.unmount()
+  })
+
+  it('resync is dropped when the filters changed meanwhile', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => (release = r))
+    let n = 0
+    const w = setup(async (p) => {
+      n++
+      if (n === 2) await gate
+      return feedPage(p.player === 'Bob' ? [feedChecks[2]] : [feedChecks[0]])
+    })
+    await flushPromises()
+    await w.setProps({ players: [...players] }) // resync (call 2) waits on the gate
+    await w.findAll('select')[0].setValue('Bob')
+    await flushPromises()
+    release()
+    await flushPromises()
+    expect(w.text()).toContain('Trap')
+    expect(w.text()).not.toContain('Boomerang')
+    w.unmount()
+  })
+
+  it('paging follows a server cursor: duplicates from local live inserts do not stall « Afficher plus »', async () => {
+    const old = Array.from({ length: 130 }, (_, i) => chk({ key: `1:${i}`, at: T(23, 10, 0) - i * 60, location: `L${i}`, item: `old${i}` }))
+    let server = [...old]
+    const calls: any[] = []
+    const w = setup(async (p) => (calls.push(p), { total: server.length, offset: p.offset, items: server.slice(p.offset, p.offset + p.limit) }))
+    await flushPromises()
+    // 60 checks happen live (the page receives them by SSE, the server list has them at its head)
+    const live = Array.from({ length: 60 }, (_, i) => chk({ key: `5:${i}`, at: T(23, 14, 0) + i * 10, location: `X${i}`, item: `live${i}` }))
+    server = [...live].reverse().concat(server)
+    for (const fn of [...roomfeedListeners.check]) fn({ type: 'roomfeed_check', checks: [...live].reverse() })
+    await flushPromises()
+    await w.find('button.mt-3').trigger('click')
+    await flushPromises()
+    // offset 50 only returns rows already known; the cursor moves on by itself until new rows come
+    expect(calls.map((c) => c.offset)).toEqual([0, 50, 100])
+    const keys = (w.vm as any).items.map((c: RoomFeedCheck) => c.key)
+    expect(keys).toHaveLength(150) // 60 live rows + old0..old89, none twice, in server order
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(keys.slice(0, 3)).toEqual(['5:59', '5:58', '5:57'])
+    expect(keys.at(-1)).toBe('1:89')
+    w.unmount()
+  })
+
+  it('an empty page with a total that says more does not loop', async () => {
+    const calls: any[] = []
+    const w = setup(async (p) => (calls.push(p), p.offset === 0 ? feedPage([feedChecks[0]], 5) : { total: 5, offset: p.offset, items: [] }))
+    await flushPromises()
+    expect(calls.map((c) => c.offset)).toEqual([0, 1])
+    expect(w.find('button.mt-3').exists()).toBe(false)
+    w.unmount()
+  })
+
+  it('catch-up windows over two days show the date of the start', async () => {
+    const straddle = chk({ key: '8:1', at: null, after: T(22, 23, 40), before: T(23, 0, 20), src: 'catchup', item: 'Straddle', location: 'Midnight' })
+    const days = chk({ key: '8:2', at: null, after: T(18, 9, 0), before: T(23, 0, 30), src: 'catchup', item: 'Long', location: 'Away' })
+    const w = setup(async () => feedPage([straddle, days]))
+    await flushPromises()
+    expect(w.text()).toContain('rattrapé · entre 22 oct. 23:40 et 00:20')
+    expect(w.text()).toContain('rattrapé · entre 18 oct. 09:00 et 23 oct. 00:30')
     w.unmount()
   })
 

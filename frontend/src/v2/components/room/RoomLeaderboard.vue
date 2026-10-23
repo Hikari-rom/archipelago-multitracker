@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { RoomFeedPlayer } from '../../../lib/types'
-import { PRESENCE_LABEL, pct, sortPlayers, type BoardSort } from '../../lib/room'
+import { tracker } from '../../../stores/tracker'
+import { PRESENCE_LABEL, activeMinutes, pct, sortPlayers, type BoardSort } from '../../lib/room'
 
 const props = defineProps<{ players: RoomFeedPlayer[] }>()
 
@@ -17,6 +18,16 @@ function toggle(name: string): void {
   const next = new Set(open.value)
   if (!next.delete(name)) next.add(name)
   open.value = next
+}
+// « actif il y a N min »: the most recent live check of the player's slots, while it is recent.
+const activeLine = (min: number | null): string | null => (min === null ? null : `actif il y a ${min} min`)
+const playerActive = (p: RoomFeedPlayer): string | null => {
+  const times = p.slots.map((s) => s.active_at).filter((t): t is number => t !== null)
+  return activeLine(activeMinutes(times.length ? Math.max(...times) : null, tracker.nowMs))
+}
+const slotLabel = (s: RoomFeedPlayer['slots'][number]): string => {
+  const active = s.presence === 'playing' ? activeLine(activeMinutes(s.active_at, tracker.nowMs)) : null
+  return active ? `${PRESENCE_LABEL[s.presence]} · ${active}` : PRESENCE_LABEL[s.presence]
 }
 const id = (i: number) => `room-slots-${i}`
 const seg = 'inline-flex rounded-lg border p-0.5'
@@ -59,6 +70,7 @@ const grid = 'grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 ga
           <span class="hidden min-[700px]:order-7 min-[700px]:block">
             <span v-if="p.playing > 0" data-playing-dot class="block size-2 rounded-full bg-done" title="Au moins un slot en jeu" role="img" aria-label="Au moins un slot en jeu" />
           </span>
+          <span v-if="playerActive(p)" data-active class="col-start-2 col-end-[-1] truncate text-xs text-muted-foreground min-[700px]:order-8">{{ playerActive(p) }}</span>
         </button>
         <ul v-if="open.has(p.player)" :id="id(i)" data-slots class="divide-y border-t bg-background/40 text-sm">
           <li v-for="(s, k) in p.slots" :key="s.name ?? k" class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-1.5 pl-11">
@@ -66,7 +78,7 @@ const grid = 'grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-3 ga
             <span class="whitespace-nowrap font-mono text-xs tabular-nums">{{ s.done }} / {{ s.total }}</span>
             <span v-if="s.goal" class="text-done" title="But atteint" aria-label="But atteint">✓</span>
             <span v-if="s.bk === true" data-bk class="rounded bg-warn px-1 font-mono text-[11px] font-semibold leading-tight text-warn-foreground" title="BK : aucun check en logique, en attente d'items des autres joueurs">BK</span>
-            <span class="whitespace-nowrap text-xs text-muted-foreground" :class="s.presence === 'playing' && 'text-done'">{{ PRESENCE_LABEL[s.presence] }}</span>
+            <span class="whitespace-nowrap text-xs text-muted-foreground" :class="s.presence === 'playing' && 'text-done'">{{ slotLabel(s) }}</span>
           </li>
         </ul>
       </li>

@@ -15,6 +15,16 @@ export const PRESENCE_LABEL: Record<RoomPresence, string> = {
   unknown: 'Inconnu',
 }
 
+/** A live check this recent (seconds) counts as activity (backend `presence.RECENT_SECONDS`). */
+export const ACTIVE_SECONDS = 600
+
+/** Whole minutes since the last live check when it is recent enough (« actif il y a N min »), else null. */
+export function activeMinutes(activeAt: number | null | undefined, nowMs: number): number | null {
+  if (activeAt == null) return null
+  const ago = nowMs / 1000 - activeAt
+  return ago <= ACTIVE_SECONDS ? Math.max(0, Math.floor(ago / 60)) : null
+}
+
 /** Leaderboard order: by % (ties: more checks) or by number of checks (ties: higher %); then by name. */
 export function sortPlayers(players: RoomFeedPlayer[], by: BoardSort): RoomFeedPlayer[] {
   const key = (p: RoomFeedPlayer) => (by === 'pct' ? [ratio(p.done, p.total), p.done] : [p.done, ratio(p.done, p.total)])
