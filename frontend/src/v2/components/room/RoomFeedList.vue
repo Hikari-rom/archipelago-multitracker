@@ -37,14 +37,17 @@ const matches = (c: RoomFeedCheck): boolean =>
 
 /**
  * Insert the rows whose key is new at their place in the server order; returns how many were added.
- * Rows of a server page (`fetched`) older than everything loaded are appended. A live row older than everything loaded
- * belongs to a page not loaded yet when the server has `unloaded` rows beyond the loaded ones: it is left to that page.
+ * Rows of a server page older than everything loaded are appended. A live row older than everything loaded belongs to
+ * a page not loaded yet when the server has `unloaded` rows beyond the loaded ones: it is left to that page.
+ * Ties (same time, e.g. a history import stamped with its poll time) follow the server: rows of a later page were logged
+ * before the loaded ones and go after them; rows of the first page (resync) or live ones were logged after and go before.
  */
-function merge(incoming: RoomFeedCheck[], fetched: boolean, unloaded = 0): number {
+function merge(incoming: RoomFeedCheck[], mode: 'live' | 'page' | 'resync', unloaded = 0): number {
   const have = new Set(items.value.map((c) => c.key))
   const next = [...items.value]
   let added = 0
-  for (const c of incoming) {
+  // A resync page is in server order: walk it backwards so that tied rows inserted "before" keep that order.
+  for (const c of mode === 'resync' ? [...incoming].reverse() : incoming) {
     if (have.has(c.key)) continue
     have.add(c.key)
     if (!matches(c)) continue
@@ -52,10 +55,10 @@ function merge(incoming: RoomFeedCheck[], fetched: boolean, unloaded = 0): numbe
     // Rows without a known key (undated catch-up) cannot be compared: skip over them.
     let at = next.findIndex((x) => {
       const k = sortKey(x)
-      return k !== null && k <= key
+      return k !== null && (mode === 'page' ? k < key : k <= key)
     })
     if (at < 0) {
-      if (!fetched && unloaded > 0) continue
+      if (mode === 'live' && unloaded > 0) continue
       at = next.length
     }
     next.splice(at, 0, c)
@@ -92,7 +95,7 @@ async function load(reset: boolean): Promise<number | null> {
       added = page.items.length
       nextOffset.value = page.items.length
     } else {
-      added = merge(page.items, true)
+      added = merge(page.items, 'page')
       // An empty page cannot move the cursor: the server has nothing more at this offset.
       nextOffset.value = page.items.length ? nextOffset.value + page.items.length : Math.max(nextOffset.value, page.total)
     }
@@ -127,7 +130,7 @@ onRoomCheck((data) => {
     if (have.has(c.key) || !matches(c)) continue
     have.add(c.key)
     // Server rows not loaded yet, this one aside: the total plus the rows counted earlier in this batch.
-    merge([c], false, total.value + counted - items.value.length)
+    merge([c], 'live', total.value + counted - items.value.length)
     counted++
   }
   total.value += counted
@@ -143,7 +146,7 @@ async function resync(): Promise<void> {
   try {
     const page = await api.getRoomFeedChecks(filterParams(0))
     if (mine !== syncing || gen !== generation) return
-    merge(page.items, true)
+    merge(page.items, 'resync')
     nextOffset.value = Math.max(nextOffset.value, page.items.length)
     total.value = Math.max(page.total, items.value.length)
     error.value = ''

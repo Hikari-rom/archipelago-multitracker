@@ -435,6 +435,25 @@ describe('RoomFeedList', () => {
     w.unmount()
   })
 
+  it('tied rows (a history import stamped with one poll time) keep the server order across pages and resyncs', async () => {
+    const poll = T(23, 12, 0)
+    const imported = (k: number) => chk({ key: `9:${k}`, at: null, after: null, before: poll, src: 'catchup', location: `I${k}` })
+    // server order for ties: the most recently logged first
+    let server = Array.from({ length: 80 }, (_, i) => imported(79 - i))
+    const w = setup(async (p) => ({ total: server.length, offset: p.offset, items: server.slice(p.offset, p.offset + p.limit) }))
+    await flushPromises()
+    await w.find('button.mt-3').trigger('click')
+    await flushPromises()
+    const keys = () => (w.vm as any).items.map((c: RoomFeedCheck) => c.key)
+    expect(keys()).toEqual(server.map((c) => c.key))
+    // two more rows logged by the next poll with the same stamp, then a resync of page 1
+    server = [imported(81), imported(80), ...server]
+    await w.setProps({ players: [...players] })
+    await flushPromises()
+    expect(keys()).toEqual(server.map((c) => c.key))
+    w.unmount()
+  })
+
   it('an empty page with a total that says more does not loop', async () => {
     const calls: any[] = []
     const w = setup(async (p) => (calls.push(p), p.offset === 0 ? feedPage([feedChecks[0]], 5) : { total: 5, offset: p.offset, items: [] }))
