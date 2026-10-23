@@ -35,3 +35,16 @@ def test_load_overrides(tmp_path: Path):
     assert load_overrides(p) == {"balatrom": "romain"}
     p.write_text(":::not yaml", encoding="utf-8")
     assert load_overrides(p) == {}
+
+
+def test_load_overrides_tolerates_bad_encoding_and_odd_values(tmp_path):
+    bad = tmp_path / "latin1.yaml"
+    bad.write_bytes("Jérôme_x: jérôme\n".encode("latin-1"))
+    assert load_overrides(bad) == {}
+    odd = tmp_path / "odd.yaml"
+    odd.write_text("a: true\nb: ' bob '\nc: 7\n", encoding="utf-8")
+    assert load_overrides(odd) == {"b": "bob", "c": "7"}
+
+
+def test_label_casing_comes_from_the_cluster_itself():
+    assert group_players(["AB", "abc", "ab_x"])["abc"] == "abc"

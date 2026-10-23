@@ -37,7 +37,7 @@ def group_players(names: list[str], overrides: dict[str, str] | None = None) -> 
     label: dict[str, str] = {}  # lowered base -> player
     for members in clusters.values():
         prefix = _common_prefix(members)
-        original = next(b for b in bases.values() if b.lower().startswith(prefix))
+        original = next(b for b in bases.values() if b.lower() in members)
         for m in members:
             label[m] = original[:len(prefix)]
     result = {n: label[b.lower()] for n, b in bases.items()}
@@ -53,9 +53,10 @@ def load_overrides(path: Path = OVERRIDES_PATH) -> dict[str, str]:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-    except (OSError, yaml.YAMLError) as exc:
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
         log.warning("room players file %s ignored: %s", path, exc)
         return {}
     if not isinstance(raw, dict):
         return {}
-    return {str(k): str(v) for k, v in raw.items() if isinstance(v, (str, int)) and str(v).strip()}
+    return {str(k): str(v).strip() for k, v in raw.items()
+            if isinstance(v, (str, int)) and not isinstance(v, bool) and str(v).strip()}
