@@ -20,7 +20,7 @@ _SAFE_NAME = re.compile(r"[^A-Za-z0-9_.-]+")
 
 def rel(path: Path) -> str:
     try:
-        return str(path.resolve().relative_to(ROOT))
+        return path.resolve().relative_to(ROOT).as_posix()  # "/" on Windows too: the web UI matches these
     except ValueError:
         return str(path)
 

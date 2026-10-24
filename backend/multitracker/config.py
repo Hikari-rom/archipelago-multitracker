@@ -109,7 +109,7 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
             entry["game"] = slot.game
         if slot.yaml:
             try:
-                entry["yaml"] = str(Path(slot.yaml).resolve().relative_to(ROOT))
+                entry["yaml"] = Path(slot.yaml).resolve().relative_to(ROOT).as_posix()  # same file on Linux and Windows
             except ValueError:
                 entry["yaml"] = str(slot.yaml)
         if slot.owner:

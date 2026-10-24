@@ -155,7 +155,7 @@ apworlds:
     needs_yaml: true
     source: github
     repo: KuroLynx/AEMinecraft
-    tag: v0.7.0-rc.2  # version of the room (D12); rc.1 has the same datapackage and rules
+    tag: v0.7.0-rc.5  # version of the room (D12, checksum 0741e682 checked 2026-10-24; rc.2-rc.4 differ)
     asset: "*.apworld"
     logic: true
   tboir:

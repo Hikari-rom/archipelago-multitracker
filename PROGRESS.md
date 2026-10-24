@@ -132,6 +132,12 @@
   `Multitracker.exe`). Premier run réussi (40042769711) : les 46 apworlds se chargent sous Windows, l'app démarre.
 - Pas encore de release : pousser un tag `v*` la publie (dépôt public).
 
+### 2026-10-24 — AEMinecraft 0.7.0-rc.5
+- La room utilise AEMinecraft **rc.5** (checksum `0741e682`, calculé pour rc.3, rc.4, rc.5 : rc.3/rc.4 = rc.2) : la
+  logique de `romain_minecraft` était coupée par D12 (« autre version »). Épinglé sur rc.5, `room_inventory.py` :
+  47 identiques, 1 différent (TUNIC, jeu core d'un ami : version d'AP différente, logique déjà désactivée).
+- Validation : 5/5 seeds aléatoires, 2/2 avec `romain_mc.yaml`, e2e m7a OK. Dans l'app : 43 checks en logique.
+
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de
   l'app actuelle dans `test-output/design/captures-app-actuelle.zip` (23 captures, refaites le 2026-10-14 après M19,

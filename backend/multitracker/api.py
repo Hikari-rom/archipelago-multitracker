@@ -74,7 +74,7 @@ def _rel(path: Path | None) -> str | None:
     if path is None:
         return None
     try:
-        return str(Path(path).resolve().relative_to(ROOT))
+        return Path(path).resolve().relative_to(ROOT).as_posix()
     except ValueError:
         return Path(path).name  # never expose the filesystem layout
 

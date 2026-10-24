@@ -469,7 +469,7 @@ class RoomFeed:
         if d is None:
             return None
         try:
-            return str(d.relative_to(ROOT))
+            return d.relative_to(ROOT).as_posix()
         except ValueError:
             return str(d)
 

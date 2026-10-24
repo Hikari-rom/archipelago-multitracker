@@ -19,7 +19,7 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   de combat, logique désactivée). OoT bloqué (`[!]`) : récompenses de donjon impossibles à connaître sans spoiler.
 - 2026-10-11 : Balatro, Phantom Hourglass, PokePark et Ori WotW activés (21 jeux avec logique, OoT mis de côté).
   Versions d'apworlds = celles de la room (D12, vérifié par le worker) : `scripts/room_inventory.py` compare les
-  checksums sans réveiller la room ; TWW HD épinglé sur un commit de `main`, AEMinecraft sur 0.7.0-rc.2.
+  checksums sans réveiller la room ; TWW HD épinglé sur un commit de `main`, AEMinecraft sur 0.7.0-rc.5 (2026-10-24 : rc.2 → rc.5, checksum de la room).
   `validate_logic.py --no-yaml` valide le mode « slot_data seul » (slots d'autres joueurs). OoT mis de côté par Romain.
   M9 backend de configuration fait ; ordre de travail : M10 design shadcn-vue → M11 page Configuration + vraie room
   (`config/room.real.yaml` gitignoré ; `config/players/romain/` versionné depuis le 2026-10-14) → M12 historique/tri → M13 PokePark/WotW → M14.

@@ -45,6 +45,24 @@ apworlds:
   paint:
     source: core
     game: Paint
+  subnautica:
+    source: core
+    game: Subnautica
+  v6:
+    source: core
+    game: VVVVVV
+  overcooked2:
+    source: core
+    game: Overcooked! 2
+  hk:
+    source: core
+    game: Hollow Knight
+  stardew:
+    source: core
+    game: Stardew Valley
+  satisfactory:
+    source: core
+    game: Satisfactory
   twwhd:
     repo: Teotia444/twwhd-apworld
     commit: c21882644711807ee2e61a096280f5385186e5de
@@ -226,15 +244,15 @@ apworlds:
     game: Ratchet and Clank 3
   aeminecraft:
     repo: KuroLynx/AEMinecraft
-    tag: v0.7.0-rc.2
-    published: '2026-10-10T13:18:28Z'
+    tag: v0.7.0-rc.5
+    published: '2026-10-23T15:24:00Z'
     asset_pattern: '*.apworld'
     asset: minecraft_aem.apworld
-    url: https://github.com/KuroLynx/AEMinecraft/releases/download/v0.7.0-rc.2/minecraft_aem.apworld
-    size: 1228705
+    url: https://github.com/KuroLynx/AEMinecraft/releases/download/v0.7.0-rc.5/minecraft_aem.apworld
+    size: 1272892
     file: minecraft_aem.apworld
-    sha256: 8fac061041cde5fcf37f081ea08495b38e4d4962e85cd90fd81d0c705a14312c
-    downloaded_at: '2026-10-11T00:25:19+00:00'
+    sha256: f4760bb07c7e6acb9e85d470f8a40a8a6d7b4fc3f6745799f1ffa80d7e8100cc
+    downloaded_at: '2026-10-24T00:21:43+00:00'
     source: github
     game: AEMinecraft
   tboir:
