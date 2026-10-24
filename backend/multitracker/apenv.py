@@ -16,8 +16,10 @@ STUBBED_MODULES = ("dolphin_memory_engine",)
 
 
 def _needs_stubs() -> bool:
-    return any(importlib.util.find_spec(name) is None for name in STUBBED_MODULES
-               if str(STUBS_DIR) not in sys.path)
+    """Whether Archipelago code needs STUBS_DIR: already on our path (setup() ran), or a stubbed module is missing."""
+    if str(STUBS_DIR) in sys.path:
+        return True
+    return any(importlib.util.find_spec(name) is None for name in STUBBED_MODULES)
 
 
 def setup() -> Path:
@@ -28,7 +30,7 @@ def setup() -> Path:
     # Universal Tracker's settings point at <AP>/Players; if it is missing, AP's settings code
     # opens a (tkinter) folder picker. Never needed headless: make sure the folder exists.
     (AP_DIR / "Players").mkdir(exist_ok=True)
-    if _needs_stubs():
+    if _needs_stubs() and str(STUBS_DIR) not in sys.path:
         sys.path.append(str(STUBS_DIR))  # after site-packages: never shadows a real install
     if str(AP_DIR) not in sys.path:
         sys.path.insert(0, str(AP_DIR))

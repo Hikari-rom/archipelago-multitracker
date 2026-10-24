@@ -2,7 +2,7 @@
 
 Généré par `scripts/room_inventory.py` (room de 156 slots, 102 jeux). « Checksum » compare le datapackage de l'apworld installé ici à celui de la room : la logique d'un jeu n'est activée que s'il est identique (D12). « UT sans yaml » : Universal Tracker sait régénérer ce monde sans le yaml du joueur (seule possibilité pour les slots des autres joueurs).
 
-Bilan : 47 identiques, 1 versions différentes, 54 jeux sans apworld ici.
+Bilan : 47 identiques, 2 versions différentes, 53 jeux sans apworld ici.
 
 | Jeu | Slots | Romain | Apworld ici | Checksum | UT sans yaml | Logique activée |
 |---|---|---|---|---|---|---|
@@ -78,7 +78,7 @@ Bilan : 47 identiques, 1 versions différentes, 54 jeux sans apworld ici.
 | Peggle Deluxe | 1 |  | — | — |  |  |
 | Peggle Nights | 1 |  | — | — |  |  |
 | Plants vs. Zombies | 1 |  | — | — |  |  |
-| Pokemon Emerald | 1 |  | — | — |  |  |
+| Pokemon Emerald | 1 |  | core | ❌ autre version |  |  |
 | Pokemon Platinum | 1 | oui | custom | ✅ | oui | ✅ |
 | PokePark | 1 | oui | custom | ✅ | oui | ✅ |
 | Powerwash Simulator | 1 |  | — | — |  |  |
