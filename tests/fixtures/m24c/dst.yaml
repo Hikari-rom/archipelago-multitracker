@@ -1,0 +1,6 @@
+name: dst
+game: "Don't Starve Together"
+"Don't Starve Together":
+  goal: bosses_any
+  required_bosses: ["Random"]
+  junk_item_amount: 60

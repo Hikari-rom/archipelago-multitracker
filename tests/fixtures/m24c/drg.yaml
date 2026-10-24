@@ -1,0 +1,5 @@
+name: drg
+game: "Deep Rock Galactic"
+"Deep Rock Galactic":
+  traps_on: false
+  avail_classes: 5

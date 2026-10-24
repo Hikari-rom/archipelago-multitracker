@@ -228,7 +228,7 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Inventaire : apworlds et yamls fournis, 99 jeux sur 102 au checksum de la room
 - [x] 32 apworlds sourcés sur GitHub (même sha256) dans `config/apworlds.yaml`
 - [x] Distribution des 20 apworlds sans source publique identique : importés depuis l'Archipelago du joueur (D27)
-- [ ] Pi : passer les 20 copies manuelles de `custom_worlds` dans `data/apworlds/` (après la campagne)
+- [x] Pi : les 20 copies manuelles de `custom_worlds` passées dans `data/apworlds/` par l'import (2026-10-24)
 - [x] The Wind Waker (core) : adaptateur (entrées, donjons requis ; cartes mélangées = logique indisponible)
 - [x] Campagne de validation des 52 jeux (2026-10-24) : 37 OK, 4 corrigés avant (PEAK, ArchipelaCode,
   Clair Obscur, Cookie Clicker) ; adaptateurs pour Trackmania, Slime Rancher 2,
@@ -236,4 +236,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   Cuphead (1/3), CloverPit (NC), Trombone Champ et Zuma Deluxe (génération)
 - [x] Lot 1 (v0.2.1) : The Wind Waker, R.E.P.O, PEAK, Slime Rancher, Clair Obscur Expedition 33 (e2e `m24a`)
 - [x] Lot 2 (v0.2.2) : ArchipelaCode, Cookie Clicker, A Dance of Fire and Ice, Bloons TD6, Blue Prince (e2e `m24b`)
+- [x] Lot 3 (v0.2.3) : Trackmania, Slime Rancher 2, Deep Rock Galactic, The Farmer Was Replaced, Don't Starve
+  Together (un adaptateur chacun, e2e `m24c`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

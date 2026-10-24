@@ -11,7 +11,8 @@
 3. Logique validée (référence à chaque sphère sur des seeds aux options aléatoires + bout en bout) pour 21 jeux sur 22, voir `docs/COMPAT.md`.
    2026-10-24 : nouvelle room (M24, D26) ; les apworlds sans source publique s'importent depuis l'Archipelago du joueur
    (D27) ; lot 1 en v0.2.1 (The Wind Waker, R.E.P.O, PEAK, Slime Rancher, Clair Obscur), lot 2 en v0.2.2 (ArchipelaCode,
-   Cookie Clicker, A Dance of Fire and Ice, Bloons TD6, Blue Prince), un lot de 5 par version.
+   Cookie Clicker, A Dance of Fire and Ice, Bloons TD6, Blue Prince), lot 3 en v0.2.3 (Trackmania, Slime Rancher 2,
+   Deep Rock Galactic, The Farmer Was Replaced, Don't Starve Together), un lot de 5 par version.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 

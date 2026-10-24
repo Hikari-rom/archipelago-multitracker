@@ -1,0 +1,7 @@
+name: tm
+game: "Trackmania"
+"Trackmania":
+  series_number: 3
+  series_minimum_map_number: 3
+  series_maximum_map_number: 6
+  medal_requirement: 50

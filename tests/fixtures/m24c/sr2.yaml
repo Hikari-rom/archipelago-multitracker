@@ -1,0 +1,8 @@
+name: sr2
+game: "Slime Rancher 2"
+"Slime Rancher 2":
+  randomize_shop: true
+  shop_check_count_min: 20
+  shop_check_count_max: 40
+  shop_catalog: true
+  shop_catalog_items: 3

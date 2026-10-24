@@ -280,6 +280,8 @@ apworlds:
     repo: Cousinit117/Deep-Rock-Galactic-AP
     tag: "0.20"
     asset: "deep_rock_galactic.apworld"
+    logic: true
+    needs_yaml: true  # adapter: locations removed with the global random
   dome_keeper:
     game: "Dome Keeper"
     source: github
@@ -385,6 +387,8 @@ apworlds:
     repo: Rhelys/SlimeRancher2-AP
     tag: "v0.15.0"
     asset: "slime_rancher_2.apworld"
+    logic: true
+    needs_yaml: true  # adapter: shop checks and catalog waves
   tabs:
     game: "Totally Accurate Battle Simulator"
     source: github
@@ -403,6 +407,8 @@ apworlds:
     repo: seadoggie001/TFWR-APMod
     tag: "v0.0.9-beta"
     asset: "tfwr.apworld"
+    logic: true
+    needs_yaml: true  # adapter: crop costs from slot_data
   tloz_st:
     game: "Spirit Tracks"
     source: github
@@ -415,6 +421,8 @@ apworlds:
     repo: SerialBoxes/ArchipelagoTrackmania
     tag: "v1.3.2"
     asset: "trackmania.apworld"
+    logic: true
+    needs_yaml: true  # adapter: map counts from slot_data
   ultrakill:
     game: "ULTRAKILL"
     source: github
@@ -478,6 +486,8 @@ apworlds:
   dontstarvetogether:
     game: "Don't Starve Together"
     source: user
+    logic: true
+    needs_yaml: true  # adapter: goal boss, research locations; start inventory hook
   enter_the_gungeon:
     game: "Enter The Gungeon"
     source: user

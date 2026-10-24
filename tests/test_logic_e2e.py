@@ -242,3 +242,11 @@ async def test_bot_finishes_m24b_batch_using_only_in_logic_locations(tmp_path):
     (ROOT / "test-output" / "e2e_m24b.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
 
+
+async def test_bot_finishes_m24c_batch_using_only_in_logic_locations(tmp_path):
+    """Third batch of the 2026-10 room (v0.2.3), each game with its adapter: Trackmania (map counts), Slime Rancher 2
+    (shop checks and catalog waves), Deep Rock Galactic (locations removed with the global random), The Farmer Was
+    Replaced (crop costs) and Don't Starve Together (goal boss, research locations, start inventory overflow)."""
+    result = await play_until_done("m24c", 17, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m24c.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1
