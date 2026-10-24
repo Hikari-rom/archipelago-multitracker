@@ -127,3 +127,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | Luigi's Mansion | BootsinSoots V0.6.4 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24g` (sans yaml) | activée, v0.2.7 | se reconstruit depuis le seul `slot_data` |
 | Nine Sols | Ixrec 0.6.4 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24g` (sans yaml) | activée, v0.2.7 | se reconstruit depuis le seul `slot_data` |
 | Nodebuster | josephwhite v0.1.3 | ✅ 3/3 + 2/2 yaml + e2e `m24g` | activée (yaml), v0.2.7 | |
+| Peggle Deluxe | SerpentAI peggle-deluxe-v2.2.1 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24h` (sans yaml) | activée, v0.2.8 | se reconstruit depuis le seul `slot_data` |
+| Peggle Nights | SerpentAI peggle-nights-v2.0.0 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24h` (sans yaml) | activée, v0.2.8 | se reconstruit depuis le seul `slot_data` |
+| Powerwash Simulator | SWCreeperKing v0.5.14 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24h` (sans yaml) | activée, v0.2.8 | se reconstruit depuis le seul `slot_data` |
+| Stray | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24h` | activée (yaml), v0.2.8 | |
+| Super Meat Boy | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24h` | activée (yaml), v0.2.8 | |

@@ -1,0 +1,6 @@
+name: stray
+game: "Stray"
+"Stray":
+  GoalRequirement: both
+  ChapterToGoal: 8
+  Camerasanity: true

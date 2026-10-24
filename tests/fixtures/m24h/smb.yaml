@@ -1,0 +1,6 @@
+name: smb
+game: "Super Meat Boy"
+"Super Meat Boy":
+  goal: light_world
+  boss_req: 10
+  bandages: true

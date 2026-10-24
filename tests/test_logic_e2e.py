@@ -291,3 +291,14 @@ async def test_bot_finishes_m24g_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24g", 17, tmp_path, spoiler=1, no_yaml=M24G_NO_YAML)
     (ROOT / "test-output" / "e2e_m24g.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24H_NO_YAML = frozenset({"Peggle Deluxe", "Peggle Nights", "Powerwash Simulator"})
+
+
+async def test_bot_finishes_m24h_batch_using_only_in_logic_locations(tmp_path):
+    """Eighth batch of the 2026-10 room (v0.2.8), no adapter needed: Peggle Deluxe, Peggle Nights and Powerwash
+    Simulator (no yaml, slot_data only), Stray and Super Meat Boy."""
+    result = await play_until_done("m24h", 17, tmp_path, spoiler=1, no_yaml=M24H_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24h.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

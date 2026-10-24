@@ -370,18 +370,21 @@ apworlds:
     repo: SerpentAI/Archipelago
     tag: "peggle-deluxe-v2.2.1"
     asset: "peggle_deluxe.apworld"
+    logic: true
   peggle_nights:
     game: "Peggle Nights"
     source: github
     repo: SerpentAI/Archipelago
     tag: "peggle-nights-v2.0.0"
     asset: "peggle_nights.apworld"
+    logic: true
   powerwashsimulator:
     game: "Powerwash Simulator"
     source: github
     repo: SWCreeperKing/PowerwashSimAP
     tag: "v0.5.14"
     asset: "powerwashsimulator.apworld"
+    logic: true
   pvzr:
     game: "Plants vs. Zombies"
     source: github
@@ -538,9 +541,13 @@ apworlds:
   stray:
     game: "Stray"
     source: user
+    logic: true
+    needs_yaml: true
   super_meat_boy:
     game: "Super Meat Boy"
     source: user
+    logic: true
+    needs_yaml: true
   terraria_beta:
     game: "Terraria Beta"
     source: user

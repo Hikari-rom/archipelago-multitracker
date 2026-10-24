@@ -1,0 +1,6 @@
+name: pegn
+game: "Peggle Nights"
+"Peggle Nights":
+  shadow_pegs_total: 35
+  shadow_pegs_required: 25
+  maximum_starting_ball_count: 12

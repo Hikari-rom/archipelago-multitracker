@@ -1,0 +1,5 @@
+name: pwash
+game: "Powerwash Simulator"
+"Powerwash Simulator":
+  percentsanity: 10
+  goal_type: mcguffin

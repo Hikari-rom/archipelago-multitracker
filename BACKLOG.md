@@ -245,4 +245,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Lot 6 (v0.2.6) : DREDGE, Enter The Gungeon, Fall Guys, Fez, Hades (sans adaptateur, e2e `m24f`)
 - [x] Lot 7 (v0.2.7) : Hades2Rogue, Keep Talking and Nobody Explodes, Luigi's Mansion, Nine Sols, Nodebuster (sans
   adaptateur, e2e `m24g`)
+- [x] Lot 8 (v0.2.8) : Peggle Deluxe, Peggle Nights, Powerwash Simulator, Stray, Super Meat Boy (sans adaptateur,
+  e2e `m24h`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

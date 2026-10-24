@@ -1,0 +1,6 @@
+name: pegd
+game: "Peggle Deluxe"
+"Peggle Deluxe":
+  gold_pegs_total: 30
+  gold_pegs_required: 20
+  include_full_clears: true
