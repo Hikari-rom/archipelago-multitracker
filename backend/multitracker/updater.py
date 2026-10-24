@@ -142,19 +142,44 @@ def download(asset: dict[str, Any], dest: Path, progress: Callable[[int, int], N
         raise UpdateError("le fichier téléchargé ne correspond pas à l'empreinte de la release")
 
 
+def long_path(path: str) -> str:
+    """The extended form (\\\\?\\C:\\...) of an absolute Windows path: no 260-character limit, whatever the registry
+    says. update/new/ArchipelagoMultitracker adds 35 characters to paths already 140 long in python/Lib."""
+    if path.startswith("\\\\?\\"):
+        return path
+    if path.startswith("\\\\"):
+        return "\\\\?\\UNC\\" + path[2:]
+    return "\\\\?\\" + path
+
+
+def member_parts(name: str) -> list[str]:
+    """The folders and file of a zip entry, refused when it could land outside the destination (the extended form
+    leaves "..", "/" and drives to the file system)."""
+    parts = [p for p in name.split("/") if p not in ("", ".")]
+    if name.startswith("/") or not parts or any(p == ".." or ":" in p or "\\" in p for p in parts):
+        raise UpdateError(f"chemin refusé dans le zip : {name}")
+    return parts
+
+
 def extract(zip_path: Path, dest: Path) -> Path:
     """Extract the zip into dest (emptied first) and return its top folder."""
-    if dest.exists():
-        shutil.rmtree(dest)
-    dest.mkdir(parents=True)
-    base = dest.resolve()
+    out = str(dest.resolve())
+    if os.name == "nt":
+        out = long_path(out)
+    if os.path.exists(out):
+        shutil.rmtree(out)
+    os.makedirs(out)
     try:
         with zipfile.ZipFile(zip_path) as zf:
-            for name in zf.namelist():
-                target = (dest / name).resolve()
-                if target != base and base not in target.parents:
-                    raise UpdateError(f"chemin refusé dans le zip : {name}")
-            zf.extractall(dest)
+            members = [(info, member_parts(info.filename)) for info in zf.infolist()]
+            for info, parts in members:
+                target = os.path.join(out, *parts)
+                if info.is_dir():
+                    os.makedirs(target, exist_ok=True)
+                    continue
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with zf.open(info) as src, open(target, "wb") as dst:
+                    shutil.copyfileobj(src, dst, 1 << 20)
     except zipfile.BadZipFile as exc:
         raise UpdateError("le zip téléchargé est illisible") from exc
     top = dest / PORTABLE_DIR
@@ -169,10 +194,13 @@ def stage_portable(root: Path, release: dict[str, Any],
     """Download and extract the release into update/new/; Multitracker.exe does the rest after the app exits."""
     work = root / "update"
     zip_path = work / ASSET
-    download(release["asset"], zip_path, progress)
-    top = extract(zip_path, work / "new")
-    zip_path.unlink(missing_ok=True)
-    got = (top / "VERSION").read_text(encoding="utf-8").strip()
+    try:
+        download(release["asset"], zip_path, progress)
+        top = extract(zip_path, work / "new")
+        zip_path.unlink(missing_ok=True)
+        got = (top / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError as exc:  # the page must read an error, not a download that never ends
+        raise UpdateError(f"écriture impossible dans {work} : {exc}") from exc
     if got != release["version"]:
         raise UpdateError(f"le zip est la version {got}, pas {release['version']}")
     return top
@@ -381,7 +409,9 @@ class Updater:
 
         try:
             await asyncio.to_thread(stage_portable, self.root, release, progress)
-        except UpdateError as exc:
+        except Exception as exc:  # whatever the cause, the status must leave "running"
+            if not isinstance(exc, UpdateError):
+                log.exception("update staging failed")
             write_status(self.root, mode="portable", state="error", step="Téléchargement", message=str(exc),
                          **{"from": frm, "to": to})
             return

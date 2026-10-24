@@ -92,10 +92,24 @@ jobs:
 
       # The whole update path: an older copy of the folder downloads the zip just built (release faked with a file://
       # URL), Multitracker.exe swaps the folders, and the new version starts, keeping config/ and data/.
+      # As on most PCs (not on the runners): paths limited to 260 characters, and the copy in a folder deep enough for
+      # update/new/ArchipelagoMultitracker/python/Lib/... to go over (v0.2.0 failed there, FileNotFoundError).
       - name: Update test
         run: |
-          old=build/old/ArchipelagoMultitracker
-          mkdir -p build/old && cp -r build/dist/ArchipelagoMultitracker "$old"
+          powershell -NoProfile -Command 'Set-ItemProperty -Path HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem -Name LongPathsEnabled -Value 0'
+          "$PY" - <<'EOF'
+          import os
+          p = os.path.abspath("build/" + "x" * 120 + "/" + "y" * 120)
+          try:
+              os.makedirs(p)
+          except OSError:
+              print("long paths refused, as on most PCs")
+          else:
+              raise SystemExit("long paths still allowed: this test would not catch a path over 260 characters")
+          EOF
+          old=build/old/deep-folder-260/ArchipelagoMultitracker
+          mkdir -p "$(dirname "$old")" && cp -r build/dist/ArchipelagoMultitracker "$old"
+          echo "old copy: $(cygpath -w "$(realpath "$old")" | wc -c) characters"
           echo v0.0.1 > "$old/VERSION"
           echo "name: marker" > "$old/config/players/marker.yaml"
           "$PY" - <<'EOF'

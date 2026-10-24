@@ -123,6 +123,39 @@ def test_stage_portable_refuses_bad_downloads(tmp_path, case, match):
     assert not (tmp_path / "evil.txt").exists() and not (root / "update" / "evil.txt").exists()
 
 
+def test_long_paths_and_zip_entries():
+    assert up.long_path(r"C:\Users\x\ArchipelagoMultitracker") == r"\\?\C:\Users\x\ArchipelagoMultitracker"
+    assert up.long_path(r"\\nas\share\app") == r"\\?\UNC\nas\share\app"
+    assert up.long_path(r"\\?\C:\app") == r"\\?\C:\app"
+    assert up.member_parts("ArchipelagoMultitracker/python/") == ["ArchipelagoMultitracker", "python"]
+    assert up.member_parts("a/./b//c.txt") == ["a", "b", "c.txt"]
+    for name in ("../evil.txt", "a/../../evil.txt", "/etc/evil", "C:/evil", "a\\..\\evil", "./"):
+        with pytest.raises(up.UpdateError, match="chemin refusé"):
+            up.member_parts(name)
+
+
+@pytest.mark.parametrize("error,match", [
+    (FileNotFoundError(2, "No such file or directory"), "écriture impossible"),  # a path over 260 characters
+    (RuntimeError("boom"), "boom"),
+])
+async def test_portable_apply_ends_in_error_whatever_fails(tmp_path, monkeypatch, error, match):
+    root = portable_root(tmp_path)
+    url = make_release(tmp_path, "v0.2.0", make_zip(tmp_path / "z.zip", "v0.2.0"))
+
+    def fail(zip_path, dest):
+        raise error
+
+    monkeypatch.setattr(up, "extract", fail)
+    u = up.Updater(root, release_url=url, on_exit=lambda c: pytest.fail("must not exit"))
+    await u.apply()
+    for _ in range(100):
+        if (up.read_status(root) or {}).get("state") == "error":
+            break
+        await asyncio.sleep(0.05)
+    st = up.read_status(root)
+    assert st["state"] == "error" and match in st["message"] and not u.running()
+
+
 async def test_portable_apply_stages_then_asks_to_exit(tmp_path):
     root = portable_root(tmp_path)
     url = make_release(tmp_path, "v0.2.0", make_zip(tmp_path / "z.zip", "v0.2.0"))

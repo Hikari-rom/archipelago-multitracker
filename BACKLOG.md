@@ -221,6 +221,11 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Bloc « Mises à jour » (Configuration) et bandeau v1/v2
 - [x] Release v0.2.0 (premier zip qui sait se mettre à jour)
 - [ ] Vérifier une vraie mise à jour Windows de la v0.2.0 vers la suivante sur un PC (la CI la simule)
+- [x] 2026-10-24 : la v0.2.0 ne se met pas à jour quand le dossier dépasse ~85 caractères (`C:\Users\<nom>\Downloads\...`) :
+  `update\new\ArchipelagoMultitracker\` ajoute 35 caractères à des chemins de 162 (`python\Lib\site-packages\...`),
+  limite Windows de 260, et la page restait sur « Téléchargement ». Extraction en chemins longs (`\\?\`), toute erreur
+  finit en état « error » ; la CI coupe `LongPathsEnabled` et teste dans un dossier profond. Pour une v0.2.0 déjà
+  installée : déplacer le dossier (ex. `C:\Multitracker`), supprimer `data\update\status.json`, relancer.
 
 
 ## M24 — Logique pour les jeux de la nouvelle room (demandé par Romain le 2026-10-24, D26)
