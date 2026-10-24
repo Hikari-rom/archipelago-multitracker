@@ -216,3 +216,15 @@ async def test_bot_finishes_m14b_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m14b", 17, tmp_path, spoiler=1, no_yaml=M14B_NO_YAML)
     (ROOT / "test-output" / "e2e_m14b.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24A_NO_YAML = frozenset({"Slime Rancher"})
+
+
+async def test_bot_finishes_m24a_batch_using_only_in_logic_locations(tmp_path):
+    """First batch of the 2026-10 room (v0.2.1): The Wind Waker (core; dungeon and secret cave entrances, required
+    bosses: its adapter), R.E.P.O, PEAK (loot sanity: its adapter), Slime Rancher (no yaml, slot_data only) and
+    Clair Obscur Expedition 33."""
+    result = await play_until_done("m24a", 17, tmp_path, spoiler=1, no_yaml=M24A_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24a.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

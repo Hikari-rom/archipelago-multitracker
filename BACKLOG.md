@@ -231,4 +231,5 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [ ] Pi : passer les 20 copies manuelles de `custom_worlds` dans `data/apworlds/` (après la campagne)
 - [x] The Wind Waker (core) : adaptateur (entrées, donjons requis ; cartes mélangées = logique indisponible)
 - [ ] Campagne de validation des 52 jeux, puis lots
+- [x] Lot 1 (v0.2.1) : The Wind Waker, R.E.P.O, PEAK, Slime Rancher, Clair Obscur Expedition 33 (e2e `m24a`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

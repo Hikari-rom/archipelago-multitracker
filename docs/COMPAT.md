@@ -83,3 +83,19 @@ Validation avec les vrais yamls de Romain : `validate_logic.py "<jeu>" --yaml co
 (ses options, tirages aléatoires compris, sur des seeds différentes).
 
 Résultats bruts des campagnes : `test-output/logs/campaign.summary` et `test-output/logic_validation/` (non commités).
+
+## Jeux de la room 2026-10 (M24, D26–D27)
+
+Apworlds à la version exacte de la room (même sha256 que le fichier du générateur, ou `source: user` : importé
+depuis l'Archipelago du joueur, D27). Validation : 3 runs aux options aléatoires (campagne), puis 2 runs avec le yaml
+de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. Un lot de 5 jeux par version `v0.2.N`.
+
+| Jeu | Apworld | Validation | Logique | Notes |
+|---|---|---|---|---|
+| The Wind Waker | core 0.6.7 | ✅ aléatoires + 2/2 yaml de la room + e2e `m24a` | activée (yaml), v0.2.1 | adaptateur `_tww` (entrées depuis `slot_data`, donjons requis déduits des locations, comme TWW HD). Cartes mélangées (`randomize_charts`) : logique indisponible, le serveur n'envoie pas où mène chaque carte |
+| R.E.P.O | Automagic00 0.4.4 | ✅ 3/3 + 6/6 yaml (3 joueurs) + e2e `m24a` | activée (yaml), v0.2.1 | |
+| PEAK | importé (`source: user`) | ✅ 3/3 + 6/6 yaml (3 joueurs) + e2e `m24a` | activée (yaml), v0.2.1 | adaptateur `_peak` : biomes de `loot_sanity` tirés dans `set_rules`, rejoués depuis `slot_data["loot_biome_assignments"]` |
+| Slime Rancher | SWCreeperKing v0.3.2.1 | ✅ 3/3 + 4/4 yaml + 2/2 sans yaml + e2e `m24a` (sans yaml) | activée, v0.2.1 | se reconstruit depuis le seul `slot_data` |
+| Clair Obscur Expedition 33 | Demorck v0.4.3 | ✅ 3/3 + 4/4 yaml + e2e `m24a` | activée (yaml), v0.2.1 | une option n'a que des valeurs « random » : les yamls de test gardent sa valeur par défaut |
+| ArchipelaCode | importé (`source: user`) | ✅ 3/3 | pas encore | adaptateur `_archipelacode` : problèmes tirés au hasard, rejoués depuis `slot_data["regions"]` ; `included_languages` est une liste de classe partagée par tous les mondes (sans effet dans la room : ses 2 slots sont en JavaScript) |
+| Cookie Clicker | importé (`source: user`) | ✅ 2/2 | pas encore | sa location de victoire s'appelle « Victory location » dans le monde et « Victory Location » dans le datapackage |

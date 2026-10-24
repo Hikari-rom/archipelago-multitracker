@@ -1,0 +1,8 @@
+name: tww
+game: "The Wind Waker"
+"The Wind Waker":
+  progression_dungeons: true
+  required_bosses: true
+  num_required_bosses: 3
+  randomize_dungeon_entrances: true
+  randomize_secret_cave_entrances: true

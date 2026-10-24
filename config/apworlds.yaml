@@ -42,6 +42,7 @@ apworlds:
   hk: {game: "Hollow Knight", source: core, logic: true, needs_yaml: true}  # adapter: notch and location costs
   stardew: {game: "Stardew Valley", source: core, logic: true, needs_yaml: true}  # hook: pre-fill progression count of received items
   satisfactory: {game: "Satisfactory", source: core, logic: true, needs_yaml: true}  # adapter: Hub tiers as generated; yaml + slot_data
+  tww: {game: "The Wind Waker", source: core, logic: true, needs_yaml: true}  # adapter: entrances, required bosses; randomize_charts refused (M24)
 
   twwhd:
     game: "The Wind Waker HD"
@@ -259,6 +260,8 @@ apworlds:
     repo: Demorck/ClairObscur_APWorld
     tag: "v0.4.3"
     asset: "clair_obscur.apworld"
+    logic: true
+    needs_yaml: true
   cluster_truck:
     game: "ClusterTruck"
     source: github
@@ -367,12 +370,15 @@ apworlds:
     repo: Automagic00/R.E.P.O.-Archipelago-Client-Mod
     tag: "0.4.4"
     asset: "repo.apworld"
+    logic: true
+    needs_yaml: true
   slime_rancher:
     game: "Slime Rancher"
     source: github
     repo: SWCreeperKing/Slimipelago
     tag: "v0.3.2.1"
     asset: "slime_rancher.apworld"
+    logic: true  # rebuilt from slot_data alone
   slime_rancher_2:
     game: "Slime Rancher 2"
     source: github
@@ -475,6 +481,8 @@ apworlds:
   peak:
     game: "PEAK"
     source: user
+    logic: true
+    needs_yaml: true  # adapter: loot sanity biomes
   stray:
     game: "Stray"
     source: user

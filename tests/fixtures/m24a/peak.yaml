@@ -1,0 +1,5 @@
+name: peak
+game: "PEAK"
+"PEAK":
+  item_sanity: true
+  loot_sanity: all

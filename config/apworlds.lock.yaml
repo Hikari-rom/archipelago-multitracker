@@ -63,6 +63,9 @@ apworlds:
   satisfactory:
     source: core
     game: Satisfactory
+  tww:
+    source: core
+    game: The Wind Waker
   twwhd:
     repo: Teotia444/twwhd-apworld
     commit: c21882644711807ee2e61a096280f5385186e5de
