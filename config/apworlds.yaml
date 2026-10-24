@@ -439,15 +439,22 @@ apworlds:
   adofai:
     game: "A Dance of Fire and Ice"
     source: user
+    logic: true
+    needs_yaml: true
   archipelacode:
     game: "ArchipelaCode"
     source: user
+    logic: true
+    needs_yaml: true  # adapter: problems from slot_data, language from the yaml
   bloonstd6:
     game: "Bloons TD6"
     source: user
+    logic: true
   blueprince:
     game: "Blue Prince"
     source: user
+    logic: true
+    needs_yaml: true
   burnout_paradise_remastered:
     game: "Burnout Paradise Remastered"
     source: user
@@ -457,6 +464,8 @@ apworlds:
   cookieclicker:
     game: "Cookie Clicker"
     source: user
+    logic: true
+    needs_yaml: true
   cyberpunk2077:
     game: "Cyberpunk 2077"
     source: user

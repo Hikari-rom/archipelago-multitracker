@@ -97,5 +97,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | PEAK | importé (`source: user`) | ✅ 3/3 + 6/6 yaml (3 joueurs) + e2e `m24a` | activée (yaml), v0.2.1 | adaptateur `_peak` : biomes de `loot_sanity` tirés dans `set_rules`, rejoués depuis `slot_data["loot_biome_assignments"]` |
 | Slime Rancher | SWCreeperKing v0.3.2.1 | ✅ 3/3 + 4/4 yaml + 2/2 sans yaml + e2e `m24a` (sans yaml) | activée, v0.2.1 | se reconstruit depuis le seul `slot_data` |
 | Clair Obscur Expedition 33 | Demorck v0.4.3 | ✅ 3/3 + 4/4 yaml + e2e `m24a` | activée (yaml), v0.2.1 | une option n'a que des valeurs « random » : les yamls de test gardent sa valeur par défaut |
-| ArchipelaCode | importé (`source: user`) | ✅ 3/3 | pas encore | adaptateur `_archipelacode` : problèmes tirés au hasard, rejoués depuis `slot_data["regions"]` ; `included_languages` est une liste de classe partagée par tous les mondes (sans effet dans la room : ses 2 slots sont en JavaScript) |
-| Cookie Clicker | importé (`source: user`) | ✅ 2/2 | pas encore | sa location de victoire s'appelle « Victory location » dans le monde et « Victory Location » dans le datapackage |
+| ArchipelaCode | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + e2e `m24b` | activée (yaml), v0.2.2 | adaptateur `_archipelacode` : problèmes tirés au hasard, rejoués depuis `slot_data["regions"]` ; le langage vient du yaml. `included_languages` est une liste de classe partagée par tous les mondes : l'adaptateur en donne une à chaque monde |
+| Cookie Clicker | importé (`source: user`) | ✅ 2/2 + 4/4 yaml (2 joueurs) + e2e `m24b` | activée (yaml), v0.2.2 | sa location de victoire s'appelle « Victory location » dans le monde et « Victory Location » dans le datapackage |
+| A Dance of Fire and Ice | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + e2e `m24b` | activée (yaml), v0.2.2 | |
+| Bloons TD6 | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + 2/2 sans yaml + e2e `m24b` (sans yaml) | activée, v0.2.2 | se reconstruit depuis le seul `slot_data` |
+| Blue Prince | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + e2e `m24b` | activée (yaml), v0.2.2 | |

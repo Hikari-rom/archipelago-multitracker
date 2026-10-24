@@ -473,7 +473,7 @@ START_ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int], list[str]], 
 }
 
 
-def _stardew_received(world: Any, items: list) -> None:
+def _stardew_received(world: Any, items: list, start: list) -> None:
     """Stardew Valley counts "received progression items" (months lived, progression percent) only for the
     items that were progression *before* the fill: the last Progressive Trash Can is created useful and
     turned into progression after the fill. A received item is rebuilt from its name, so give each
@@ -516,25 +516,27 @@ def _stardew_received(world: Any, items: list) -> None:
             item.events_to_collect.pop(event, None)
 
 
-RECEIVED_HOOKS: dict[str, Callable[[Any, list], None]] = {
+RECEIVED_HOOKS: dict[str, Callable[[Any, list, list], None]] = {
     "Stardew Valley": _stardew_received,
 }
 
 
-def adjust_received(game: str, world: Any, items: list) -> None:
-    """Per-game fix of the received items (rebuilt from their names) before they are collected."""
+def adjust_received(game: str, world: Any, items: list, start: list | None = None) -> None:
+    """Per-game fix of the received items (rebuilt from their names) before they are collected.
+    `start`: those of `items` that came from the start inventory (location -2), in the server's order."""
     hook = RECEIVED_HOOKS.get(game)
     if hook:
-        hook(world, items)
+        hook(world, items, start if start is not None else [])
 
 
 from .adapters_m7 import ADAPTERS_M7  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M7)
 
-from .adapters_m24 import ADAPTERS_M24  # noqa: E402
+from .adapters_m24 import ADAPTERS_M24, RECEIVED_HOOKS_M24  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M24)
+RECEIVED_HOOKS.update(RECEIVED_HOOKS_M24)
 
 
 def needs_start_items(game: str) -> bool:

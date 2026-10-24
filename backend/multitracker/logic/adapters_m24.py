@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import importlib
 import logging
 from typing import Any, Callable, ContextManager
@@ -68,7 +69,147 @@ def _peak(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
         yield
 
 
+@contextlib.contextmanager
+def _trackmania(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Trackmania: generate_early draws the map count of every series (the locations and the medal requirements);
+    slot_data["SeriesData"] holds the result. Replay it."""
+    series = slot_data.get("SeriesData")
+    if not isinstance(series, list):
+        log.warning("Trackmania: no SeriesData in slot_data, the series may be wrong")
+        yield
+        return
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        self.series_data = [dict(s) for s in series]
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
+@contextlib.contextmanager
+def _slime_rancher_2(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Slime Rancher 2: generate_early draws the Polestar Provisions shop checks (a random subset, split into catalog
+    waves) and the plort goal amount. The slot's locations give the subset, slot_data the waves and the amount."""
+    locations_mod = importlib.import_module(f"{world_cls.__module__}.locations")
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        if self._shop_check_locations:
+            self._shop_check_locations = [loc for loc in locations_mod.POLESTAR_SHOP_LOCATIONS
+                                          if loc.code in location_ids]
+            by_id = {str(loc.code): loc.name for loc in self._shop_check_locations}
+            waves = slot_data.get("shop_catalog_waves") or {}
+            self._shop_catalog_waves = {by_id[k]: int(w) for k, w in waves.items() if k in by_id}
+            self._shop_catalog_items = int(slot_data.get("shop_catalog_items", 0)) if self._shop_catalog_waves else 0
+        if "plort_goal_amount" in slot_data:
+            self._plort_goal_amount = int(slot_data["plort_goal_amount"])
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
+@contextlib.contextmanager
+def _deep_rock_galactic(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Deep Rock Galactic: create_regions removes a number of locations drawn with the global random (traps off,
+    classes…). Remove only the ones the options remove for sure, then keep the slot's locations."""
+    regions_mod = importlib.import_module(f"{world_cls.__module__}.regions")
+    original = regions_mod.remove_locations
+
+    def remove_locations(all_locations, location_difference, *args, **kwargs):
+        kept = original(all_locations, 0, *args, **kwargs)
+        return {name: code for name, code in kept.items() if code in location_ids}
+
+    with patch_attr(regions_mod, "remove_locations", remove_locations):
+        yield
+
+
+@contextlib.contextmanager
+def _tfwr(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """The Farmer Was Replaced: __init__ draws the cost of every crop (and writes it into the shared crop table);
+    slot_data["crops.<name>"] holds them. Use those, on copies of the table."""
+    crops_mod = importlib.import_module(f"{world_cls.__module__.rsplit('.', 1)[0]}.Data.Crops")
+    if not any(key.startswith("crops.") for key in slot_data):
+        log.warning("The Farmer Was Replaced: no crop costs in slot_data, the costs may be wrong")
+        yield
+        return
+
+    def randomize_crop_cost(self) -> list:
+        return [dataclasses.replace(crop, cost=list(slot_data.get(f"crops.{crop.name}", crop.cost)))
+                for crop in crops_mod.ALL_CROPS]
+
+    with patch_attr(world_cls, "randomize_crop_cost", randomize_crop_cost):
+        yield
+
+
+@contextlib.contextmanager
+def _dont_starve_together(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Don't Starve Together: with a "Random" boss goal, generate_early draws the required boss (which also decides
+    the cave and ocean regions); slot_data["goal_locations"] holds it. Give it to the options before the draw.
+    create_regions also draws which research locations exist (shuffled lists of names, popped from the end): order
+    those lists so that the slot's locations come out first."""
+    name_to_id = world_cls.location_name_to_id
+    names = {code: name for name, code in name_to_id.items()}
+    bosses = {names[code] for code in slot_data.get("goal_locations") or [] if code in names}
+    original_early, original_regions = world_cls.generate_early, world_cls.create_regions
+
+    def generate_early(self) -> None:
+        if bosses:
+            self.options.required_bosses.value = set(bosses)
+        original_early(self)
+
+    def create_regions(self) -> None:
+        shuffle = self.random.shuffle
+
+        def slot_last(seq) -> None:
+            if seq and all(isinstance(name, str) and name in name_to_id for name in seq):
+                seq.sort(key=lambda name: (name_to_id[name] in location_ids, name))
+            else:
+                shuffle(seq)
+
+        self.random.shuffle = slot_last
+        try:
+            original_regions(self)
+        finally:
+            del self.random.shuffle
+
+    with patch_attr(world_cls, "generate_early", generate_early), \
+            patch_attr(world_cls, "create_regions", create_regions):
+        yield
+
+
+def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
+    """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
+    locations go to the start inventory with their pool classification (often useful), which the real generation's
+    logic never counts. Give those their pool classification back; the start_inventory of the options was created by
+    create_item (progression) and stays so."""
+    pool = getattr(world, "dst_itempool", None)
+    if pool is None or not start:
+        return
+    from_options: dict[str, int] = {}
+    for option in ("start_inventory", "start_inventory_from_pool"):
+        for name, count in getattr(getattr(world.options, option, None), "value", {}).items():
+            from_options[name] = from_options.get(name, 0) + int(count)
+    for item in start:
+        if from_options.get(item.name, 0) > 0:
+            from_options[item.name] -= 1
+        else:
+            item.classification = pool.create_item(world, item.name).classification
+
+
+RECEIVED_HOOKS_M24: dict[str, Callable[[Any, list, list], None]] = {
+    "Don't Starve Together": _dont_starve_together_received,
+}
+
+
 ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "ArchipelaCode": _archipelacode,
+    "Don't Starve Together": _dont_starve_together,
+    "The Farmer Was Replaced": _tfwr,
+    "Deep Rock Galactic": _deep_rock_galactic,
     "PEAK": _peak,
+    "Slime Rancher 2": _slime_rancher_2,
+    "Trackmania": _trackmania,
 }

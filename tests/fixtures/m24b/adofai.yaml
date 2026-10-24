@@ -1,0 +1,7 @@
+name: adofai
+game: "A Dance of Fire and Ice"
+"A Dance of Fire and Ice":
+  completion_goal: allx
+  percentage_goal_completion: 80
+  b_world: true
+  b_world_tuto: true

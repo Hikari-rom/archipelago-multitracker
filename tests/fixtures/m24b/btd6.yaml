@@ -1,0 +1,9 @@
+name: btd6
+game: "Bloons TD6"
+"Bloons TD6":
+  goal: default
+  total_maps: 15
+  modes_per_map: 4
+  total_medals: 40
+  medalreq: 60
+  pop_tier_checks: true

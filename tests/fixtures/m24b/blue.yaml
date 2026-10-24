@@ -1,0 +1,6 @@
+name: blue
+game: "Blue Prince"
+"Blue Prince":
+  room_draft_sanity: true
+  standard_item_sanity: true
+  key_sanity: true

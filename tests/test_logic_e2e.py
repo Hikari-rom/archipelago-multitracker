@@ -30,11 +30,12 @@ def free_port() -> int:
 def full_state(multiworld, player: int, items: list[dict]):
     from BaseClasses import CollectionState
     state = CollectionState(multiworld)
+    # by address: a world may name a location differently from its datapackage (Cookie Clicker "Victory location")
+    by_address = {(l.player, l.address): l for l in multiworld.get_locations() if l.address is not None}
     for net in items:
         if net["location"] < 0 or net["player"] == 0:
             continue
-        sender = net["player"]
-        loc = multiworld.get_location(multiworld.worlds[sender].location_id_to_name[net["location"]], sender)
+        loc = by_address[(net["player"], net["location"])]
         state.collect(loc.item, True, loc)
     state.sweep_for_advancements(locations=[l for l in multiworld.get_locations(player) if l.address is None])
     return state
@@ -228,3 +229,16 @@ async def test_bot_finishes_m24a_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24a", 17, tmp_path, spoiler=1, no_yaml=M24A_NO_YAML)
     (ROOT / "test-output" / "e2e_m24a.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24B_NO_YAML = frozenset({"Bloons TD6"})
+
+
+async def test_bot_finishes_m24b_batch_using_only_in_logic_locations(tmp_path):
+    """Second batch of the 2026-10 room (v0.2.2), apworlds imported by the user: ArchipelaCode (problems drawn at
+    random: its adapter), Cookie Clicker, A Dance of Fire and Ice, Bloons TD6 (no yaml, slot_data only) and Blue
+    Prince."""
+    result = await play_until_done("m24b", 17, tmp_path, spoiler=1, no_yaml=M24B_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24b.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1
+

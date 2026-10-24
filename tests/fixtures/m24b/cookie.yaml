@@ -1,0 +1,5 @@
+name: cookie
+game: "Cookie Clicker"
+"Cookie Clicker":
+  enable_progressive_buildings: true
+  traps_percentage: 20

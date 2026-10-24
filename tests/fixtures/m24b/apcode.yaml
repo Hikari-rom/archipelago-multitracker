@@ -1,0 +1,6 @@
+name: apcode
+game: "ArchipelaCode"
+"ArchipelaCode":
+  LanguageChoice: javascript
+  TotalProblemCount: 40
+  EndGoal: 60
