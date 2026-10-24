@@ -1,0 +1,6 @@
+name: bigwalk
+game: "Big Walk"
+"Big Walk":
+  goal: big_wall
+  gourd_sanity: every_5
+  radio_sanity: true

@@ -1,0 +1,8 @@
+name: gdash
+game: "Geometry Dash"
+"Geometry Dash":
+  goal: star
+  star_goal_amount: 5
+  starting_level: polargeist
+  progressive_level_unlocks: true
+  trap_percentage: 0

@@ -1,0 +1,6 @@
+name: bg3
+game: "Baldur's Gate 3"
+"Baldur's Gate 3":
+  goal: rescue_halsin
+  questsanity: most_content
+  killsanity: all_nonmissable_hostiles

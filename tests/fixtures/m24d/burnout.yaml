@@ -1,0 +1,6 @@
+name: burnout
+game: "Burnout Paradise Remastered"
+"Burnout Paradise Remastered":
+  license_goal: a_class
+  breakable_locks: locked_by_area
+  starting_event_amount: 10

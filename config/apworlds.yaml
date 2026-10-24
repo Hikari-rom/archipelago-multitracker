@@ -242,18 +242,22 @@ apworlds:
     repo: Ishigh1/Archipelago
     tag: "2048-1.1.3"
     asset: "2048.apworld"
+    logic: true
+    needs_yaml: true
   bg3:
     game: "Baldur's Gate 3"
     source: github
     repo: zane31415/ArchipelagoBG3
     tag: "v0.7.2"
     asset: "bg3.apworld"
+    logic: true
   bigwalk:
     game: "Big Walk"
     source: github
     repo: Grizfreak/BigWalk-archipelago
     tag: "1.0.1"
     asset: "bigwalk.apworld"
+    logic: true
   clair_obscur:
     game: "Clair Obscur Expedition 33"
     source: github
@@ -466,6 +470,7 @@ apworlds:
   burnout_paradise_remastered:
     game: "Burnout Paradise Remastered"
     source: user
+    logic: true
   cloverpit:
     game: "CloverPit"
     source: user
@@ -494,6 +499,8 @@ apworlds:
   geometry_dash:
     game: "Geometry Dash"
     source: user
+    logic: true
+    needs_yaml: true
   librarian:
     game: "Librarian Tidy Up the Arcane Library"
     source: user

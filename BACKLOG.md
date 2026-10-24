@@ -238,4 +238,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Lot 2 (v0.2.2) : ArchipelaCode, Cookie Clicker, A Dance of Fire and Ice, Bloons TD6, Blue Prince (e2e `m24b`)
 - [x] Lot 3 (v0.2.3) : Trackmania, Slime Rancher 2, Deep Rock Galactic, The Farmer Was Replaced, Don't Starve
   Together (un adaptateur chacun, e2e `m24c`)
+- [x] Lot 4 (v0.2.4) : Burnout Paradise Remastered, Geometry Dash, 2048, Baldur's Gate 3, Big Walk (sans
+  adaptateur, e2e `m24d`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

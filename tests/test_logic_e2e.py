@@ -250,3 +250,14 @@ async def test_bot_finishes_m24c_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24c", 17, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m24c.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24D_NO_YAML = frozenset({"Baldur's Gate 3", "Big Walk", "Burnout Paradise Remastered"})
+
+
+async def test_bot_finishes_m24d_batch_using_only_in_logic_locations(tmp_path):
+    """Fourth batch of the 2026-10 room (v0.2.4), no adapter needed: Burnout Paradise Remastered, Baldur's Gate 3 and
+    Big Walk (no yaml, slot_data only), Geometry Dash and 2048."""
+    result = await play_until_done("m24d", 17, tmp_path, spoiler=1, no_yaml=M24D_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24d.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

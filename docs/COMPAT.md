@@ -107,3 +107,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | Deep Rock Galactic | Cousinit117 0.20 | ✅ 3/3 + 2/2 yaml + e2e `m24c` | activée (yaml), v0.2.3 | adaptateur `_deep_rock_galactic` : locations retirées avec le `random` global (pièges désactivés, classes…) ; on garde celles du slot |
 | The Farmer Was Replaced | seadoggie001 v0.0.9-beta | ✅ 3/3 + 2/2 yaml + e2e `m24c` | activée (yaml), v0.2.3 | adaptateur `_tfwr` : coût des cultures tiré au hasard (et écrit dans la table partagée), rejoué depuis `slot_data["crops.*"]` |
 | Don't Starve Together | importé (`source: user`) | ✅ 5/5 + 2/2 yaml + e2e `m24c` | activée (yaml), v0.2.3 | adaptateur `_dont_starve_together` : boss requis (`slot_data["goal_locations"]`) et locations de recherche (celles du slot) ; crochet des items reçus : les items en trop mis dans l'inventaire de départ gardent leur classification du pool (`create_item` les ferait tous « progression ») |
+| Burnout Paradise Remastered | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + 2/2 sans yaml + e2e `m24d` (sans yaml) | activée, v0.2.4 | se reconstruit depuis le seul `slot_data` |
+| Geometry Dash | importé (`source: user`) | ✅ 3/3 + 4/4 yaml (2 joueurs) + e2e `m24d` | activée (yaml), v0.2.4 | |
+| 2048 | Ishigh1 2048-1.1.3 | ✅ 3/3 + 2/2 yaml + e2e `m24d` | activée (yaml), v0.2.4 | aucune option |
+| Baldur's Gate 3 | zane31415 v0.7.2 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24d` (sans yaml) | activée, v0.2.4 | se reconstruit depuis le seul `slot_data` |
+| Big Walk | Grizfreak 1.0.1 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24d` (sans yaml) | activée, v0.2.4 | se reconstruit depuis le seul `slot_data` |
