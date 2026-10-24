@@ -132,6 +132,24 @@ class Service:
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
         self._publish_room()
 
+    async def restart_logic(self) -> None:
+        """Restart the logic worker (it loads the worlds once, e.g. newly imported apworlds) and recompute every slot."""
+        await self.logic_engine.stop()
+        await self.logic_engine.start()
+        for name, tracker in self.trackers.items():
+            self._session[name] = self._session.get(name, 0) + 1  # drop results computed by the old worker
+            self.logic[name] = LogicResult("pending")
+            if tracker.state.status == "connected":
+                self._schedule_logic(name)
+            self.publish(name)
+
+    def room_checksums(self) -> dict[str, str]:
+        """Datapackage checksum of every game of the room, as sent by the server (RoomInfo of the slots)."""
+        out: dict[str, str] = {}
+        for tracker in self.trackers.values():
+            out.update({g: c for g, c in (tracker.state.datapackage_checksums or {}).items() if c})
+        return out
+
     # -- archipelago.gg room: the port changes when a sleeping room wakes up ------------------
     def refresh_room(self, force: bool = False, min_interval: float = 60.0) -> None:
         if not self.config.room_url:

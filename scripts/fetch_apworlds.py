@@ -2,6 +2,8 @@
 """Download the apworlds listed in config/apworlds.yaml into Archipelago's custom_worlds/.
 
 - `source: core` entries ship with Archipelago itself: nothing to download.
+- `source: user` entries are not distributed by the app: each user imports them from their own Archipelago
+  install (page Configuration, D27); nothing to download.
 - `source: github` entries are resolved to a GitHub release (`tag: latest` or a pinned tag),
   the asset matching `asset` (a glob) is downloaded, and the resolved version is written
   to config/apworlds.lock.yaml.
@@ -200,8 +202,8 @@ def main() -> int:
     failures: list[str] = []
     new_lock: dict = {}
     for key, entry in wanted.items():
-        if entry.get("source", "github") == "core":
-            new_lock[key] = {"source": "core", "game": entry.get("game")}
+        if entry.get("source", "github") in ("core", "user"):
+            new_lock[key] = {"source": entry["source"], "game": entry.get("game")}
             continue
         if args.only and key not in args.only:
             if key in locked_entries:
@@ -248,6 +250,11 @@ def main() -> int:
                 new_lock[key] = locked
 
     known = {v.get("file") for v in new_lock.values()}
+    known |= {f"{k}.apworld" for k, v in new_lock.items() if v.get("source") == "user"}  # put there by hand
+    try:  # the user's imported apworlds, copied there by the app (D27)
+        known |= set(json.loads((DEST / ".user_apworlds.json").read_text(encoding="utf-8")))
+    except (OSError, ValueError, TypeError):
+        pass
     for stray in sorted(DEST.glob("*.apworld")):
         if stray.name not in known:
             print(f"? {stray.name} is in custom_worlds/ but not in config/apworlds.yaml (still loaded by AP)",

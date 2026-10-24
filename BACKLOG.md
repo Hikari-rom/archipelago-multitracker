@@ -227,7 +227,8 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Inventaire : apworlds et yamls fournis, 99 jeux sur 102 au checksum de la room
 - [x] 32 apworlds sourcés sur GitHub (même sha256) dans `config/apworlds.yaml`
-- [ ] Distribution des 20 apworlds sans source publique identique (zip Windows)
-- [ ] The Wind Waker (core) : adaptateur (entrées, donjons requis ; cartes mélangées = logique indisponible)
+- [x] Distribution des 20 apworlds sans source publique identique : importés depuis l'Archipelago du joueur (D27)
+- [ ] Pi : passer les 20 copies manuelles de `custom_worlds` dans `data/apworlds/` (après la campagne)
+- [x] The Wind Waker (core) : adaptateur (entrées, donjons requis ; cartes mélangées = logique indisponible)
 - [ ] Campagne de validation des 52 jeux, puis lots
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

@@ -145,7 +145,9 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
  "yamls": [{"path": "config/players/romain/romain_kh2.yaml",
             "players": [{"name": "romain_kh2", "game": "Kingdom Hearts 2"}],   // un par document du yaml
             "error": null}],                                                    // ou "yaml illisible : …"
- "games": {"Kingdom Hearts 2": {"logic": true, "needs_yaml": true}}}          // depuis config/apworlds.yaml
+ "games": {"Kingdom Hearts 2": {"logic": true, "needs_yaml": true,          // depuis config/apworlds.yaml
+                                "user": false,       // apworld pas fourni par l'app, à importer (D27)
+                                "imported": false}}} // importé dans data/apworlds/
 ```
 Le mot de passe n'est jamais renvoyé. `yamls` couvre `config/players/` et ses sous-dossiers (500 fichiers au plus).
 
@@ -299,3 +301,24 @@ Vérifie tout de suite (GitHub ou `git fetch`) et renvoie la même chose que `GE
 Lance la mise à jour (409 si rien à faire, si elle est bloquée ou déjà en cours) ; la suivre avec `GET /api/update`.
 Les deux POST exigent `Content-Type: application/json` (415 sinon).
 
+## Apworlds importés (D27)
+Jeux que l'app ne fournit pas (`source: user` dans `config/apworlds.yaml`) : chacun les importe depuis le dossier
+`custom_worlds` de son Archipelago. Copiés dans `data/apworlds/` (gardé par les mises à jour), puis dans
+`vendor/Archipelago/custom_worlds/` par chaque process qui charge Archipelago (liste dans `.user_apworlds.json`).
+
+### `GET /api/apworlds`
+`{"dir": "data/apworlds", "default_source": "C:\\ProgramData\\Archipelago\\custom_worlds"|null,
+"files": [{"file": "cookieclicker.apworld", "game": "Cookie Clicker", "in_room": true|false|null}]}`.
+`default_source` : le dossier d'une installation habituelle, s'il existe ; `in_room` : null tant que la room n'est pas
+connue.
+
+### `POST /api/apworlds/import` — `{"path": "<chemin absolu du dossier>"}`
+Remplace les apworlds importés par ceux du dossier dont le jeu n'est pas fourni par l'app (et, si la room est connue,
+qui sont dans la room), redémarre le worker de logique et recalcule tous les slots. Réponse : celle de `GET`, plus
+`"report": [{"file", "game", "status": "imported"|"shipped"|"not_in_room"|"unreadable"|"duplicate"}]`.
+400 si le chemin n'est pas absolu ou n'existe pas ; 403 depuis une autre origine.
+
+### `POST /api/apworlds/check` — `{}`
+Compare chaque apworld importé à la room (checksum du datapackage, comme D12) : `files[].version` vaut `room`, `other`
+(logique refusée), `not_loaded` (le monde ne se charge pas), `not_in_room` ou `unknown` (room pas connectée).
+Les deux POST exigent `Content-Type: application/json` (415 sinon).

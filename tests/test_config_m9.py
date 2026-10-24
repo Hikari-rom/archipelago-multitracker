@@ -89,7 +89,7 @@ async def test_upload_api(players_dir, tmp_path):
             assert r.status_code == 403
             conf = (await client.get("/api/config")).json()
             assert [y["players"] for y in conf["yamls"]] == [[{"name": "K", "game": "Kingdom Hearts 2"}]]
-            assert conf["games"]["Celeste (Open World)"] == {"logic": True, "needs_yaml": True}
+            assert conf["games"]["Celeste (Open World)"] == {"logic": True, "needs_yaml": True, "user": False, "imported": False}
             assert conf["wake_room"] is False and conf["has_backup"] is False
 
 

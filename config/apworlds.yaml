@@ -428,6 +428,69 @@ apworlds:
     tag: "zuma-deluxe-v0.2.0-b"
     asset: "zuma_deluxe.apworld"
 
+  # M24 (D27): games of the room whose apworld has no public release at the room's version: not shipped,
+  # each user imports it from their own Archipelago install (page Configuration).
+  adofai:
+    game: "A Dance of Fire and Ice"
+    source: user
+  archipelacode:
+    game: "ArchipelaCode"
+    source: user
+  bloonstd6:
+    game: "Bloons TD6"
+    source: user
+  blueprince:
+    game: "Blue Prince"
+    source: user
+  burnout_paradise_remastered:
+    game: "Burnout Paradise Remastered"
+    source: user
+  cloverpit:
+    game: "CloverPit"
+    source: user
+  cookieclicker:
+    game: "Cookie Clicker"
+    source: user
+  cyberpunk2077:
+    game: "Cyberpunk 2077"
+    source: user
+  dredge:
+    game: "DREDGE"
+    source: user
+  drdr:
+    game: "Dead Rising Deluxe Remaster"
+    source: user
+  dontstarvetogether:
+    game: "Don't Starve Together"
+    source: user
+  enter_the_gungeon:
+    game: "Enter The Gungeon"
+    source: user
+  geometry_dash:
+    game: "Geometry Dash"
+    source: user
+  librarian:
+    game: "Librarian Tidy Up the Arcane Library"
+    source: user
+  peak:
+    game: "PEAK"
+    source: user
+  stray:
+    game: "Stray"
+    source: user
+  super_meat_boy:
+    game: "Super Meat Boy"
+    source: user
+  terraria_beta:
+    game: "Terraria Beta"
+    source: user
+  trombone:
+    game: "Trombone Champ"
+    source: user
+  mm_recomp:
+    game: "Majora's Mask Recompiled"
+    source: user
+
 tools:
   universal_tracker:
     game: "Universal Tracker"

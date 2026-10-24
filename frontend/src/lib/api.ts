@@ -1,5 +1,6 @@
 import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
 import type { UpdateInfo } from './update'
+import type { ApworldsInfo } from './apworlds'
 import type {
   HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
   SentCheck, SlotDetail, SlotSummary,
@@ -151,3 +152,10 @@ export const getUpdate = () => fetch('/api/update').then((r) => json<UpdateInfo>
 export const checkUpdate = () => fetch('/api/update/check', jsonInit('POST', {})).then((r) => json<UpdateInfo>(r))
 
 export const applyUpdate = () => fetch('/api/update/apply', jsonInit('POST', {})).then((r) => json<UpdateInfo>(r))
+
+export const getApworlds = () => fetch('/api/apworlds').then((r) => json<ApworldsInfo>(r))
+
+export const importApworlds = (path: string) =>
+  fetch('/api/apworlds/import', jsonInit('POST', { path })).then((r) => json<ApworldsInfo>(r))
+
+export const checkApworlds = () => fetch('/api/apworlds/check', jsonInit('POST', {})).then((r) => json<ApworldsInfo>(r))

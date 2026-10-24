@@ -263,3 +263,21 @@ Room `rsRyiqQFQWGRdqg3zHurYw` : 156 slots, 102 jeux, dont 55 sans apworld ici. R
   pas remplacer un monde core) en dépendent ; ils attendent un éventuel passage en 0.6.8. Musipelago_Mathcroft-Music
   (1 slot) : apworld absent.
 - **Releases** : un lot de 5 jeux validés = une version `v0.2.N`.
+
+## D27 — Apworlds sans source publique : importés depuis l'Archipelago de chaque joueur (2026-10-24)
+Les 20 apworlds de la room sans release publique identique (D26) ne peuvent pas être mis dans le zip : le dépôt et les
+releases sont publics et ce ne sont pas nos fichiers. Les joueurs utilisent la version Windows et ont tous Archipelago
+installé avec ces apworlds (ils jouent dans la room) : option retenue par Romain, l'app les importe de là.
+- `config/apworlds.yaml` : ces jeux ont `source: user` (rien à télécharger ni à vérifier en CI ; logique activée comme
+  les autres, après validation).
+- Page Configuration, panneau « Apworlds de ton Archipelago » : chemin prérempli (`%ProgramData%\Archipelago\custom_worlds`
+  s'il existe), bouton « Importer ». Seuls les fichiers dont le jeu n'est pas fourni par l'app (et qui sont dans la room)
+  sont copiés dans `data/apworlds/`, gardé par les mises à jour. Le jeu est lu dans `archipelago.json` ou la ligne
+  `game = "…"` de l'archive : l'import n'exécute rien.
+- `apenv.setup()` recopie ces fichiers dans `vendor/Archipelago/custom_worlds/` une fois par process (worker de logique,
+  génération, scripts), sans écraser un fichier de l'app ; une copie à jour est laissée en place (pas de trou pour un
+  process concurrent). Liste des fichiers copiés : `custom_worlds/.user_apworlds.json`.
+- Version : pas de contrôle à l'import ; le worker refuse la logique si le checksum diffère de la room (D12), et
+  « Vérifier les versions » compare tout de suite les checksums (commande `checksums` du worker).
+- Après un import, le worker de logique est redémarré (il ne charge les mondes qu'une fois) et tous les slots recalculés.
+

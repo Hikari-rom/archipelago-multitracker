@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import * as api from '../lib/api'
 import UpdatePanel from './UpdatePanel.vue'
+import UserApworldsPanel from './UserApworldsPanel.vue'
 import {
   autoAssociate,
   buildPutBody,
@@ -573,6 +574,7 @@ const selectClass =
 
     </form>
 
+    <UserApworldsPanel @imported="loadConfig().catch(() => {})" />
     <UpdatePanel />
   </section>
 </template>

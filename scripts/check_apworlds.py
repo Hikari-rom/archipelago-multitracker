@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Check that every apworld from config/apworlds.yaml loads on the vendored Archipelago.
+"""Check that every apworld from config/apworlds.yaml loads on the vendored Archipelago (`source: user` ones,
+imported by each user from their own install, are not checked).
 
 Each game is checked in a fresh subprocess (an apworld that breaks at import time
 cannot affect the others). Prints a table and writes the raw results as JSON
@@ -65,6 +66,7 @@ def main() -> int:
     entries = {**config.get("apworlds", {}), **config.get("tools", {})}
     only = set(sys.argv[1:])
     results = json.loads(OUT.read_text()) if OUT.exists() else {}
+    entries = {k: e for k, e in entries.items() if e.get("source") != "user"}  # imported by each user (D27)
     for key, entry in entries.items():
         if only and key not in only:
             continue

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import logging
 import os
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ STUBS_DIR = ROOT / "backend" / "ap_stubs"
 
 # Modules stubbed in STUBS_DIR, used only when the real package is not installed.
 STUBBED_MODULES = ("dolphin_memory_engine",)
+_synced = False
 
 
 def _needs_stubs() -> bool:
@@ -34,7 +36,21 @@ def setup() -> Path:
         sys.path.append(str(STUBS_DIR))  # after site-packages: never shadows a real install
     if str(AP_DIR) not in sys.path:
         sys.path.insert(0, str(AP_DIR))
+    _sync_user_apworlds()
     return AP_DIR
+
+
+def _sync_user_apworlds() -> None:
+    """Copy the user's imported apworlds (D27) into custom_worlds, once per process, before worlds load."""
+    global _synced
+    if _synced:
+        return
+    _synced = True
+    from . import user_apworlds
+    try:
+        user_apworlds.sync()
+    except OSError as e:
+        logging.getLogger(__name__).warning("imported apworlds not synced: %s", e)
 
 
 def subprocess_env() -> dict[str, str]:

@@ -364,6 +364,11 @@ class Worker:
         if req.get("op") == "ping":
             setup_ap()
             return {"state": "ok"}
+        if req.get("op") == "checksums":  # versions of the loaded worlds (imported apworlds, D27)
+            setup_ap()
+            import worlds
+            packages = worlds.network_data_package["games"]
+            return {"state": "ok", "checksums": {g: packages.get(g, {}).get("checksum") for g in req.get("games", [])}}
         if req.get("op") == "forget":
             self.slots.pop(req["slot_name"], None)
             return {"state": "ok"}

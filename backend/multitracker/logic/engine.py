@@ -33,12 +33,14 @@ def enabled_games(path: Path = APWORLDS_CONFIG) -> dict[str, bool]:
 
 
 def game_catalog(path: Path = APWORLDS_CONFIG) -> dict[str, dict[str, bool]]:
-    """game name -> {"logic": enabled, "needs_yaml": the logic needs the player's yaml}, from config/apworlds.yaml."""
+    """game name -> {"logic": enabled, "needs_yaml": the logic needs the player's yaml, "user": apworld imported by
+    each user (D27)}, from config/apworlds.yaml."""
     try:
         config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except OSError:
         return {}
-    return {entry["game"]: {"logic": bool(entry.get("logic", False)), "needs_yaml": bool(entry.get("needs_yaml", False))}
+    return {entry["game"]: {"logic": bool(entry.get("logic", False)), "needs_yaml": bool(entry.get("needs_yaml", False)),
+                            "user": entry.get("source") == "user"}
             for entry in (config.get("apworlds") or {}).values() if entry.get("game")}
 
 
@@ -96,6 +98,18 @@ class UTLogicEngine(LogicEngine):
         if not self._conn.poll(self.timeout):
             raise TimeoutError(f"logic worker did not answer within {self.timeout:.0f}s")
         return self._conn.recv()
+
+    async def checksums(self, games: list[str]) -> dict[str, str | None] | None:
+        async with self._lock:
+            if self._proc is None or not self._proc.is_alive():
+                await asyncio.to_thread(self._spawn)
+            try:
+                res = await asyncio.to_thread(self._roundtrip, {"op": "checksums", "games": list(games)})
+            except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
+                log.warning("logic worker failed (%s), restarting it", exc)
+                await asyncio.to_thread(self._kill)
+                return None
+        return res.get("checksums") if res.get("state") == "ok" else None
 
     async def compute(self, request: LogicRequest) -> LogicResult:
         if not self.games.get(request.game, False):

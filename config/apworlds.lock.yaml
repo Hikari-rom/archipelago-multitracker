@@ -788,6 +788,66 @@ apworlds:
     downloaded_at: '2026-10-24T10:28:30+00:00'
     source: github
     game: Zuma Deluxe
+  adofai:
+    source: user
+    game: A Dance of Fire and Ice
+  archipelacode:
+    source: user
+    game: ArchipelaCode
+  bloonstd6:
+    source: user
+    game: Bloons TD6
+  blueprince:
+    source: user
+    game: Blue Prince
+  burnout_paradise_remastered:
+    source: user
+    game: Burnout Paradise Remastered
+  cloverpit:
+    source: user
+    game: CloverPit
+  cookieclicker:
+    source: user
+    game: Cookie Clicker
+  cyberpunk2077:
+    source: user
+    game: Cyberpunk 2077
+  dredge:
+    source: user
+    game: DREDGE
+  drdr:
+    source: user
+    game: Dead Rising Deluxe Remaster
+  dontstarvetogether:
+    source: user
+    game: Don't Starve Together
+  enter_the_gungeon:
+    source: user
+    game: Enter The Gungeon
+  geometry_dash:
+    source: user
+    game: Geometry Dash
+  librarian:
+    source: user
+    game: Librarian Tidy Up the Arcane Library
+  peak:
+    source: user
+    game: PEAK
+  stray:
+    source: user
+    game: Stray
+  super_meat_boy:
+    source: user
+    game: Super Meat Boy
+  terraria_beta:
+    source: user
+    game: Terraria Beta
+  trombone:
+    source: user
+    game: Trombone Champ
+  mm_recomp:
+    source: user
+    game: Majora's Mask Recompiled
   universal_tracker:
     repo: FarisTheAncient/Archipelago
     tag: Tracker_v0.3.0

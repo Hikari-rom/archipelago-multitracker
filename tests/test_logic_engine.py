@@ -117,3 +117,17 @@ def test_world_loading_noise_is_summarized():
     summary = [m for m in messages if m.startswith("Archipelago worlds:")]
     assert len(summary) == 1 and "zillion" in summary[0] and "balatro" in summary[0]
     assert not any("Could not load world" in m or "compatible_version" in m for m in messages)
+
+
+async def test_local_checksums_survive_a_restart():
+    from multitracker.logic.engine import UTLogicEngine
+    engine = UTLogicEngine({"Super Mario 64": True}, timeout=120)
+    await engine.start()
+    try:
+        first = await engine.checksums(["Super Mario 64", "Nope"])
+        assert isinstance(first["Super Mario 64"], str) and first["Nope"] is None
+        await engine.stop()  # what an apworld import does (Service.restart_logic)
+        await engine.start()
+        assert await engine.checksums(["Super Mario 64"]) == {"Super Mario 64": first["Super Mario 64"]}
+    finally:
+        await engine.stop()

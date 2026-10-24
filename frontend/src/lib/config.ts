@@ -18,6 +18,8 @@ export interface YamlEntry {
 export interface GameInfo {
   logic: boolean
   needs_yaml: boolean
+  user?: boolean // apworld not shipped with the app: each user imports it (D27)
+  imported?: boolean
 }
 export interface ConfigResponse {
   room_url: string | null
@@ -228,6 +230,9 @@ export function diagnose(
   const info = games[row.game]
   if (!row.game) out.push({ level: 'info', text: 'jeu inconnu tant que la room n\'est pas découverte' })
   else if (!info) out.push({ level: 'info', text: 'pas d\'apworld : suivi des checks seulement' })
+  else if (info.user && !info.imported) {
+    out.push({ level: 'info', text: 'apworld à importer depuis ton Archipelago (en bas de la page) : suivi des checks seulement' })
+  }
   else if (!info.logic) out.push({ level: 'info', text: 'logique pas encore validée pour ce jeu' })
   if (row.yaml) {
     const y = yamls.find((e) => e.path === row.yaml)

@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from .apenv import ROOT
 from . import players as player_yamls
+from . import user_apworlds
 from .config import ConfigError, RoomConfig, SlotConfig, backup_path, restore_backup, safe_yaml_path
 from .config import save as save_config
 from .logtail import Follower, last_lines, mask
@@ -59,6 +60,10 @@ class SlotBody(BaseModel):
     game: str | None = None
     yaml: str | None = None
     owner: str | None = None
+
+
+class ApworldsImportBody(BaseModel):
+    path: str
 
 
 class ConfigBody(BaseModel):
@@ -143,6 +148,58 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             raise HTTPException(409, str(exc)) from exc
         return await asyncio.to_thread(update_info)
 
+    # -- apworlds imported from the user's own Archipelago install (D27) ----------------------
+    def apworlds_info(service: Service) -> dict[str, Any]:
+        room = service.room_checksums()
+        files = user_apworlds.imported()
+        for f in files:
+            f["in_room"] = (f["game"] in room) if room else None
+        source = user_apworlds.default_source()
+        return {"dir": _rel(user_apworlds.USER_DIR), "default_source": str(source) if source else None,
+                "files": files}
+
+    @app.get("/api/apworlds")
+    async def get_apworlds(request: Request) -> dict[str, Any]:
+        return await asyncio.to_thread(apworlds_info, get_service(request))
+
+    @app.post("/api/apworlds/import")
+    async def import_apworlds(body: ApworldsImportBody, request: Request) -> dict[str, Any]:
+        require_json(request)
+        same_origin(request)  # the imported apworlds run in the logic worker: only from the app's own page
+        service = get_service(request)
+        source = Path(body.path.strip()).expanduser()
+        if not body.path.strip() or not source.is_absolute():
+            raise HTTPException(400, "indique le chemin complet du dossier custom_worlds")
+        room = set(service.room_checksums()) or None
+        try:
+            rows = await asyncio.to_thread(user_apworlds.import_dir, source, room)
+        except FileNotFoundError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(500, f"import impossible : {exc}") from exc
+        await service.restart_logic()  # the worker loads the worlds once: restart it on the new set
+        return {**await asyncio.to_thread(apworlds_info, service), "report": rows}
+
+    @app.post("/api/apworlds/check")
+    async def check_apworlds(request: Request) -> dict[str, Any]:
+        """Version of each imported apworld against the room: room | other | not_loaded | not_in_room | unknown."""
+        require_json(request)
+        service = get_service(request)
+        info = await asyncio.to_thread(apworlds_info, service)
+        room = service.room_checksums()
+        games = sorted({f["game"] for f in info["files"] if f["game"]})
+        local = await service.logic_engine.checksums(games) if games else {}
+        for f in info["files"]:
+            if not room or local is None or not f["game"]:
+                f["version"] = "unknown"
+            elif f["game"] not in room:
+                f["version"] = "not_in_room"
+            elif not local.get(f["game"]):
+                f["version"] = "not_loaded"
+            else:
+                f["version"] = "room" if local[f["game"]] == room[f["game"]] else "other"
+        return info
+
     @app.get("/api/slots")
     async def slots(request: Request) -> dict[str, Any]:
         service = get_service(request)
@@ -152,9 +209,19 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 "now": time.time(),  # the browser corrects its clock with this (activity, item times)
                 "slots": [service.summary(n) for n in service.trackers]}
 
+    def games_info() -> dict[str, dict[str, bool]]:
+        """The catalog, plus whether each game's apworld was imported by the user (D27)."""
+        from .logic.engine import game_catalog
+        games = game_catalog()
+        imported = {f["game"] for f in user_apworlds.imported() if f["game"]}
+        for game in imported - set(games):
+            games[game] = {"logic": False, "needs_yaml": False, "user": True}
+        for game, info in games.items():
+            info["imported"] = game in imported
+        return games
+
     @app.get("/api/config")
     async def get_config(request: Request) -> dict[str, Any]:
-        from .logic.engine import game_catalog
         cfg = get_service(request).config
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
@@ -163,7 +230,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml)} for s in cfg.slots],
-                "player_yamls": [y["path"] for y in yamls], "yamls": yamls, "games": game_catalog()}
+                "player_yamls": [y["path"] for y in yamls], "yamls": yamls, "games": await asyncio.to_thread(games_info)}
 
     @app.post("/api/discover")
     async def discover(body: DiscoverBody, request: Request) -> dict[str, Any]:

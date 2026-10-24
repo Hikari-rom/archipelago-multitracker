@@ -47,6 +47,10 @@ class LogicEngine:
     async def compute(self, request: LogicRequest) -> LogicResult:
         raise NotImplementedError
 
+    async def checksums(self, games: list[str]) -> dict[str, str | None] | None:
+        """Local datapackage checksum of each game (None: world not loaded); None when unknown (no worker)."""
+        return None
+
 
 class NullLogicEngine(LogicEngine):
     """No logic at all: every slot is "Logique indisponible"."""
