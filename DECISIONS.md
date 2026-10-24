@@ -201,3 +201,20 @@ regroupement automatique par les 3 premières lettres du nom de slot, correction
 « En jeu » : client de jeu connecté (Join sans tag outil, statut 10/20 pour les slots que l'app ne suit pas) ou check
 depuis moins de 10 min ; pour les slots suivis, le statut serveur est faussé par nos propres connexions. Les groupes
 d'item links ne comptent pas comme joueurs. Désactivé par défaut (`room_dashboard`), activé pour Romain.
+
+## D23 — Version portable pour Windows, sans WSL (2026-10-24, demandé par Romain)
+Un zip à dézipper, construit par GitHub Actions sur une machine Windows (`.github/workflows/windows.yml`) : lancement à
+la main (artifact du run) ou release GitHub sur un tag `v*`. Pas d'exe unique (PyInstaller) : Archipelago charge les
+mondes et les apworlds depuis ses dossiers, et le moteur de logique lance des process Python (`spawn`).
+- **Python** : CPython 3.13 autonome (python-build-standalone, installé par `uv`), déplaçable, dépendances installées
+  dedans par pip. Pymem gardé (il marche sous Windows), kivy/kivymd retirés comme sur le Pi.
+- **Multitracker.exe** : petit programme Go qui lance `python\python.exe scripts\windows\launcher.py` dans la même
+  console. Le lanceur (Python, bibliothèque standard, testé sur le Pi) fait ce que fait `scripts/app.sh` au premier
+  plan : `config/room.yaml` copié de l'exemple au premier lancement, journal dans `data/logs/app.log`, attente de
+  `/api/health`, ouverture du navigateur ; fermer la fenêtre arrête l'app.
+- **127.0.0.1 par défaut** (pas d'alerte du pare-feu Windows) ; `--host 0.0.0.0` pour le réseau local.
+- **Rien de personnel dans le zip** : ni `config/room.yaml`, ni `config/players/*`, ni `data/`. Les données restent dans
+  le dossier ; mise à jour = nouveau dossier + copie de `config/room.yaml`, `config/room_players.yaml`,
+  `config/players/` et `data/` (dézipper par-dessus laisserait d'anciens apworlds).
+- La construction vérifie que chaque apworld se charge sous Windows (`check_apworlds.py`) et démarre l'app
+  (`Multitracker.exe --smoke`). L'exe n'est pas signé : SmartScreen avertit au premier lancement.

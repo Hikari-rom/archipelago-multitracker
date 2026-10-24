@@ -127,6 +127,11 @@
 - Test réel sur serveur local (`tests/test_roomfeed_live.py`, port 38283) : checks entendus en direct, le serveur ne
   rejoue rien, et les checks faits pendant une coupure sont rattrapés une fois chacun.
 
+### 2026-10-24 — Version portable pour Windows (M22, D23)
+- `.github/workflows/windows.yml` : zip de 74 Mo (Python 3.13 autonome, AP 0.6.7, apworlds du lock, interface,
+  `Multitracker.exe`). Premier run réussi (40042769711) : les 46 apworlds se chargent sous Windows, l'app démarre.
+- Pas encore de release : pousser un tag `v*` la publie (dépôt public).
+
 ## À faire par Romain
 - **Refonte de l'affichage** : brief pour Claude Design dans `docs/design/BRIEF-claude-design.md`, captures de
   l'app actuelle dans `test-output/design/captures-app-actuelle.zip` (23 captures, refaites le 2026-10-14 après M19,

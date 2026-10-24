@@ -18,6 +18,23 @@ page **Journal** (logs en direct).
 datapackage et tes yamls). Elle se connecte en **lecture seule** (tag `Tracker`) : elle n'envoie jamais de check,
 de message ni de demande de hint.
 
+## Windows : version portable
+
+Pas besoin de WSL : un zip contient tout (Python, Archipelago 0.6.7, les apworlds, l'interface). Windows 10 ou 11,
+64 bits.
+
+1. Télécharger `ArchipelagoMultitracker-windows-x64.zip` depuis les
+   [releases](https://github.com/Hikari-rom/archipelago-multitracker/releases), ou depuis le dernier run réussi de
+   [Windows portable](https://github.com/Hikari-rom/archipelago-multitracker/actions/workflows/windows.yml) (artifact).
+2. Dézipper (pas dans « Program Files »), double-cliquer sur `Multitracker.exe`. SmartScreen prévient que l'exe n'est
+   pas signé : « Informations complémentaires » → « Exécuter quand même ».
+3. Le navigateur s'ouvre sur http://127.0.0.1:42753 : page Configuration, comme ci-dessous à partir de
+   [6. Choisir les slots](#6-choisir-les-slots).
+
+La fenêtre noire doit rester ouverte (la fermer arrête l'app). `Multitracker.exe --host 0.0.0.0` ouvre l'app au
+réseau local, `--port N` change le port. Le mode d'emploi complet est dans `LISEZMOI.txt`, dans le zip (mise à jour,
+emplacement des données). Construction : `.github/workflows/windows.yml` et `scripts/windows/` (D23).
+
 ## Installation en local, pas à pas
 
 L'installation ne demande pas les droits root (une fois les prérequis présents) et n'écrit rien hors du dossier du
@@ -28,7 +45,7 @@ désinstaller, il suffit de supprimer le dossier (voir [Désinstaller](#désinst
 
 | | |
 |---|---|
-| **Système** | Linux. Testé sur un Raspberry Pi 5 (8 Go) sous Raspberry Pi OS / Debian 13, 64 bits. Une autre distribution Linux (x86_64 ou ARM 64 bits) devrait marcher. macOS et Windows (via WSL 2) ne sont pas testés. |
+| **Système** | Linux. Testé sur un Raspberry Pi 5 (8 Go) sous Raspberry Pi OS / Debian 13, 64 bits. Une autre distribution Linux (x86_64 ou ARM 64 bits) devrait marcher. macOS n'est pas testé ; pour Windows, voir la [version portable](#windows--version-portable). |
 | **Python** | 3.11, 3.12 ou 3.13, avec le module `venv`. Pas 3.14 : le script d'installation le refuse (non testé avec Archipelago 0.6.7). |
 | **Node.js** | 20 ou plus récent, avec `npm` (pour construire l'interface). |
 | **Outils** | `git`, `curl`, `ss` (paquet `iproute2`) et `flock` (paquet `util-linux`), présents d'office sur Debian. |

@@ -204,3 +204,10 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [ ] Nettoyage des fichiers `data/room_feed/`
 - [ ] BK des autres joueurs
 - [ ] Page v1
+
+## M22 — Version portable pour Windows (demandé par Romain le 2026-10-24)
+- [x] Lanceur (`scripts/windows/launcher.py`) + `Multitracker.exe` (Go) + assemblage du dossier (`build_portable.py`)
+- [x] Workflow GitHub Actions `windows.yml` : Python autonome, AP 0.6.7, apworlds du lock, interface, zip, test de démarrage
+- [ ] Première release (tag `v*`), à décider par Romain
+- [ ] Données hors du dossier (mise à jour sans recopier `config/` et `data/`)
+- [ ] Icône de l'exe, signature
