@@ -1,0 +1,4 @@
+name: cuphead
+game: "Cuphead"
+"Cuphead":
+  randomize_abilities: true

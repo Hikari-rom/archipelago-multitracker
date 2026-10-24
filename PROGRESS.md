@@ -17,7 +17,8 @@
    Deluxe Remaster, Dome Keeper, Donut County), lot 6 en v0.2.6 (DREDGE, Enter The Gungeon, Fall Guys, Fez, Hades),
    lot 7 en v0.2.7 (Hades2Rogue, Keep Talking and Nobody Explodes, Luigi's Mansion, Nine Sols, Nodebuster), lot 8 en
    v0.2.8 (Peggle Deluxe, Peggle Nights, Powerwash Simulator, Stray, Super Meat Boy), lot 9 en v0.2.9 (TerraNil,
-   Terraria Beta, Totally Accurate Battle Simulator, ULTRAKILL, Trombone Champ), un lot de 5 par version.
+   Terraria Beta, Totally Accurate Battle Simulator, ULTRAKILL, Trombone Champ), lot 10 en v0.2.10 (Plants vs. Zombies,
+   Cuphead, CloverPit, Zuma Deluxe, Librarian), un lot de 5 par version.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 

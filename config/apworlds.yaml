@@ -280,6 +280,7 @@ apworlds:
     repo: JKLeckr/Archipelago-cuphead
     tag: "alpha03l"
     asset: "cuphead.apworld"
+    logic: true  # adapter: King Dice Chalice checks
   deep_rock_galactic:
     game: "Deep Rock Galactic"
     source: github
@@ -391,6 +392,7 @@ apworlds:
     repo: dannybonz/replanted_archipelago
     tag: "v1.10.2"
     asset: "pvzr.apworld"
+    logic: true
   repo:
     game: "R.E.P.O"
     source: github
@@ -470,6 +472,7 @@ apworlds:
     repo: Movido51/Archipelago
     tag: "zuma-deluxe-v0.2.0-b"
     asset: "zuma_deluxe.apworld"
+    logic: true
 
   # M24 (D27): games of the room whose apworld has no public release at the room's version: not shipped,
   # each user imports it from their own Archipelago install (page Configuration).
@@ -499,6 +502,8 @@ apworlds:
   cloverpit:
     game: "CloverPit"
     source: user
+    logic: true
+    needs_yaml: true
   cookieclicker:
     game: "Cookie Clicker"
     source: user
@@ -537,6 +542,7 @@ apworlds:
   librarian:
     game: "Librarian Tidy Up the Arcane Library"
     source: user
+    logic: true
   peak:
     game: "PEAK"
     source: user

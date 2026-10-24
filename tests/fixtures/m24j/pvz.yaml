@@ -1,0 +1,5 @@
+name: pvz
+game: "Plants vs. Zombies"
+"Plants vs. Zombies":
+  randomly_banned_plants_per_level: 0
+  zombie_randomisation: true

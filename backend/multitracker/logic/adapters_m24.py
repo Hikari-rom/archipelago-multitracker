@@ -180,6 +180,25 @@ def _dont_starve_together(world_cls: type, slot_data: dict[str, Any], location_i
         yield
 
 
+@contextlib.contextmanager
+def _cuphead(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Cuphead: its regeneration (re_gen_setup) takes the options from slot_data, which lacks
+    dlc_kingdice_chalice_checks (the King Dice mini-boss checks as Ms. Chalice). The slot's locations tell whether
+    it is on (its two "on" values only differ in game)."""
+    defs = importlib.import_module(f"{world_cls.__module__}.world.locations.locationdefs")
+    chaliced = {world_cls.location_name_to_id[name] for name in defs.location_level_dicepalace_dlc_chaliced
+                if name in world_cls.location_name_to_id}
+    original = world_cls.re_gen_setup
+
+    def re_gen_setup(self) -> None:
+        original(self)
+        if chaliced & location_ids and not self.options.dlc_kingdice_chalice_checks.value:
+            self.options.dlc_kingdice_chalice_checks.value = self.options.dlc_kingdice_chalice_checks.option_enabled
+
+    with patch_attr(world_cls, "re_gen_setup", re_gen_setup):
+        yield
+
+
 def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
     """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
     locations go to the start inventory with their pool classification (often useful), which the real generation's
@@ -206,6 +225,7 @@ RECEIVED_HOOKS_M24: dict[str, Callable[[Any, list, list], None]] = {
 
 ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "ArchipelaCode": _archipelacode,
+    "Cuphead": _cuphead,
     "Don't Starve Together": _dont_starve_together,
     "The Farmer Was Replaced": _tfwr,
     "Deep Rock Galactic": _deep_rock_galactic,
