@@ -467,6 +467,8 @@ apworlds:
     repo: Dreskn/Wikipelago-Continued
     tag: "1.0.3"
     asset: "wikipelago.apworld"
+    logic: true
+    needs_yaml: true  # adapter: branch crossroads from slot_data
   zuma_deluxe:
     game: "Zuma Deluxe"
     source: github
@@ -571,6 +573,8 @@ apworlds:
   mm_recomp:
     game: "Majora's Mask Recompiled"
     source: user
+    logic: true
+    needs_yaml: true  # adapter: shop prices from slot_data
 
 tools:
   universal_tracker:

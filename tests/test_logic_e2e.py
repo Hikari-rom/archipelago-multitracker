@@ -328,8 +328,9 @@ async def test_bot_finishes_m24j_batch_using_only_in_logic_locations(tmp_path):
 
 
 async def test_bot_finishes_m24k_batch_using_only_in_logic_locations(tmp_path):
-    """Remaining games of the 2026-10 room (v0.2.11): Spirit Tracks (its adapter: no deferred connections, section
-    count, either tear size, Lost at Sea pairings as generated), with big tears and Lost at Sea shuffled."""
+    """Last games of the 2026-10 room (v0.2.11), one adapter each: Spirit Tracks (no yaml, slot_data only; no
+    deferred connections, section count, either tear size, Lost at Sea pairings as generated) with big tears and
+    Lost at Sea shuffled, Majora's Mask Recompiled (shop prices) and Wikipelago (branch crossroads)."""
     result = await play_until_done("m24k", 17, tmp_path, spoiler=1, no_yaml=frozenset({"Spirit Tracks"}))
     (ROOT / "test-output" / "e2e_m24k.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1

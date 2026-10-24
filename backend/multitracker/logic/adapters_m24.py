@@ -241,6 +241,45 @@ def _tloz_st(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
         yield
 
 
+@contextlib.contextmanager
+def _mm_recomp(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Majora's Mask Recompiled: with shop prices other than vanilla, generate_early draws every shop price (the
+    rules check the wallet against them); slot_data["shop_prices_ints"] holds them. Replay them."""
+    prices = slot_data.get("shop_prices_ints")
+    if not isinstance(prices, list):
+        yield
+        return
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        if self.prices_ints:
+            self.prices_ints = [int(price) for price in prices]
+            self.prices = " ".join(str(price) for price in self.prices_ints)
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
+@contextlib.contextmanager
+def _wikipelago(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Wikipelago: generate_early draws the main round each branch forks from (its entrance needs that round's
+    Round Access); slot_data["crossroads"] holds them. Replay them."""
+    crossroads = slot_data.get("crossroads")
+    if not isinstance(crossroads, list):
+        yield
+        return
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        original(self)
+        self.crossroads = [{"main_round": int(cr["main_round"]), "branch_id": int(cr["branch_id"])}
+                           for cr in crossroads]
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
 def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
     """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
     locations go to the start inventory with their pool classification (often useful), which the real generation's
@@ -271,8 +310,10 @@ ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManage
     "Don't Starve Together": _dont_starve_together,
     "The Farmer Was Replaced": _tfwr,
     "Deep Rock Galactic": _deep_rock_galactic,
+    "Majora's Mask Recompiled": _mm_recomp,
     "PEAK": _peak,
     "Slime Rancher 2": _slime_rancher_2,
     "Spirit Tracks": _tloz_st,
     "Trackmania": _trackmania,
+    "Wikipelago": _wikipelago,
 }

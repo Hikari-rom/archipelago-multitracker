@@ -1,0 +1,6 @@
+name: wiki
+game: "Wikipelago"
+"Wikipelago":
+  check_count: 30
+  branch_count: 4
+  branch_length: 3

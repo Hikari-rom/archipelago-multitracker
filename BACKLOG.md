@@ -255,7 +255,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Lot 9 (v0.2.9) : TerraNil, Terraria Beta, Totally Accurate Battle Simulator, ULTRAKILL, Trombone Champ (sans
   adaptateur, e2e `m24i` ; le bot de test s'annonce plus récent quand un monde demande un client > 0.6.7)
 - [x] Lot 10 (v0.2.10) : Plants vs. Zombies, Cuphead (adaptateur), CloverPit, Zuma Deluxe, Librarian (e2e `m24j`)
-- [x] Spirit Tracks (v0.2.11) : adaptateur `_tloz_st` (connexions UT, sections, taille des larmes, Lost at Sea),
-  e2e `m24k`
-- [ ] Restent Majora's Mask Recompiled et Wikipelago (KO avec les yamls de la room)
+- [x] Lot 11 (v0.2.11) : Spirit Tracks (adaptateur `_tloz_st` : connexions UT, sections, taille des larmes,
+  Lost at Sea), Majora's Mask Recompiled (prix des boutiques), Wikipelago (branches) (e2e `m24k`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8
