@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import * as api from '../lib/api'
+import UpdatePanel from './UpdatePanel.vue'
 import {
   autoAssociate,
   buildPutBody,
@@ -571,5 +572,7 @@ const selectClass =
       </Card>
 
     </form>
+
+    <UpdatePanel />
   </section>
 </template>

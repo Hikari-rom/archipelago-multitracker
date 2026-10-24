@@ -40,6 +40,16 @@ Tout reste dans ce dossier :
 
 Mettre à jour
 -------------
-Dézippe la nouvelle version dans un nouveau dossier, puis copie depuis l'ancien :
+L'app vérifie une fois par jour s'il existe une nouvelle version, et l'annonce par un bandeau.
+Page Configuration, bloc « Mises à jour » : « Vérifier maintenant », puis « Mettre à jour ».
+L'app télécharge la nouvelle version, s'arrête, Multitracker.exe remplace les fichiers puis la relance ;
+la page se recharge toute seule. Ta configuration (config\room.yaml, config\players\) et data\ sont gardées.
+Si la nouvelle version ne démarre pas, l'ancienne est remise automatiquement.
+L'ancienne version reste dans update\old jusqu'à la mise à jour suivante.
+
+Sans passer par la page (par exemple si l'app ne démarre plus), dans une invite de commandes ouverte dans ce dossier :
+    Multitracker.exe --update
+
+À la main : dézippe la nouvelle version dans un nouveau dossier, puis copie depuis l'ancien :
 config\room.yaml, config\room_players.yaml (s'il existe), config\players\ et data\
 Ne dézippe pas par-dessus l'ancien dossier : d'anciens apworlds pourraient rester.

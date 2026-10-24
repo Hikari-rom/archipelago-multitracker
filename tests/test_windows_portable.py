@@ -61,7 +61,7 @@ def test_launch_starts_the_app_and_stops_it(tmp_path):
 def test_launch_reports_an_app_that_exits(tmp_path, capsys):
     log = tmp_path / "app.log"
     extra = ["--no-logic", "--config", str(tmp_path / "missing.yaml"), "--db", str(tmp_path / "db.sqlite3")]
-    assert launcher.launch(ROOT, "127.0.0.1", PORT, extra + ["--bogus-flag"], log=log, browser=False) == 1
+    assert launcher.launch(ROOT, "127.0.0.1", PORT, extra + ["--bogus-flag"], log=log, browser=False) == launcher.START_FAILED
     assert "L'app s'est arrêtée" in capsys.readouterr().out
 
 
@@ -75,6 +75,7 @@ def _fake_checkout(root: Path) -> None:
         "vendor/Archipelago/.git/HEAD": "",
         "vendor/Archipelago/custom_worlds/celeste.apworld": "",
         "scripts/windows/launcher.py": "",
+        "scripts/update.sh": "",
         "scripts/windows/LISEZMOI.txt": "ligne 1\nligne 2\n",
         "config/apworlds.yaml": "", "config/apworlds.lock.yaml": "", "config/room.example.yaml": "",
         "config/room.yaml": "password: secret", "config/room_players.yaml": "",
@@ -94,12 +95,16 @@ def test_portable_folder_has_what_the_app_needs_and_nothing_personal(tmp_path):
     (py / "python.exe").write_text("")
     exe = tmp_path / "Multitracker.exe"
     exe.write_text("")
-    dest = build.assemble(root, py, exe, out)
+    dest = build.assemble(root, py, exe, out, "v1.2.3")
     got = {p.relative_to(dest).as_posix() for p in dest.rglob("*") if p.is_file()}
     assert got == {
-        "Multitracker.exe", "LISEZMOI.txt", "python/python.exe", "backend/multitracker/__init__.py",
+        "Multitracker.exe", "LISEZMOI.txt", "VERSION", "python/python.exe", "backend/multitracker/__init__.py",
         "frontend/dist/index.html", "vendor/Archipelago/MultiServer.py", "vendor/Archipelago/custom_worlds/celeste.apworld",
         "scripts/windows/launcher.py", "config/apworlds.yaml", "config/apworlds.lock.yaml", "config/room.example.yaml",
     }
     assert (dest / "config" / "players").is_dir()
+    assert (dest / "VERSION").read_text() == "v1.2.3\n"
+    from multitracker.updater import detect_mode
+    assert detect_mode(dest) == "portable"
+    assert launcher.version(dest) == "v1.2.3"
     assert (dest / "LISEZMOI.txt").read_bytes() == "﻿ligne 1\r\nligne 2\r\n".encode("utf-8")

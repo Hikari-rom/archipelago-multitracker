@@ -4,13 +4,14 @@ Expects, in the repository: vendor/Archipelago with the apworlds (scripts/fetch_
 build). Copies only what the app needs at run time, next to a standalone Python that already holds the dependencies:
 
     ArchipelagoMultitracker/
-      Multitracker.exe  LISEZMOI.txt
+      Multitracker.exe  LISEZMOI.txt  VERSION (read by the updater: multitracker/updater.py)
       python/  backend/  frontend/dist/  vendor/Archipelago/  scripts/windows/launcher.py
       config/  (apworlds.yaml, apworlds.lock.yaml, room.example.yaml, empty players/)
 
 Never copied: config/room.yaml (room password), config/players/* (players' yamls), data/, tests, .git.
 
-    python scripts/windows/build_portable.py --python build/python --exe build/Multitracker.exe --out build/dist
+    python scripts/windows/build_portable.py --python build/python --exe build/Multitracker.exe --out build/dist \
+        --version "$(git describe --tags --always)"
 """
 from __future__ import annotations
 
@@ -25,7 +26,7 @@ CONFIG_FILES = ("apworlds.yaml", "apworlds.lock.yaml", "room.example.yaml")
 IGNORE = shutil.ignore_patterns("__pycache__", "*.pyc", ".git", ".github", ".pytest_cache")
 
 
-def assemble(root: Path, python: Path, exe: Path, out: Path) -> Path:
+def assemble(root: Path, python: Path, exe: Path, out: Path, version: str) -> Path:
     for need in (root / "vendor" / "Archipelago", root / "frontend" / "dist" / "index.html", python / "python.exe", exe):
         if not need.exists():
             raise SystemExit(f"manquant : {need}")
@@ -43,6 +44,7 @@ def assemble(root: Path, python: Path, exe: Path, out: Path) -> Path:
     for name in CONFIG_FILES:
         shutil.copy2(root / "config" / name, dest / "config" / name)
     shutil.copy2(exe, dest / "Multitracker.exe")
+    (dest / "VERSION").write_text(version + "\n", encoding="utf-8")
     # CRLF: Notepad shows LF-only files on one line on older Windows versions.
     text = (root / "scripts" / "windows" / "LISEZMOI.txt").read_text(encoding="utf-8")
     (dest / "LISEZMOI.txt").write_bytes(text.replace("\r\n", "\n").replace("\n", "\r\n").encode("utf-8-sig"))
@@ -54,8 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--python", type=Path, required=True, help="standalone Python with the dependencies installed")
     parser.add_argument("--exe", type=Path, required=True, help="Multitracker.exe (scripts/windows/launcher.go)")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--version", required=True, help="v1.2.3 for a release, git describe otherwise")
     args = parser.parse_args(argv)
-    dest = assemble(ROOT, args.python, args.exe, args.out)
+    dest = assemble(ROOT, args.python, args.exe, args.out, args.version)
     size = sum(f.stat().st_size for f in dest.rglob("*") if f.is_file())
     print(f"{dest} : {size / 1e6:.0f} Mo")
     return 0

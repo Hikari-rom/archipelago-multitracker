@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import CompactList from './components/CompactList.vue'
 import ConfigView from './components/ConfigView.vue'
+import UpdateBanner from './components/UpdateBanner.vue'
 import GoalsView from './components/GoalsView.vue'
 import HistoryView from './components/HistoryView.vue'
 import LogsView from './components/LogsView.vue'
@@ -255,6 +256,7 @@ const sseLabel = computed(
     </div>
   </header>
 
+  <UpdateBanner class="mx-4" />
   <main class="mx-auto max-w-[1400px] px-4 pt-3.5 pb-10">
     <ConfigView v-if="showConfig" />
     <LogsView v-else-if="showLogs" />

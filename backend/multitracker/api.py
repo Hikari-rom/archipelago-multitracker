@@ -22,6 +22,7 @@ from .config import ConfigError, RoomConfig, SlotConfig, backup_path, restore_ba
 from .config import save as save_config
 from .logtail import Follower, last_lines, mask
 from .service import Service
+from .updater import Updater, UpdateError
 
 log = logging.getLogger(__name__)
 FRONTEND_DIST = ROOT / "frontend" / "dist"
@@ -80,15 +81,19 @@ def _rel(path: Path | None) -> str | None:
 
 
 def create_app(service_factory: Callable[[], Service], frontend_dist: Path | None = FRONTEND_DIST,
-               log_file: Path | None = LOG_FILE) -> FastAPI:
+               log_file: Path | None = LOG_FILE, updater: Updater | None = None) -> FastAPI:
+    """updater: None = no update checks (tests); __main__ gives one."""
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         service = service_factory()
         app.state.service = service
         await service.start()
+        checks = asyncio.create_task(updater.loop()) if updater else None
         try:
             yield
         finally:
+            if checks:
+                checks.cancel()
             await service.stop()
 
     app = FastAPI(title="Archipelago Multitracker", lifespan=lifespan)
@@ -105,6 +110,38 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         service = get_service(request)
         return {"ok": True, "slots": len(service.trackers),
                 "connected": sum(t.state.status == "connected" for t in service.trackers.values())}
+
+    def require_json(request: Request) -> None:
+        # POST without a JSON body is a "simple" request another site could send from the browser (no preflight)
+        if not request.headers.get("content-type", "").startswith("application/json"):
+            raise HTTPException(415, "Content-Type: application/json attendu")
+
+    def update_info() -> dict[str, Any]:
+        return updater.info() if updater else {"mode": "none", "current": {"version": None}, "latest": None,
+                                               "available": False, "blocked": None, "checked_at": None,
+                                               "check_error": None, "running": False, "status": None}
+
+    @app.get("/api/update")
+    async def get_update() -> dict[str, Any]:
+        return await asyncio.to_thread(update_info)
+
+    @app.post("/api/update/check")
+    async def check_update(request: Request) -> dict[str, Any]:
+        require_json(request)
+        if updater is None:
+            raise HTTPException(409, "mises à jour désactivées")
+        return await updater.check()
+
+    @app.post("/api/update/apply")
+    async def apply_update(request: Request) -> dict[str, Any]:
+        require_json(request)
+        if updater is None:
+            raise HTTPException(409, "mises à jour désactivées")
+        try:
+            await updater.apply()
+        except UpdateError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        return await asyncio.to_thread(update_info)
 
     @app.get("/api/slots")
     async def slots(request: Request) -> dict[str, Any]:

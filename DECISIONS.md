@@ -225,3 +225,24 @@ s'affiche comme `/` (`history.replaceState`, le hash est gardé), pour les favor
 téléphones. Le serveur ne change pas (il renvoie `index.html` pour toute adresse inconnue) ; tout est dans
 `src/main.ts` et `src/lib/v2path.ts`. Les préférences restent séparées (`amt-v2-*` pour la v2).
 
+## D25 — Mises à jour depuis l'app (2026-10-24, demandé par Romain)
+Page Configuration, bloc « Mises à jour » (« Vérifier maintenant », « Mettre à jour ») et bandeau dans les deux
+interfaces ; vérification automatique une fois par jour (`backend/multitracker/updater.py`, `/api/update*`).
+- **Version portable (Windows)** : suit les releases GitHub. L'app télécharge le zip, vérifie son sha256 (`digest` de
+  l'API GitHub), l'extrait dans `update\new\` et s'arrête avec le code 75. `Multitracker.exe` (`update.go`) remplace
+  alors chaque dossier du zip (l'ancien va dans `update\old\`), seulement les fichiers du zip dans `config\`, jamais
+  `data\`, et relance ; si la nouvelle version ne répond pas (code 3 du lanceur), il remet l'ancienne. C'est l'exe qui
+  échange les fichiers parce que `python.exe` est verrouillé tant qu'il tourne ; Windows laisse renommer un exe lancé.
+  Le zip contient `VERSION` (tag, ou `git describe` pour un run manuel : `v0.1.0-3-gabc` est plus récent que `v0.1.0`).
+  `Multitracker.exe --update` fait la même chose sans l'interface. Testé de bout en bout dans le workflow (une copie
+  « v0.0.1 » du dossier se met à jour vers le zip construit).
+- **Dépôt git (le Pi)** : suit `origin/main`, pas les releases (le Pi est aussi le poste de développement).
+  `scripts/update.sh`, lancé détaché (`start_new_session`) pour survivre au redémarrage : `merge --ff-only
+  --autostash`, réinstallation de ce qui a changé seulement, `npm run build`, `app.sh restart` si le backend a changé.
+  Refus si commits locaux non poussés ou autre branche. Comparaison avec le commit sur lequel l'app a **démarré**
+  (`MT_UPDATE_SINCE`), pas avec HEAD : les sessions de dev commitent dans le dépôt du Pi sans redémarrer l'app.
+- État partagé dans `data/update/status.json` (écrit avant le redémarrage, lu après). POST refusés sans
+  `Content-Type: application/json` (un autre site ne peut pas les déclencher depuis le navigateur). Pas d'option pour
+  couper la vérification (un appel GitHub ou un `git fetch` par jour) ; tout appareil du réseau local qui ouvre l'app
+  peut lancer une mise à jour, toujours depuis le dépôt de Romain.
+

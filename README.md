@@ -44,6 +44,11 @@ La fenêtre noire doit rester ouverte (la fermer arrête l'app). `Multitracker.e
 réseau local, `--port N` change le port. Le mode d'emploi complet est dans `LISEZMOI.txt`, dans le zip (mise à jour,
 emplacement des données). Construction : `.github/workflows/windows.yml` et `scripts/windows/` (D23).
 
+Mises à jour (à partir de la v0.2.0) : un bandeau signale une nouvelle release ; page Configuration → « Mises à jour »
+→ « Mettre à jour ». L'app télécharge le zip, `Multitracker.exe` remplace les fichiers et redémarre, en gardant
+`config\` et `data\` (l'ancienne version revient si la nouvelle ne démarre pas). Sans l'interface :
+`Multitracker.exe --update` (D25).
+
 ## Installation en local, pas à pas
 
 L'installation ne demande pas les droits root (une fois les prérequis présents) et n'écrit rien hors du dossier du
@@ -175,12 +180,17 @@ reconnecte toute seule quand quelqu'un la réveille, ou tout de suite avec le bo
 
 ### Mettre à jour l'app
 
+Depuis l'interface : page Configuration → « Mises à jour » → « Vérifier maintenant », puis « Mettre à jour » (un
+bandeau le propose aussi ; l'app vérifie une fois par jour). Ou à la main :
+
 ```bash
-scripts/app.sh stop
-git pull
-bash scripts/bootstrap.sh     # nouvelles dépendances, apworlds du lock, interface reconstruite
-scripts/app.sh start
+bash scripts/update.sh
 ```
+
+Le script suit la branche `main` : `git merge --ff-only` (tes modifications non commitées sont mises de côté puis
+remises), réinstalle seulement ce qui a changé (dépendances, apworlds du lock, paquets npm), reconstruit l'interface
+et redémarre l'app si son code a changé. Il s'arrête sans rien toucher si le dépôt a des commits locaux non poussés
+ou n'est pas sur `main`. Journal : `data/logs/update.log` (D25).
 
 Ta configuration (`config/room.yaml`, `config/players/`) et tes données (`data/` : dernière visite, historique) sont
 gardées.

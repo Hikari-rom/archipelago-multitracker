@@ -1,4 +1,5 @@
 import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
+import type { UpdateInfo } from './update'
 import type {
   HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
   SentCheck, SlotDetail, SlotSummary,
@@ -144,3 +145,9 @@ export function getRoomFeedActivity(bucket: 'hour' | 'day', player?: string): Pr
   if (player) q.set('player', player)
   return fetch(`/api/roomfeed/activity?${q}`).then((r) => json<RoomFeedActivity>(r))
 }
+
+export const getUpdate = () => fetch('/api/update').then((r) => json<UpdateInfo>(r))
+
+export const checkUpdate = () => fetch('/api/update/check', jsonInit('POST', {})).then((r) => json<UpdateInfo>(r))
+
+export const applyUpdate = () => fetch('/api/update/apply', jsonInit('POST', {})).then((r) => json<UpdateInfo>(r))

@@ -1,6 +1,7 @@
 # Portable Windows build: a zip with a standalone Python, Archipelago 0.6.7, the apworlds of the lock, the built
 # interface and Multitracker.exe (scripts/windows/). Run by hand (Actions > Windows portable > Run workflow): the zip
-# is an artifact of the run. Pushing a tag v* also publishes it as a GitHub release.
+# is an artifact of the run. Pushing a tag v* also publishes it as a GitHub release, which the installed copies
+# offer as an update (backend/multitracker/updater.py).
 name: Windows portable
 
 on:
@@ -23,6 +24,8 @@ jobs:
       ZIP: ArchipelagoMultitracker-windows-x64.zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags, for git describe (VERSION)
 
       - uses: actions/setup-node@v4
         with:
@@ -70,17 +73,47 @@ jobs:
 
       - name: Multitracker.exe
         working-directory: scripts/windows
-        run: go build -trimpath -ldflags "-s -w" -o ../../build/Multitracker.exe launcher.go
+        run: |
+          go vet ./...
+          go test ./...
+          go build -trimpath -ldflags "-s -w" -o ../../build/Multitracker.exe .
 
       - name: Assemble and zip
         run: |
-          "$PY" scripts/windows/build_portable.py --python build/python --exe build/Multitracker.exe --out build/dist
+          "$PY" scripts/windows/build_portable.py --python build/python --exe build/Multitracker.exe --out build/dist \
+            --version "$(git describe --tags --always)"
+          cat build/dist/ArchipelagoMultitracker/VERSION
           (cd build/dist && 7z a -tzip -mx=7 "../$ZIP" ArchipelagoMultitracker > /dev/null)
           ls -l "build/$ZIP"
 
       # After the zip: the first start writes config/room.yaml and data/ into the folder.
       - name: Smoke test
         run: build/dist/ArchipelagoMultitracker/Multitracker.exe --smoke --port 42760
+
+      # The whole update path: an older copy of the folder downloads the zip just built (release faked with a file://
+      # URL), Multitracker.exe swaps the folders, and the new version starts, keeping config/ and data/.
+      - name: Update test
+        run: |
+          old=build/old/ArchipelagoMultitracker
+          mkdir -p build/old && cp -r build/dist/ArchipelagoMultitracker "$old"
+          echo v0.0.1 > "$old/VERSION"
+          echo "name: marker" > "$old/config/players/marker.yaml"
+          "$PY" - <<'EOF'
+          import hashlib, json, pathlib
+          z = pathlib.Path("build/ArchipelagoMultitracker-windows-x64.zip").resolve()
+          data = z.read_bytes()
+          version = pathlib.Path("build/dist/ArchipelagoMultitracker/VERSION").read_text().strip()
+          asset = {"name": z.name, "browser_download_url": z.as_uri(), "size": len(data),
+                   "digest": "sha256:" + hashlib.sha256(data).hexdigest()}
+          pathlib.Path("build/release.json").write_text(json.dumps({"tag_name": version, "assets": [asset]}))
+          EOF
+          export MT_UPDATE_RELEASE_URL="$("$PY" -c 'import pathlib; print(pathlib.Path("build/release.json").resolve().as_uri())')"
+          "$old/Multitracker.exe" --update --smoke --port 42761
+          test "$(cat "$old/VERSION")" = "$(cat build/dist/ArchipelagoMultitracker/VERSION)"
+          test "$(cat "$old/update/old/VERSION")" = v0.0.1
+          test -f "$old/config/players/marker.yaml" && test -f "$old/config/room.yaml"
+          cat "$old/data/update/status.json"
+          grep -q '"state": "done"' "$old/data/update/status.json"
 
       - uses: actions/upload-artifact@v4
         with:

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 from pathlib import Path
 
 import uvicorn
@@ -33,7 +34,22 @@ def main() -> None:
             logic = default_engine()
         return Service(cfg, store, logic)
 
-    uvicorn.run(create_app(factory), host=args.host, port=args.port, log_level="info", proxy_headers=False)
+    from .updater import Updater
+    updater = Updater()
+    server = uvicorn.Server(uvicorn.Config(create_app(factory, updater=updater), host=args.host, port=args.port,
+                                           log_level="info", proxy_headers=False))
+    exit_code = 0
+
+    def request_exit(code: int) -> None:  # the portable build exits with EXIT_UPDATE for Multitracker.exe
+        nonlocal exit_code
+        exit_code = code
+        server.should_exit = True
+
+    updater.on_exit = request_exit
+    server.run()
+    if not server.started:
+        sys.exit(3)  # as uvicorn.run
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

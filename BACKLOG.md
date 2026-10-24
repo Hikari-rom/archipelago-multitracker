@@ -210,6 +210,14 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 ## M22 — Version portable pour Windows (demandé par Romain le 2026-10-24)
 - [x] Lanceur (`scripts/windows/launcher.py`) + `Multitracker.exe` (Go) + assemblage du dossier (`build_portable.py`)
 - [x] Workflow GitHub Actions `windows.yml` : Python autonome, AP 0.6.7, apworlds du lock, interface, zip, test de démarrage
-- [ ] Première release (tag `v*`), à décider par Romain
-- [ ] Données hors du dossier (mise à jour sans recopier `config/` et `data/`)
+- [x] Première release : v0.1.0 (2026-10-24)
+- [x] Mise à jour depuis l'app, sans recopier `config/` et `data/` (M23, D25)
 - [ ] Icône de l'exe, signature
+
+## M23 — Mises à jour depuis l'app (demandé par Romain le 2026-10-24, D25)
+- [x] `updater.py` + `/api/update`, `/api/update/check`, `/api/update/apply` ; vérification quotidienne
+- [x] Windows : téléchargement + sha256, `Multitracker.exe` échange les dossiers et remet l'ancienne version si besoin ; `--update`
+- [x] Pi : `scripts/update.sh` (fast-forward, réinstallation ciblée, build, redémarrage), commits faits sur le Pi compris
+- [x] Bloc « Mises à jour » (Configuration) et bandeau v1/v2
+- [ ] Vérifier une vraie mise à jour Windows de la v0.2.0 vers la suivante sur un PC (la CI la simule)
+

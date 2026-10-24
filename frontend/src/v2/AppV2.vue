@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import ConfigView from '../components/ConfigView.vue'
 import LogsView from '../components/LogsView.vue'
+import UpdateBanner from '../components/UpdateBanner.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice } from '../lib/config'
 import { totals } from '../lib/dashboard'
 import { setView, tracker, type View } from '../stores/tracker'
@@ -88,6 +89,7 @@ const TABS: { key: View; label: string }[] = [
     </div>
   </header>
   <SleepBanner class="mx-4 min-[700px]:mx-8" />
+  <UpdateBanner class="mx-4 min-[700px]:mx-8" />
   <main class="mx-auto max-w-[1440px] px-4 pt-4 pb-24 min-[700px]:px-8 min-[700px]:pb-10">
     <p v-if="tracker.loadError && !tracker.slots.length" role="alert" class="rounded-xl border bg-card p-4"><span class="text-error">! </span>Impossible de joindre le serveur : {{ tracker.loadError }}</p>
     <ConfigView v-else-if="view === 'config'" />

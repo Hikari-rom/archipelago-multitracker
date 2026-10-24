@@ -51,6 +51,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 
 ## Commandes utiles
 - App : `scripts/app.sh start|stop|restart|status|logs` (port 42753, logs dans `data/logs/app.log`).
+- Mise à jour (D25) : `bash scripts/update.sh` (ou le bouton de la page Configuration) ; journal `data/logs/update.log`.
+  Après des commits faits ici même, le bouton propose aussi la mise à jour (l'app compare avec son commit de démarrage).
 - Tests backend : `scripts/test.sh -q [fichiers]` (fixe `PYTHONHASHSEED=0`, nécessaire à la reproductibilité des
   générations). Tests front : `cd frontend && npm test && npm run build`.
 - Captures de l'app qui tourne : `cd frontend && node scripts/screenshot.mjs` (→ `test-output/screenshots/live/`,

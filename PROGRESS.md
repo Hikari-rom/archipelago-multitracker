@@ -1,7 +1,8 @@
 # Progression
 
 ## État actuel (5 lignes)
-0. 2026-10-15 : v2 Observatoire testable sur `/v2` (M20). 2026-10-24 : la v2 devient l'interface par défaut sur `/`, la v1 passe sur `/v1` (D24).
+0. 2026-10-15 : v2 Observatoire testable sur `/v2` (M20). 2026-10-24 : la v2 devient l'interface par défaut sur `/`, la v1 passe sur `/v1` (D24) ; release v0.1.0 ;
+   mises à jour depuis l'app, Pi et Windows (M23, D25).
    2026-10-23 : tableau de bord de la room complète (M21, D22) : v2, menu Plus → « Room complète ».
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page

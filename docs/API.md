@@ -280,3 +280,22 @@ Dans `data/room_feed/<seed>/` (un dossier par seed, créé seulement quand la fo
 `checks-AAAA-MM-JJ.jsonl` (un check par ligne, journal en ajout seul), `presence.jsonl` (connexions et
 déconnexions) et `state.json`. Les regroupements de slots par joueur peuvent être forcés dans
 `config/room_players.yaml`.
+
+## Mises à jour (D25)
+
+### `GET /api/update`
+`{"mode": "portable"|"git"|"none", "current": {"version", "commit"?, "date"?, "running"?}, "latest": null|{...},
+"available", "blocked", "checked_at", "check_error", "running", "status"}`. `latest` : pour la version portable,
+`{"version": "v0.2.0", "url", "notes", "published_at", "asset"}` ; pour git, `{"version": "<sha de origin/main>",
+"behind", "commits": [{"commit", "date", "subject"}]}` (commits absents du code qui tourne). `current.running` (git) :
+le commit sur lequel l'app a démarré, quand le dépôt a bougé depuis. `blocked` : pourquoi la mise à jour ne peut pas
+se faire depuis l'app. `status` : contenu de `data/update/status.json`
+(`{"state": "running"|"restarting"|"done"|"error", "step", "message", "from", "to", "at", "progress"?}`).
+
+### `POST /api/update/check` — `{}`
+Vérifie tout de suite (GitHub ou `git fetch`) et renvoie la même chose que `GET`.
+
+### `POST /api/update/apply` — `{}`
+Lance la mise à jour (409 si rien à faire, si elle est bloquée ou déjà en cours) ; la suivre avec `GET /api/update`.
+Les deux POST exigent `Content-Type: application/json` (415 sinon).
+
