@@ -1,0 +1,95 @@
+# Portable Windows build: a zip with a standalone Python, Archipelago 0.6.7, the apworlds of the lock, the built
+# interface and Multitracker.exe (scripts/windows/). Run by hand (Actions > Windows portable > Run workflow): the zip
+# is an artifact of the run. Pushing a tag v* also publishes it as a GitHub release.
+name: Windows portable
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      PY: build/python/python.exe
+      ZIP: ArchipelagoMultitracker-windows-x64.zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: false
+
+      - uses: astral-sh/setup-uv@v5
+
+      # python-build-standalone (through uv): relocatable, unlike the Python of the runner.
+      - name: Python 3.13
+        run: |
+          uv python install 3.13 --install-dir build/pythons
+          mv "$(ls -d build/pythons/cpython-3.13*-windows-x86_64-none | head -1)" build/python
+          rm -f build/python/Lib/EXTERNALLY-MANAGED
+          "$PY" --version
+          "$PY" -m ensurepip --upgrade
+
+      - name: Archipelago 0.6.7
+        run: git -c advice.detachedHead=false clone --quiet --depth 1 --branch 0.6.7 https://github.com/ArchipelagoMW/Archipelago vendor/Archipelago
+
+      # As scripts/bootstrap.sh, but Pymem stays (it works on Windows); kivy/kivymd are AP's GUI, never used.
+      - name: Python dependencies
+        run: |
+          grep -vE '^\s*(kivy|kivymd)\b|^\s*#|^\s*$' vendor/Archipelago/requirements.txt > build/ap-requirements.txt
+          "$PY" -m pip install --quiet --no-warn-script-location -r build/ap-requirements.txt \
+            "PyMemoryEditor>=2.0.1" "attrs==24.2.0" -r backend/requirements.txt
+
+      - name: Apworlds
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: '"$PY" scripts/fetch_apworlds.py'
+
+      - name: Apworlds load on Windows
+        run: PYTHONPATH=backend "$PY" scripts/check_apworlds.py
+
+      - name: Interface
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --loglevel=error && npm run build
+
+      - name: Multitracker.exe
+        working-directory: scripts/windows
+        run: go build -trimpath -ldflags "-s -w" -o ../../build/Multitracker.exe launcher.go
+
+      - name: Assemble and zip
+        run: |
+          "$PY" scripts/windows/build_portable.py --python build/python --exe build/Multitracker.exe --out build/dist
+          (cd build/dist && 7z a -tzip -mx=7 "../$ZIP" ArchipelagoMultitracker > /dev/null)
+          ls -l "build/$ZIP"
+
+      # After the zip: the first start writes config/room.yaml and data/ into the folder.
+      - name: Smoke test
+        run: build/dist/ArchipelagoMultitracker/Multitracker.exe --smoke --port 42760
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArchipelagoMultitracker-windows-x64
+          path: build/${{ env.ZIP }}
+          compression-level: 0
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "build/$ZIP" --title "$GITHUB_REF_NAME" --generate-notes

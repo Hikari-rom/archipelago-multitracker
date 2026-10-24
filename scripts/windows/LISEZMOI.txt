@@ -1,0 +1,45 @@
+Archipelago Multitracker — version portable pour Windows
+========================================================
+
+Rien à installer : tout est dans ce dossier (Python, Archipelago 0.6.7, les apworlds, l'interface).
+Windows 10 ou 11, 64 bits.
+
+Lancer
+------
+1. Dézippe le dossier où tu veux (pas dans « Program Files »), par exemple dans Documents.
+2. Double-clique sur Multitracker.exe.
+   Windows peut afficher « Windows a protégé votre ordinateur » (l'exe n'est pas signé) :
+   « Informations complémentaires », puis « Exécuter quand même ».
+3. Une fenêtre noire s'ouvre, puis le navigateur sur http://127.0.0.1:42753
+   Le premier démarrage prend jusqu'à une minute (chargement des apworlds).
+
+Garde la fenêtre noire ouverte : la fermer arrête l'app.
+
+Première configuration
+----------------------
+Dans le navigateur, page Configuration :
+- colle le lien de la room (https://archipelago.gg/room/...) et clique sur « Découvrir les slots » ;
+- importe tes yamls (certains jeux en ont besoin pour la logique) ;
+- coche tes slots, puis « Enregistrer ».
+
+Depuis un téléphone ou un autre PC
+----------------------------------
+Par défaut l'app n'est visible que depuis ce PC. Pour l'ouvrir au réseau local, lance dans une invite de
+commandes, depuis ce dossier :
+    Multitracker.exe --host 0.0.0.0
+Windows demande alors d'autoriser l'accès réseau (réseau privé). L'adresse est http://<ip du PC>:42753
+
+Autre port : Multitracker.exe --port 42800
+
+Tes données
+-----------
+Tout reste dans ce dossier :
+- config\room.yaml : la room et ses réglages (contient le mot de passe de la room) ;
+- config\players\ : tes yamls ;
+- data\ : historique, « dernière visite », journal (data\logs\app.log).
+
+Mettre à jour
+-------------
+Dézippe la nouvelle version dans un nouveau dossier, puis copie depuis l'ancien :
+config\room.yaml, config\room_players.yaml (s'il existe), config\players\ et data\
+Ne dézippe pas par-dessus l'ancien dossier : d'anciens apworlds pourraient rester.
