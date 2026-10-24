@@ -1,0 +1,6 @@
+name: sols
+game: "Nine Sols"
+"Nine Sols":
+  seals_for_eigong: 6
+  shuffle_grapple: true
+  randomize_jade_costs: true

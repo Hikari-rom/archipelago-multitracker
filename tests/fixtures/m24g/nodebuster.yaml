@@ -1,0 +1,6 @@
+name: nodebuster
+game: "Nodebuster"
+"Nodebuster":
+  crypto: true
+  milestone: true
+  bossdrops: necessary

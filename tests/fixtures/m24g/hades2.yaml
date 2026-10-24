@@ -1,0 +1,6 @@
+name: hades2
+game: "Hades2Rogue"
+"Hades2Rogue":
+  weapon_amount: 3
+  initial_weapon: Blades
+  keepsakesanity: progressive

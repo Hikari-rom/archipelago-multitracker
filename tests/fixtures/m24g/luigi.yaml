@@ -1,0 +1,6 @@
+name: luigi
+game: "Luigi's Mansion"
+"Luigi's Mansion":
+  toadsanity: true
+  boosanity: true
+  gold_mice: true

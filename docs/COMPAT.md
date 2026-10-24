@@ -122,3 +122,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | Fall Guys | ninpalk 0.0.2 | ✅ 3/3 + 2/2 yaml + e2e `m24f` | activée (yaml), v0.2.6 | |
 | Fez | nhyldmar v0.6.1 | ✅ 3/3 + 2/2 yaml + e2e `m24f` | activée (yaml), v0.2.6 | |
 | Hades | NaixGames 0.16.3 | ✅ 3/3 + 2/2 yaml + e2e `m24f` | activée (yaml), v0.2.6 | |
+| Hades2Rogue | BrittisH39 v0.10.0 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24g` (sans yaml) | activée, v0.2.7 | se reconstruit depuis le seul `slot_data` |
+| Keep Talking and Nobody Explodes | GreenPower713 v0.3.0c | ✅ 3/3 + 2/2 yaml + e2e `m24g` | activée (yaml), v0.2.7 | |
+| Luigi's Mansion | BootsinSoots V0.6.4 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24g` (sans yaml) | activée, v0.2.7 | se reconstruit depuis le seul `slot_data` |
+| Nine Sols | Ixrec 0.6.4 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24g` (sans yaml) | activée, v0.2.7 | se reconstruit depuis le seul `slot_data` |
+| Nodebuster | josephwhite v0.1.3 | ✅ 3/3 + 2/2 yaml + e2e `m24g` | activée (yaml), v0.2.7 | |

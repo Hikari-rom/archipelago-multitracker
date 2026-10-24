@@ -280,3 +280,14 @@ async def test_bot_finishes_m24f_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24f", 17, tmp_path, spoiler=1)
     (ROOT / "test-output" / "e2e_m24f.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24G_NO_YAML = frozenset({"Hades2Rogue", "Luigi's Mansion", "Nine Sols"})
+
+
+async def test_bot_finishes_m24g_batch_using_only_in_logic_locations(tmp_path):
+    """Seventh batch of the 2026-10 room (v0.2.7), no adapter needed: Hades2Rogue, Luigi's Mansion and Nine Sols (no
+    yaml, slot_data only), Keep Talking and Nobody Explodes and Nodebuster."""
+    result = await play_until_done("m24g", 17, tmp_path, spoiler=1, no_yaml=M24G_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24g.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

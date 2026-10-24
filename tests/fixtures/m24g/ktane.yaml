@@ -1,0 +1,5 @@
+name: ktane
+game: "Keep Talking and Nobody Explodes"
+"Keep Talking and Nobody Explodes":
+  adventure_mode: praetorian_pact
+  hardlock_modules: true
