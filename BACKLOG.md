@@ -219,5 +219,6 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [x] Windows : téléchargement + sha256, `Multitracker.exe` échange les dossiers et remet l'ancienne version si besoin ; `--update`
 - [x] Pi : `scripts/update.sh` (fast-forward, réinstallation ciblée, build, redémarrage), commits faits sur le Pi compris
 - [x] Bloc « Mises à jour » (Configuration) et bandeau v1/v2
+- [x] Release v0.2.0 (premier zip qui sait se mettre à jour)
 - [ ] Vérifier une vraie mise à jour Windows de la v0.2.0 vers la suivante sur un PC (la CI la simule)
 
