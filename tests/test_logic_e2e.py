@@ -272,3 +272,11 @@ async def test_bot_finishes_m24e_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24e", 17, tmp_path, spoiler=1, no_yaml=M24E_NO_YAML)
     (ROOT / "test-output" / "e2e_m24e.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m24f_batch_using_only_in_logic_locations(tmp_path):
+    """Sixth batch of the 2026-10 room (v0.2.6), no adapter needed: DREDGE, Enter The Gungeon, Fall Guys, Fez and
+    Hades."""
+    result = await play_until_done("m24f", 17, tmp_path, spoiler=1)
+    (ROOT / "test-output" / "e2e_m24f.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

@@ -1,0 +1,7 @@
+name: fez
+game: "Fez"
+"Fez":
+  goal: 40
+  shuffle_clock_antis: true
+  randomize_abilities: true
+  trap_percentage: 10

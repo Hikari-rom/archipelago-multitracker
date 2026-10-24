@@ -309,18 +309,24 @@ apworlds:
     repo: ninpalk/FallGuysAP
     tag: "0.0.2"
     asset: "fall_guys.apworld"
+    logic: true
+    needs_yaml: true
   fez:
     game: "Fez"
     source: github
     repo: nhyldmar/fez-ap
     tag: "v0.6.1"
     asset: "fez.apworld"
+    logic: true
+    needs_yaml: true
   hades:
     game: "Hades"
     source: github
     repo: NaixGames/Polycosmos
     tag: "0.16.3"
     asset: "hades.apworld"
+    logic: true
+    needs_yaml: true
   hades2rogue:
     game: "Hades2Rogue"
     source: github
@@ -492,6 +498,8 @@ apworlds:
   dredge:
     game: "DREDGE"
     source: user
+    logic: true
+    needs_yaml: true
   drdr:
     game: "Dead Rising Deluxe Remaster"
     source: user
@@ -505,6 +513,8 @@ apworlds:
   enter_the_gungeon:
     game: "Enter The Gungeon"
     source: user
+    logic: true
+    needs_yaml: true
   geometry_dash:
     game: "Geometry Dash"
     source: user

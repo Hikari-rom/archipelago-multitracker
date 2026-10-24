@@ -14,7 +14,8 @@
    Cookie Clicker, A Dance of Fire and Ice, Bloons TD6, Blue Prince), lot 3 en v0.2.3 (Trackmania, Slime Rancher 2,
    Deep Rock Galactic, The Farmer Was Replaced, Don't Starve Together), lot 4 en v0.2.4 (Burnout Paradise Remastered,
    Geometry Dash, 2048, Baldur's Gate 3, Big Walk), lot 5 en v0.2.5 (ClusterTruck, Cyberpunk 2077, Dead Rising
-   Deluxe Remaster, Dome Keeper, Donut County), un lot de 5 par version.
+   Deluxe Remaster, Dome Keeper, Donut County), lot 6 en v0.2.6 (DREDGE, Enter The Gungeon, Fall Guys, Fez, Hades),
+   un lot de 5 par version.
 4. Tests : `scripts/test.sh -q` (backend, ~10 min) et `cd frontend && npm test`.
 5. Pour la vraie room : page **Configuration** de l'app (lien archipelago.gg + mot de passe + choix des slots), ou `config/room.yaml`.
 

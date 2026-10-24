@@ -242,4 +242,5 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   adaptateur, e2e `m24d`)
 - [x] Lot 5 (v0.2.5) : ClusterTruck, Cyberpunk 2077, Dead Rising Deluxe Remaster, Dome Keeper, Donut County (sans
   adaptateur, e2e `m24e`)
+- [x] Lot 6 (v0.2.6) : DREDGE, Enter The Gungeon, Fall Guys, Fez, Hades (sans adaptateur, e2e `m24f`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

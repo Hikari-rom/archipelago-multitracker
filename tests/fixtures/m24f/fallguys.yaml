@@ -1,0 +1,6 @@
+name: fallguys
+game: "Fall Guys"
+"Fall Guys":
+  final_round_tickets_required: 15
+  final_round_tickets_in_pool: 30
+  qualifysanity: true

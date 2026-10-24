@@ -1,0 +1,5 @@
+name: dredge
+game: "DREDGE"
+"DREDGE":
+  logical_nets: true
+  include_iron_rig_dlc: true

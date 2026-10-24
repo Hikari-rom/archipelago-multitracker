@@ -1,0 +1,6 @@
+name: hades
+game: "Hades"
+"Hades":
+  location_system: room_weapon_based
+  hades_defeats_needed: 2
+  weaponsanity: true

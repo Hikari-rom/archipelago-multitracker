@@ -1,0 +1,5 @@
+name: gungeon
+game: "Enter The Gungeon"
+"Enter The Gungeon":
+  lich: optional
+  guns: short
