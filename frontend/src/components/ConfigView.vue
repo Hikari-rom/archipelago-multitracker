@@ -503,9 +503,10 @@ const selectClass =
 
           <p v-if="!rows.length" class="text-muted-foreground text-sm">Aucun slot. Utilise « Découvrir les slots ».</p>
           <p v-else-if="!visible.length" class="text-muted-foreground text-sm">Aucun slot ne correspond au filtre.</p>
-          <ul v-else class="divide-y rounded-lg border text-sm">
+          <!-- Bounded height: a room has 150+ slots, the page must not grow with them. -->
+          <ul v-else data-slot-list class="max-h-[min(60vh,36rem)] divide-y overflow-y-auto overscroll-contain rounded-lg border text-sm">
             <li
-              class="text-muted-foreground hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)] sm:gap-2"
+              class="text-muted-foreground bg-card sticky top-0 z-10 hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)] sm:gap-2"
               aria-hidden="true"
             >
               <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span>

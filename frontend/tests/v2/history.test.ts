@@ -1,10 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import HistoryV2 from '../../src/v2/views/HistoryV2.vue'
 import { installMock } from '../../src/lib/api'
 import type { HistoryPage, SentCheck } from '../../src/lib/types'
 import { tracker } from '../../src/stores/tracker'
-import { mk } from '../helpers'
+import { mk, stubScrollBoxes } from '../helpers'
+
+beforeAll(() => stubScrollBoxes())
 
 const t = (d: number, h: number, m: number) => new Date(2026, 9, d, h, m).getTime() / 1000
 const check = (p: Partial<SentCheck>): SentCheck => ({
@@ -24,7 +26,6 @@ const page: HistoryPage<SentCheck> = {
 
 afterEach(() => {
   tracker.slots = []
-  window.scrollTo(0, 0)
 })
 
 function setup(p: HistoryPage<SentCheck>) {
@@ -66,8 +67,9 @@ describe('HistoryV2', () => {
     await flushPromises()
     expect(limits).toEqual([50])
     expect(w.findAll('li[data-index]').length).toBeLessThan(51) // only the rows on screen are mounted
-    window.scrollTo(0, 50 * 33)
-    window.dispatchEvent(new Event('scroll'))
+    const box = w.find('[data-history-scroll]').element as HTMLElement
+    box.scrollTop = 50 * 33
+    box.dispatchEvent(new Event('scroll'))
     await flushPromises()
     expect(limits).toEqual([50, 100])
     expect(w.text()).toContain('pages de 50')

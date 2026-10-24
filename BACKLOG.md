@@ -192,6 +192,7 @@ Fond étoilé et thèmes : après les maquettes de Claude Design (`docs/design/B
 - [ ] 3e/4e thème
 - [x] Configuration : barre « Enregistrer » en haut, une ligne compacte par slot (2026-10-24)
 - [x] Cartes et Focus : BK en rouge (bordure, fond, chiffre), jeu terminé en or (liseré, filet intérieur, halo qui respire, inspiré des cartes d'Enigmatik) (2026-10-24)
+- [x] Listes longues dans un cadre de hauteur fixe : Historique v1/v2, slots de Configuration (2026-10-24)
 - [ ] Refonte Journal/Configuration
 - [ ] Retrait de la v1 quand la v2 est validée
 

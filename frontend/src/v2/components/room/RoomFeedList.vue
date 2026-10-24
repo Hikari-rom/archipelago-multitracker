@@ -247,7 +247,7 @@ const select = 'h-9 min-w-0 max-w-full rounded-lg border bg-card px-2 text-sm te
       <p v-else-if="loaded && !total" class="px-4 text-sm text-muted-foreground">Aucun check pour ces filtres.</p>
 
       <div
-        v-show="rows.length" ref="scrollEl" data-feed-scroll tabindex="0" aria-label="Fil des checks"
+        v-show="rows.length" ref="scrollEl" data-feed-scroll data-scroll-box tabindex="0" aria-label="Fil des checks"
         class="max-h-[min(65vh,40rem)] overflow-y-auto overscroll-contain px-4"
       >
         <ul class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">

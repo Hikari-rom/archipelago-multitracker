@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type ComponentPublicInstance } from 'vue'
-import { useWindowVirtualizer } from '@tanstack/vue-virtual'
-import { useResizeObserver } from '@vueuse/core'
+import { computed, ref, watch, type ComponentPublicInstance } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { tracker } from '../../stores/tracker'
 import type { ReceivedEntry, SentCheck, SlotSummary } from '../../lib/types'
 import { sentText } from '../../lib/history'
@@ -30,7 +29,7 @@ const receivedGroups = computed(() =>
 
 const time = (t: number | null | undefined) => (t == null ? '—' : hhmm(t))
 
-// One flat list (day headings + entries) so the window virtualizer only mounts the rows on screen.
+// One flat list (day headings + entries) so the virtualizer only mounts the rows on screen.
 type Row =
   | { kind: 'day'; key: string; label: string; count: number }
   | { kind: 'sent'; key: string; row: DayRow<SentCheck> }
@@ -43,22 +42,18 @@ const rows = computed<Row[]>(() =>
     ? flatten(sentGroups.value, (row) => ({ kind: 'sent', key: `${row.entry.slot}:${row.entry.location_id}`, row }))
     : flatten(receivedGroups.value, (row) => ({ kind: 'received', key: `${row.entry.slot}:${row.entry.index}`, row })))
 
-const listEl = ref<HTMLElement | null>(null)
-const rootEl = ref<HTMLElement | null>(null)
-const scrollMargin = ref(0)
-const measureMargin = () => {
-  if (listEl.value) scrollMargin.value = listEl.value.getBoundingClientRect().top + window.scrollY
-}
-// Anything above the list (per-game table on narrow screens, notices) moves it: re-measure on resize.
-useResizeObserver(rootEl, measureMargin)
-onMounted(measureMargin)
+// The list scrolls inside a box of fixed height: the page stays short however many entries are loaded.
+const scrollEl = ref<HTMLElement | null>(null)
+watch([historyTab, slotFilter, () => props.owner], () => {
+  if (scrollEl.value) scrollEl.value.scrollTop = 0
+})
 
-const virtualizer = useWindowVirtualizer<HTMLElement>(computed(() => ({
+const virtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
   count: rows.value.length,
+  getScrollElement: () => scrollEl.value,
   estimateSize: (i: number) => (rows.value[i]?.kind === 'day' ? 37 : 33),
   getItemKey: (i: number) => rows.value[i]?.key ?? i,
   overscan: 12,
-  scrollMargin: scrollMargin.value,
 })))
 const visible = computed(() => virtualizer.value.getVirtualItems().map((v) => ({ v, r: rows.value[v.index] })).filter((x) => x.r))
 const measure = (el: Element | ComponentPublicInstance | null) => {
@@ -78,7 +73,7 @@ const tabs = computed(() => [
 </script>
 
 <template>
-  <section ref="rootEl" class="flex flex-col gap-4" aria-labelledby="history-title">
+  <section class="flex flex-col gap-4" aria-labelledby="history-title">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
       <h2 id="history-title" class="text-lg font-semibold">Historique</h2>
       <div role="tablist" aria-label="Type d'historique" class="flex gap-1 border-b">
@@ -149,46 +144,51 @@ const tabs = computed(() => [
         </details>
       </div>
 
-      <div class="rounded-xl border bg-card px-4 py-3">
-        <p class="mb-2 flex flex-wrap gap-x-4 font-mono text-xs text-muted-foreground">
+      <div class="min-w-0 rounded-xl border bg-card py-3">
+        <p class="mb-2 flex px-4 flex-wrap gap-x-4 font-mono text-xs text-muted-foreground">
           <span><span class="rounded px-1" :class="badgeClass.PROG">PROG</span> progression</span>
           <span><span class="rounded px-1" :class="badgeClass.UTILE">UTILE</span> utile</span>
           <span><span class="rounded px-1" :class="badgeClass.PIÈGE">PIÈGE</span> piège</span>
           <span>sans étiquette = normal</span>
         </p>
-        <p v-if="!page && loading" class="text-sm text-muted-foreground">Chargement…</p>
-        <p v-else-if="page && !page.total" class="text-sm text-muted-foreground">{{ historyTab === 'sent' ? 'Aucun check fait.' : 'Aucun item reçu.' }}</p>
+        <p v-if="!page && loading" class="px-4 text-sm text-muted-foreground">Chargement…</p>
+        <p v-else-if="page && !page.total" class="px-4 text-sm text-muted-foreground">{{ historyTab === 'sent' ? 'Aucun check fait.' : 'Aucun item reçu.' }}</p>
 
-        <ul ref="listEl" class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
-          <li
-            v-for="{ v, r } in visible" :key="r.key" :ref="measure" :data-index="v.index"
-            class="absolute inset-x-0 top-0" :style="{ transform: `translateY(${v.start - scrollMargin}px)` }"
-          >
-            <h3 v-if="r.kind === 'day'" :data-day="r.label" class="border-b py-1 text-sm font-semibold" :class="v.index > 0 && 'mt-3'">
-              {{ r.label }} · {{ r.count }} {{ historyTab === 'sent' ? 'check' : 'item' }}{{ r.count > 1 ? 's' : '' }}
-            </h3>
-            <div v-else-if="r.kind === 'sent'" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
-              <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.checked_at) }}</span>
-              <span v-if="r.row.showSource" class="font-semibold">{{ r.row.entry.game }}</span>
-              <span class="font-mono text-xs">{{ r.row.entry.location }}</span>
-              <span v-if="r.row.entry.item == null" class="italic text-muted-foreground">contenu inconnu</span>
-              <template v-else>
+        <div
+          v-show="rows.length" ref="scrollEl" data-history-scroll data-scroll-box tabindex="0" aria-label="Historique"
+          class="max-h-[min(70vh,48rem)] overflow-y-auto overscroll-contain px-4"
+        >
+          <ul class="relative" :style="{ height: `${virtualizer.getTotalSize()}px` }">
+            <li
+              v-for="{ v, r } in visible" :key="r.key" :ref="measure" :data-index="v.index"
+              class="absolute inset-x-0 top-0" :style="{ transform: `translateY(${v.start}px)` }"
+            >
+              <h3 v-if="r.kind === 'day'" :data-day="r.label" class="border-b py-1 text-sm font-semibold" :class="v.index > 0 && 'mt-3'">
+                {{ r.label }} · {{ r.count }} {{ historyTab === 'sent' ? 'check' : 'item' }}{{ r.count > 1 ? 's' : '' }}
+              </h3>
+              <div v-else-if="r.kind === 'sent'" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
+                <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.checked_at) }}</span>
+                <span v-if="r.row.showSource" class="font-semibold">{{ r.row.entry.game }}</span>
+                <span class="font-mono text-xs">{{ r.row.entry.location }}</span>
+                <span v-if="r.row.entry.item == null" class="italic text-muted-foreground">contenu inconnu</span>
+                <template v-else>
+                  <span v-if="category(r.row.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.row.entry)!]">{{ category(r.row.entry) }}</span>
+                  <span>{{ r.row.entry.item }}</span>
+                  <span class="text-muted-foreground">{{ r.row.entry.to_self ? 'pour moi' : `pour ${r.row.entry.receiver} · ${r.row.entry.receiver_game}` }}</span>
+                </template>
+              </div>
+              <div v-else class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
+                <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.received_at) }}</span>
                 <span v-if="category(r.row.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.row.entry)!]">{{ category(r.row.entry) }}</span>
-                <span>{{ r.row.entry.item }}</span>
-                <span class="text-muted-foreground">{{ r.row.entry.to_self ? 'pour moi' : `pour ${r.row.entry.receiver} · ${r.row.entry.receiver_game}` }}</span>
-              </template>
-            </div>
-            <div v-else class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b py-1.5 text-sm">
-              <span class="w-12 font-mono text-xs text-muted-foreground tabular-nums">{{ time(r.row.entry.received_at) }}</span>
-              <span v-if="category(r.row.entry)" class="rounded px-1 font-mono text-[11px]" :class="badgeClass[category(r.row.entry)!]">{{ category(r.row.entry) }}</span>
-              <span>{{ r.row.entry.name }}</span>
-              <span v-if="r.row.showSource" class="text-muted-foreground">pour <span class="font-semibold text-foreground">{{ r.row.entry.game }}</span></span>
-              <span class="text-muted-foreground">{{ itemOrigin(r.row.entry) }}</span>
-            </div>
-          </li>
-        </ul>
+                <span>{{ r.row.entry.name }}</span>
+                <span v-if="r.row.showSource" class="text-muted-foreground">pour <span class="font-semibold text-foreground">{{ r.row.entry.game }}</span></span>
+                <span class="text-muted-foreground">{{ itemOrigin(r.row.entry) }}</span>
+              </div>
+            </li>
+          </ul>
+        </div>
 
-        <button v-if="hasMore" type="button" class="mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="more">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
+        <button v-if="hasMore" type="button" class="mx-4 mt-3 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent disabled:opacity-50 max-[699px]:min-h-11" :disabled="loading" @click="more">{{ loading ? 'Chargement…' : 'Afficher plus' }}</button>
       </div>
     </div>
   </section>

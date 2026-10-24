@@ -154,7 +154,8 @@ const selectClass =
         </p>
         <p v-if="!page.total" class="text-muted-foreground text-sm">{{ kind === 'sent' ? 'Aucun check fait.' : 'Aucun item reçu.' }}</p>
 
-        <ul v-if="kind === 'sent'" class="divide-y">
+        <!-- Bounded height: the page does not grow with « Afficher de plus ». -->
+        <ul v-if="kind === 'sent'" class="divide-y max-h-[min(70vh,48rem)] overflow-y-auto overscroll-contain">
           <li v-for="c in sentRows" :key="`${c.slot}:${c.location_id}`" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
             <span class="min-w-0 break-words">{{ c.location }}</span>
             <span class="text-muted-foreground min-w-48 flex-1 break-words">
@@ -173,7 +174,7 @@ const selectClass =
           </li>
         </ul>
 
-        <ul v-else class="divide-y">
+        <ul v-else class="divide-y max-h-[min(70vh,48rem)] overflow-y-auto overscroll-contain">
           <li v-for="i in receivedRows" :key="`${i.slot}:${i.index}`" class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 py-1.5 text-sm">
             <span :class="cn('break-words', i.progression && 'font-bold')">
               <span v-if="itemKind(i)" :class="cn('inline-block w-5 text-center', itemKind(i)!.cls)" :title="itemKind(i)!.label" :aria-label="itemKind(i)!.label">{{ itemKind(i)!.sym }}</span>{{ i.name }}
