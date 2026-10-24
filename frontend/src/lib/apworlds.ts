@@ -1,6 +1,6 @@
 // Apworlds imported from the user's own Archipelago install (D27).
 
-export type ImportStatus = 'imported' | 'shipped' | 'not_in_room' | 'unreadable' | 'duplicate'
+export type ImportStatus = 'imported' | 'shipped' | 'not_needed' | 'unreadable' | 'duplicate'
 export type VersionStatus = 'room' | 'other' | 'not_loaded' | 'not_in_room' | 'unknown'
 
 export interface ApworldFile {
@@ -24,7 +24,7 @@ export interface ApworldsInfo {
 export const IMPORT_LABELS: Record<ImportStatus, string> = {
   imported: 'importé',
   shipped: 'déjà fourni par l’app',
-  not_in_room: 'pas dans la room',
+  not_needed: 'pas utile à l’app',
   unreadable: 'illisible',
   duplicate: 'en double',
 }
@@ -40,7 +40,7 @@ export const VERSION_LABELS: Record<VersionStatus, { text: string; tone: 'ok' | 
 const PLURALS: Record<ImportStatus, string> = {
   imported: 'importés',
   shipped: 'déjà fournis par l’app',
-  not_in_room: 'pas dans la room',
+  not_needed: 'pas utiles à l’app',
   unreadable: 'illisibles',
   duplicate: 'en double',
 }

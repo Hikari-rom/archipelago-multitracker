@@ -313,9 +313,9 @@ Jeux que l'app ne fournit pas (`source: user` dans `config/apworlds.yaml`) : cha
 connue.
 
 ### `POST /api/apworlds/import` — `{"path": "<chemin absolu du dossier>"}`
-Remplace les apworlds importés par ceux du dossier dont le jeu n'est pas fourni par l'app (et, si la room est connue,
-qui sont dans la room), redémarre le worker de logique et recalcule tous les slots. Réponse : celle de `GET`, plus
-`"report": [{"file", "game", "status": "imported"|"shipped"|"not_in_room"|"unreadable"|"duplicate"}]`.
+Remplace les apworlds importés par ceux du dossier dont le jeu est `source: user` dans le catalogue, redémarre le
+worker de logique et recalcule tous les slots. Réponse : celle de `GET`, plus
+`"report": [{"file", "game", "status": "imported"|"shipped"|"not_needed"|"unreadable"|"duplicate"}]`.
 400 si le chemin n'est pas absolu ou n'existe pas ; 403 depuis une autre origine.
 
 ### `POST /api/apworlds/check` — `{}`

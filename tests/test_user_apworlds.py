@@ -35,7 +35,9 @@ def env(tmp_path, monkeypatch):
     source.mkdir()
     catalog = tmp_path / "apworlds.yaml"
     catalog.write_text('apworlds:\n  shipped: {game: "Shipped Game", source: github}\n'
-                       '  mine: {game: "User Game", source: user}\n', encoding="utf-8")
+                       '  mine: {game: "User Game", source: user}\n  old: {game: "Old Game", source: user}\n'
+                       '  new: {game: "New Game", source: user}\n  other: {game: "Other Version", source: user}\n'
+                       '  absent: {game: "Not Loaded", source: user}\n', encoding="utf-8")
     make_apworld(custom / "shipped.apworld", "Shipped Game")
     monkeypatch.setattr(ua, "CUSTOM_DIR", custom)
     monkeypatch.setattr(ua, "USER_DIR", user)
@@ -47,20 +49,24 @@ def test_apworld_game_reads_manifest_or_class_attribute(tmp_path):
     assert ua.apworld_game(make_apworld(tmp_path / "a.apworld", "Game A", manifest=True)) == "Game A"
     assert ua.apworld_game(make_apworld(tmp_path / "b.apworld", "Majora's Mask Recompiled")) == "Majora's Mask Recompiled"
     assert ua.apworld_game(make_apworld(tmp_path / "c.apworld", None)) is None
+    with zipfile.ZipFile(tmp_path / "e.apworld", "w") as zf:  # manifest at the root (newer apworlds)
+        zf.writestr("archipelago.json", json.dumps({"game": "Cuphead", "version": 7}))
+        zf.writestr("e/__init__.py", "game = GAME_NAME\n")
+    assert ua.apworld_game(tmp_path / "e.apworld") == "Cuphead"
     (tmp_path / "d.apworld").write_bytes(b"not a zip")
     assert ua.apworld_game(tmp_path / "d.apworld") is None
 
 
-def test_import_keeps_only_games_the_app_does_not_ship(env):
-    make_apworld(env.source / "shipped.apworld", "Shipped Game")  # the app's version wins
-    make_apworld(env.source / "other_name.apworld", "Shipped Game")
+def test_import_keeps_only_the_user_games_of_the_catalog(env):
+    (env.source / "shipped.apworld").write_bytes(b"same name as the app's file: not even read")
+    make_apworld(env.source / "other_name.apworld", "Shipped Game")  # the app's version wins
     make_apworld(env.source / "mine.apworld", "User Game")
-    make_apworld(env.source / "elsewhere.apworld", "Not In Room")
+    make_apworld(env.source / "rich_presence.apworld", "Discord Rich Presence")  # not in the catalog
     make_apworld(env.source / "mine_copy.apworld", "User Game")
     make_apworld(env.source / "broken.apworld", None)
-    rows = ua.import_dir(env.source, room_games={"Shipped Game", "User Game"})
+    rows = ua.import_dir(env.source)
     assert {r["file"]: r["status"] for r in rows} == {
-        "broken.apworld": "unreadable", "elsewhere.apworld": "not_in_room", "mine.apworld": "imported",
+        "broken.apworld": "unreadable", "rich_presence.apworld": "not_needed", "mine.apworld": "imported",
         "mine_copy.apworld": "duplicate", "other_name.apworld": "shipped", "shipped.apworld": "shipped"}
     assert [p.name for p in env.user.iterdir()] == ["mine.apworld"]
     assert ua.imported() == [{"file": "mine.apworld", "game": "User Game"}]
@@ -85,6 +91,7 @@ def test_sync_copies_records_and_cleans_up(env):
     make_apworld(env.user / "mine.apworld", "User Game")
     make_apworld(env.user / "shipped.apworld", "Not the shipped one")  # name taken by the app's file
     make_apworld(env.user / "dup.apworld", "Shipped Game")  # game shipped by the app
+    make_apworld(env.user / "tool.apworld", "Discord Rich Presence")  # put there by hand: not a user game
     assert ua.sync() == ["mine.apworld"]
     assert json.loads((env.custom / ua.RECORD).read_text()) == ["mine.apworld"]
     assert ua.apworld_game(env.custom / "shipped.apworld") == "Shipped Game"
@@ -109,6 +116,7 @@ def test_synced_files_are_not_taken_for_shipped_ones(env):
 
 def test_shipped_games_ignore_user_entries(env):
     assert ua.shipped_games() == {"Shipped Game"}
+    assert "User Game" in ua.user_games() and "Shipped Game" not in ua.user_games()
 
 
 # -- API ----------------------------------------------------------------------------------------
@@ -147,14 +155,14 @@ def call(service, method, path, **kw):
 
 def test_api_import_then_check_versions(env):
     for name, game in [("mine", "User Game"), ("other", "Other Version"), ("absent", "Not Loaded"),
-                       ("away", "Not In Room")]:
+                       ("away", "Not Wanted")]:
         make_apworld(env.source / f"{name}.apworld", game)
     room = {"User Game": "aaa", "Other Version": "bbb", "Not Loaded": "ccc", "Shipped Game": "ddd"}
     service = FakeService(room, {"User Game": "aaa", "Other Version": "zzz"})
     r = call(service, "POST", "/api/apworlds/import", json={"path": str(env.source)})
     assert r.status_code == 200, r.text
     assert service.restarts == 1
-    assert {row["file"]: row["status"] for row in r.json()["report"]}["away.apworld"] == "not_in_room"
+    assert {row["file"]: row["status"] for row in r.json()["report"]}["away.apworld"] == "not_needed"
     assert [f["file"] for f in r.json()["files"]] == ["absent.apworld", "mine.apworld", "other.apworld"]
     r = call(service, "POST", "/api/apworlds/check", json={})
     assert {f["game"]: f["version"] for f in r.json()["files"]} == {
@@ -187,11 +195,9 @@ def test_api_config_flags_imported_games(env, tmp_path, monkeypatch):
     monkeypatch.setattr(engine, "game_catalog", lambda: catalog(env.catalog))
     env.user.mkdir()
     make_apworld(env.user / "mine.apworld", "User Game")
-    make_apworld(env.user / "extra.apworld", "Uncatalogued Game")
     service = FakeService({}, {})
     service.config = SimpleNamespace(room_url=None, server="", password="", wake_room=False, scout_checked=False,
                                      room_dashboard=False, path=tmp_path / "room.yaml", slots=[])
     games = call(service, "GET", "/api/config").json()["games"]
     assert games["User Game"] == {"logic": False, "needs_yaml": False, "user": True, "imported": True}
     assert games["Shipped Game"]["imported"] is False and games["Shipped Game"]["user"] is False
-    assert games["Uncatalogued Game"] == {"logic": False, "needs_yaml": False, "user": True, "imported": True}

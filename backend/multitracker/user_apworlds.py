@@ -2,8 +2,9 @@
 
 The app ships the apworlds of config/apworlds.yaml (lock, sha256). The games it does not ship come from the user's
 Archipelago `custom_worlds` folder: "Importer" copies them to data/apworlds/ (kept across updates), and every
-process that loads Archipelago copies them into its custom_worlds first (`sync`). An apworld of a game the app ships
-is never imported: the shipped version is the validated one. Whether an imported apworld is the room's version is
+process that loads Archipelago copies them into its custom_worlds first (`sync`). Only the `source: user` games of
+the catalog are imported: an apworld of a game the app ships would replace the validated one, any other brings no
+logic. Whether an imported apworld is the room's version is
 checked at run time like any other (D12: logic refused when the datapackage checksum differs).
 
 Only reads the archives (manifest, `game = "..."` line); importing never runs their code.
@@ -39,7 +40,7 @@ def apworld_game(path: Path) -> str | None:
         with zipfile.ZipFile(path) as zf:
             names = zf.namelist()
             for name in names:
-                if name.count("/") == 1 and name.endswith("/archipelago.json"):
+                if name == "archipelago.json" or (name.count("/") == 1 and name.endswith("/archipelago.json")):
                     game = json.loads(zf.read(name)).get("game")
                     if isinstance(game, str) and game:
                         return game
@@ -53,14 +54,23 @@ def apworld_game(path: Path) -> str | None:
     return None
 
 
-def shipped_games(catalog: Path | None = None) -> set[str]:
-    """Games the app itself provides (config/apworlds.yaml entries not marked `source: user`)."""
+def _catalog_games(catalog: Path | None, user: bool) -> set[str]:
     try:
         config = yaml.safe_load((catalog or CATALOG).read_text(encoding="utf-8")) or {}
     except (OSError, yaml.YAMLError):
         return set()
     return {e["game"] for e in (config.get("apworlds") or {}).values()
-            if isinstance(e, dict) and e.get("game") and e.get("source") != "user"}
+            if isinstance(e, dict) and e.get("game") and (e.get("source") == "user") == user}
+
+
+def shipped_games(catalog: Path | None = None) -> set[str]:
+    """Games the app itself provides (config/apworlds.yaml entries not marked `source: user`)."""
+    return _catalog_games(catalog, user=False)
+
+
+def user_games(catalog: Path | None = None) -> set[str]:
+    """Games whose apworld each user imports (`source: user`): the only ones worth importing."""
+    return _catalog_games(catalog, user=True)
 
 
 def _record(custom: Path) -> list[str]:
@@ -99,24 +109,24 @@ def _copy(src: Path, dest: Path) -> None:
     os.replace(tmp, dest)
 
 
-def import_dir(source: Path, room_games: set[str] | None = None, dest: Path | None = None,
-               custom: Path | None = None, catalog: Path | None = None) -> list[dict]:
-    """Replace data/apworlds/ with the apworlds of `source` that the app does not ship. With `room_games`, only
-    the games of the room are taken. One row per .apworld of `source`: {file, game, status}, status in
-    imported | shipped | not_in_room | unreadable | duplicate."""
+def import_dir(source: Path, dest: Path | None = None, custom: Path | None = None,
+               catalog: Path | None = None) -> list[dict]:
+    """Replace data/apworlds/ with the apworlds of `source` for the `source: user` games of the catalog (any other
+    one would bring no logic, and tools like a Discord presence have no business running here). One row per
+    .apworld of `source`: {file, game, status}, status in imported | shipped | not_needed | unreadable | duplicate."""
     dest = dest or USER_DIR
     if not source.is_dir():
         raise FileNotFoundError(f"dossier introuvable : {source}")
-    games, files = shipped_games(catalog), shipped_files(custom)
+    games, wanted, files = shipped_games(catalog), user_games(catalog), shipped_files(custom)
     rows, chosen, seen = [], {}, set()
     for path in sorted(source.glob("*.apworld"), key=lambda p: p.name.lower()):
-        game = apworld_game(path)
-        if game is None:
-            status = "unreadable"
-        elif game in games or path.name in files:
+        game = None if path.name in files else apworld_game(path)
+        if path.name in files or game in games:
             status = "shipped"
-        elif room_games is not None and game not in room_games:
-            status = "not_in_room"
+        elif game is None:
+            status = "unreadable"
+        elif game not in wanted:
+            status = "not_needed"
         elif game in seen:
             status = "duplicate"
         else:
@@ -142,17 +152,16 @@ def imported(dest: Path | None = None) -> list[dict]:
 
 
 def sync(custom: Path | None = None, user: Path | None = None, catalog: Path | None = None) -> list[str]:
-    """Make custom_worlds hold exactly the imported apworlds of games the app does not ship (plus its own files).
+    """Make custom_worlds hold exactly the imported apworlds of `source: user` games (plus the app's own files).
     Leaves an up-to-date copy in place, so concurrent processes never see it missing. Returns the names there."""
     custom, user = custom or CUSTOM_DIR, user or USER_DIR
     if not custom.is_dir():
         return []
     previous = _record(custom)
-    games, files = shipped_games(catalog), shipped_files(custom)
+    games, files = user_games(catalog), shipped_files(custom)
     wanted: dict[str, Path] = {}
     for path in sorted(user.glob("*.apworld")) if user.is_dir() else []:
-        game = apworld_game(path)
-        if game is not None and game not in games and path.name not in files:  # else the app's own apworld wins
+        if path.name not in files and apworld_game(path) in games:  # else the app's own apworld wins
             wanted[path.name] = path
     for name in previous:
         if name not in wanted:

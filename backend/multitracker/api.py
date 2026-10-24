@@ -170,9 +170,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         source = Path(body.path.strip()).expanduser()
         if not body.path.strip() or not source.is_absolute():
             raise HTTPException(400, "indique le chemin complet du dossier custom_worlds")
-        room = set(service.room_checksums()) or None
         try:
-            rows = await asyncio.to_thread(user_apworlds.import_dir, source, room)
+            rows = await asyncio.to_thread(user_apworlds.import_dir, source)
         except FileNotFoundError as exc:
             raise HTTPException(400, str(exc)) from exc
         except OSError as exc:
@@ -214,8 +213,6 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         from .logic.engine import game_catalog
         games = game_catalog()
         imported = {f["game"] for f in user_apworlds.imported() if f["game"]}
-        for game in imported - set(games):
-            games[game] = {"logic": False, "needs_yaml": False, "user": True}
         for game, info in games.items():
             info["imported"] = game in imported
         return games

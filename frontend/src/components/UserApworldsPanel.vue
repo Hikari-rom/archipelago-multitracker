@@ -73,8 +73,8 @@ onMounted(load)
       <CardTitle class="flex items-center gap-2"><FolderInput class="size-4" aria-hidden="true" /> Apworlds de ton Archipelago</CardTitle>
       <CardDescription>
         Certains jeux ne sont pas fournis avec l'app. Importe-les depuis le dossier <code>custom_worlds</code> de ton
-        installation d'Archipelago : seuls les jeux de la room que l'app ne fournit pas sont copiés. La logique n'est
-        calculée que si c'est la même version que celle de la room.
+        installation d'Archipelago : seuls ceux dont l'app a besoin sont copiés. La logique n'est calculée que si c'est
+        la même version que celle de la room.
       </CardDescription>
     </CardHeader>
     <CardContent class="flex flex-col gap-3 px-5 text-sm">

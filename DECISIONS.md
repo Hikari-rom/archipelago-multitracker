@@ -271,8 +271,9 @@ installé avec ces apworlds (ils jouent dans la room) : option retenue par Romai
 - `config/apworlds.yaml` : ces jeux ont `source: user` (rien à télécharger ni à vérifier en CI ; logique activée comme
   les autres, après validation).
 - Page Configuration, panneau « Apworlds de ton Archipelago » : chemin prérempli (`%ProgramData%\Archipelago\custom_worlds`
-  s'il existe), bouton « Importer ». Seuls les fichiers dont le jeu n'est pas fourni par l'app (et qui sont dans la room)
-  sont copiés dans `data/apworlds/`, gardé par les mises à jour. Le jeu est lu dans `archipelago.json` ou la ligne
+  s'il existe), bouton « Importer ». Seuls les jeux `source: user` sont copiés dans `data/apworlds/` (gardé par les
+  mises à jour) : un autre apworld n'apporterait pas de logique, et des outils (présence Discord, gestionnaire
+  d'apworlds…) n'ont rien à faire tourner ici ; un jeu fourni par l'app garde la version validée. Le jeu est lu dans `archipelago.json` ou la ligne
   `game = "…"` de l'archive : l'import n'exécute rien.
 - `apenv.setup()` recopie ces fichiers dans `vendor/Archipelago/custom_worlds/` une fois par process (worker de logique,
   génération, scripts), sans écraser un fichier de l'app ; une copie à jour est laissée en place (pas de trou pour un
