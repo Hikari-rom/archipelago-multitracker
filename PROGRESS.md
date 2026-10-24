@@ -130,7 +130,7 @@
 ### 2026-10-24 — Version portable pour Windows (M22, D23)
 - `.github/workflows/windows.yml` : zip de 74 Mo (Python 3.13 autonome, AP 0.6.7, apworlds du lock, interface,
   `Multitracker.exe`). Premier run réussi (40042769711) : les 46 apworlds se chargent sous Windows, l'app démarre.
-- Pas encore de release : pousser un tag `v*` la publie (dépôt public).
+- Release **v0.1.0** publiée le 2026-10-24 (zip Windows, notes en français) : https://github.com/Hikari-rom/archipelago-multitracker/releases/tag/v0.1.0. Pour la suivante : pousser un tag `v*`.
 
 ### 2026-10-24 — AEMinecraft 0.7.0-rc.5
 - La room utilise AEMinecraft **rc.5** (checksum `0741e682`, calculé pour rc.3, rc.4, rc.5 : rc.3/rc.4 = rc.2) : la
