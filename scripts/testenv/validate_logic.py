@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -142,6 +143,7 @@ def main() -> int:
             res = run_once(args.game, args.companions, run, args.default_options, player_yaml=args.yaml,
                            tool_yaml=args.tool_yaml or not args.no_yaml)
         except Exception as exc:  # report and continue with the next run
+            traceback.print_exc()
             res = {"run": run, "generated": None, "error": f"{type(exc).__name__}: {exc}"[:400]}
         res["seconds"] = round(time.time() - started, 1)
         results.append(res)

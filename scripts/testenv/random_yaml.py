@@ -40,7 +40,8 @@ def roll(game: str, rng: random.Random) -> dict:
                 values[name] = rng.choice([True, False])
             elif issubclass(option, Options.Choice):
                 choices = [k for k in option.options if not k.startswith("random")]
-                values[name] = rng.choice(choices)
+                if choices:  # a Choice with only "random…" names (Clair Obscur): keep its default
+                    values[name] = rng.choice(choices)
             elif issubclass(option, Options.Range):
                 values[name] = rng.randint(option.range_start, option.range_end)
         except TypeError:

@@ -45,8 +45,11 @@ def regenerate(fixture: str, seed: int):
 
 def check_same_fill(multiworld, multidata: dict[str, Any]) -> None:
     for player, locations in multidata["locations"].items():
+        # by address: a world may name a location differently from its datapackage (Cookie Clicker's victory)
+        by_address = {loc.address: loc for loc in multiworld.get_locations(player) if loc.address is not None}
         for address, (item_code, item_player, _flags) in locations.items():
-            loc = multiworld.get_location(multiworld.worlds[player].location_id_to_name[address], player)
+            loc = by_address.get(address)
+            assert loc is not None, f"regenerated multiworld has no location {address} of player {player}"
             assert loc.item.code == item_code and loc.item.player == item_player, \
                 f"regenerated multiworld differs from the hosted seed at {loc}"
 

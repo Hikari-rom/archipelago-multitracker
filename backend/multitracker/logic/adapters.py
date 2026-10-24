@@ -532,6 +532,10 @@ from .adapters_m7 import ADAPTERS_M7  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M7)
 
+from .adapters_m24 import ADAPTERS_M24  # noqa: E402
+
+ADAPTERS.update(ADAPTERS_M24)
+
 
 def needs_start_items(game: str) -> bool:
     return game in START_ADAPTERS
