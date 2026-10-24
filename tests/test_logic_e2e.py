@@ -261,3 +261,14 @@ async def test_bot_finishes_m24d_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24d", 17, tmp_path, spoiler=1, no_yaml=M24D_NO_YAML)
     (ROOT / "test-output" / "e2e_m24d.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24E_NO_YAML = frozenset({"Donut County"})
+
+
+async def test_bot_finishes_m24e_batch_using_only_in_logic_locations(tmp_path):
+    """Fifth batch of the 2026-10 room (v0.2.5), no adapter needed: ClusterTruck, Cyberpunk 2077, Dead Rising Deluxe
+    Remaster, Dome Keeper and Donut County (no yaml, slot_data only)."""
+    result = await play_until_done("m24e", 17, tmp_path, spoiler=1, no_yaml=M24E_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24e.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

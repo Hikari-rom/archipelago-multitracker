@@ -1,0 +1,6 @@
+name: cyber
+game: "Cyberpunk 2077"
+"Cyberpunk 2077":
+  district_restriction_type: require_district_token
+  include_ncpd_hustles: true
+  enable_traps: false

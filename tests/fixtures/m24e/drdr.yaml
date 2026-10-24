@@ -1,0 +1,6 @@
+name: drdr
+game: "Dead Rising Deluxe Remaster"
+"Dead Rising Deluxe Remaster":
+  goal: ending_a
+  number_of_survivors: 20
+  trap_percentage: 10

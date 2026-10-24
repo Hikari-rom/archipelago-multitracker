@@ -1,0 +1,8 @@
+name: dome
+game: "Dome Keeper"
+"Dome Keeper":
+  keeper: Engineer
+  dome: Laser
+  dome_gadget: Shield
+  map_size: Medium
+  progression_type: Relic_Hunt_Progression_Layers

@@ -1,0 +1,6 @@
+name: donut
+game: "Donut County"
+"Donut County":
+  hole: global
+  trashsanity: types
+  total_pieces: 30

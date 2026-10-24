@@ -1,0 +1,6 @@
+name: ctruck
+game: "ClusterTruck"
+"ClusterTruck":
+  goal_level: "5_10"
+  goal_requirement: 25
+  trap_percentage: 10

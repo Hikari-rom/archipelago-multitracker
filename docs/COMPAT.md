@@ -112,3 +112,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | 2048 | Ishigh1 2048-1.1.3 | ✅ 3/3 + 2/2 yaml + e2e `m24d` | activée (yaml), v0.2.4 | aucune option |
 | Baldur's Gate 3 | zane31415 v0.7.2 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24d` (sans yaml) | activée, v0.2.4 | se reconstruit depuis le seul `slot_data` |
 | Big Walk | Grizfreak 1.0.1 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24d` (sans yaml) | activée, v0.2.4 | se reconstruit depuis le seul `slot_data` |
+| ClusterTruck | Nullctipus 1.3.2 | ✅ 3/3 + 2/2 yaml + e2e `m24e` | activée (yaml), v0.2.5 | |
+| Cyberpunk 2077 | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24e` | activée (yaml), v0.2.5 | |
+| Dead Rising Deluxe Remaster | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24e` | activée (yaml), v0.2.5 | |
+| Dome Keeper | Arrcival v1.3.0 | ✅ 3/3 + 2/2 yaml + e2e `m24e` | activée (yaml), v0.2.5 | |
+| Donut County | 1e1001 v0.2.0-preview.3 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24e` (sans yaml) | activée, v0.2.5 | se reconstruit depuis le seul `slot_data` |

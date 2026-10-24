@@ -240,4 +240,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   Together (un adaptateur chacun, e2e `m24c`)
 - [x] Lot 4 (v0.2.4) : Burnout Paradise Remastered, Geometry Dash, 2048, Baldur's Gate 3, Big Walk (sans
   adaptateur, e2e `m24d`)
+- [x] Lot 5 (v0.2.5) : ClusterTruck, Cyberpunk 2077, Dead Rising Deluxe Remaster, Dome Keeper, Donut County (sans
+  adaptateur, e2e `m24e`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8
