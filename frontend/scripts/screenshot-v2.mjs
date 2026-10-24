@@ -1,4 +1,4 @@
-// Screenshots of the v2 at /v2 (run against the mock dev server: VITE_MOCK=1 npx vite --port 38290).
+// Screenshots of the v2 at / (run against the mock dev server: VITE_MOCK=1 npx vite --port 38290).
 // Usage: node scripts/screenshot-v2.mjs [baseUrl] [outDir]
 import { chromium } from '@playwright/test'
 import { existsSync, mkdirSync } from 'node:fs'
@@ -9,10 +9,10 @@ mkdirSync(out, { recursive: true })
 const executablePath = ['/usr/bin/chromium', '/usr/bin/chromium-browser'].find((p) => existsSync(p))
 const browser = await chromium.launch(executablePath ? { executablePath } : {})
 const shots = [
-  ['dashboard-cards', '/v2', { 'amt-v2-layout': 'cards' }],
-  ['dashboard-focus', '/v2', { 'amt-v2-layout': 'focus' }],
-  ['history', '/v2#history', {}],
-  ['goals', '/v2#goals', {}],
+  ['dashboard-cards', '/', { 'amt-v2-layout': 'cards' }],
+  ['dashboard-focus', '/', { 'amt-v2-layout': 'focus' }],
+  ['history', '/#history', {}],
+  ['goals', '/#goals', {}],
 ]
 for (const [device, viewport] of [['desktop', { width: 1440, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
   for (const theme of ['nuit', 'plan']) {

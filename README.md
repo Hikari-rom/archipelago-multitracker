@@ -16,10 +16,10 @@ en avant, page **Historique** (checks envoyés et items reçus, jour par jour, a
 (logs en direct).
 
 Deux interfaces, mêmes données :
-- **v2 « Observatoire »** sur `/v2` : affichage Cartes ou Focus, thèmes Nuit et Plan, téléphone. Un jeu en **BK**
+- **v2 « Observatoire »** sur `/` (l'interface par défaut ; l'ancienne adresse `/v2` y mène aussi) : affichage Cartes ou Focus, thèmes Nuit et Plan, téléphone. Un jeu en **BK**
   (plus rien en logique) est en rouge, un jeu **terminé** en or. Page **Room complète** en option (menu Plus) :
   classement, qui joue, activité et fil des checks de toute la room.
-- **v1** sur `/` : l'interface d'origine, gardée tant que la v2 n'est pas validée.
+- **v1** sur `/v1` : l'interface d'origine (menu Plus → « Revenir à la v1 »).
 
 Sur Linux (testé sur Raspberry Pi), ou sur Windows avec la [version portable](#windows--version-portable).
 

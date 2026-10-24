@@ -218,3 +218,10 @@ mondes et les apworlds depuis ses dossiers, et le moteur de logique lance des pr
   `config/players/` et `data/` (dézipper par-dessus laisserait d'anciens apworlds).
 - La construction vérifie que chaque apworld se charge sous Windows (`check_apworlds.py`) et démarre l'app
   (`Multitracker.exe --smoke`). L'exe n'est pas signé : SmartScreen avertit au premier lancement.
+
+## D24 — v2 par défaut sur /, v1 sur /v1 (2026-10-24, demandé par Romain)
+Romain arrive maintenant sur la v2 : `/` charge la v2, `/v1` la v1. L'ancienne adresse `/v2` charge la v2 puis
+s'affiche comme `/` (`history.replaceState`, le hash est gardé), pour les favoris et les écrans d'accueil des
+téléphones. Le serveur ne change pas (il renvoie `index.html` pour toute adresse inconnue) ; tout est dans
+`src/main.ts` et `src/lib/v2path.ts`. Les préférences restent séparées (`amt-v2-*` pour la v2).
+
