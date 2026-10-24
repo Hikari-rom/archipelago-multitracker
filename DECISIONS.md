@@ -246,3 +246,20 @@ interfaces ; vérification automatique une fois par jour (`backend/multitracker/
   couper la vérification (un appel GitHub ou un `git fetch` par jour) ; tout appareil du réseau local qui ouvre l'app
   peut lancer une mise à jour, toujours depuis le dépôt de Romain.
 
+
+## D26 — Jeux de la nouvelle room : apworlds et yamls fournis par Romain (2026-10-24)
+Room `rsRyiqQFQWGRdqg3zHurYw` : 156 slots, 102 jeux, dont 55 sans apworld ici. Romain a fourni le dossier
+`custom_worlds` de la génération (`worlds.zip`) et les yamls de tous les joueurs (`yamls.zip`), déposés dans
+`incoming/` (gitignoré).
+- **Apworlds** : la version de la room est celle du fichier du générateur. Pour chacun, on cherche une release GitHub
+  dont le fichier a **le même sha256** (`digest` de l'API GitHub, index Eijebong/Archipelago-index) : 32 trouvés,
+  ajoutés à `config/apworlds.yaml` (`source: github`, tag épinglé, sha256 dans le lock), sans logique tant que le jeu
+  n'est pas validé. Les 20 autres n'ont pas de source publique identique : copiés à la main dans `custom_worlds` du Pi
+  pour la validation, en attendant de décider comment les distribuer (le zip Windows ne prend que le lock).
+  Inventaire (`scripts/room_inventory.py`) : 99 jeux sur 102 ont le checksum de la room.
+- **Yamls des autres joueurs** : `config/players/room/` (gitignoré, le repo est public) ; jamais dans les fixtures de
+  test (yamls générés au hasard par `validate_logic.py`).
+- **Archipelago reste en 0.6.7** : seuls TUNIC et Pokemon Emerald (mondes core modifiés en 0.6.8, un apworld ne peut
+  pas remplacer un monde core) en dépendent ; ils attendent un éventuel passage en 0.6.8. Musipelago_Mathcroft-Music
+  (1 slot) : apworld absent.
+- **Releases** : un lot de 5 jeux validés = une version `v0.2.N`.

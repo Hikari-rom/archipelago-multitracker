@@ -232,6 +232,202 @@ apworlds:
 
 # Not a game: Universal Tracker, used headless as the logic engine.
 # Tracker_v0.3.0 is the newest release whose core is Archipelago 0.6.7 (v0.3.1+ target 0.6.8).
+
+  # M24: games of the room rsRyiqQFQWGRdqg3zHurYw (2026-10), at the exact version the room was generated with:
+  # same sha256 as the generator's apworlds (D12/D26). Logic off until validated (docs/COMPAT.md).
+  2048:
+    game: "2048"
+    source: github
+    repo: Ishigh1/Archipelago
+    tag: "2048-1.1.3"
+    asset: "2048.apworld"
+  bg3:
+    game: "Baldur's Gate 3"
+    source: github
+    repo: zane31415/ArchipelagoBG3
+    tag: "v0.7.2"
+    asset: "bg3.apworld"
+  bigwalk:
+    game: "Big Walk"
+    source: github
+    repo: Grizfreak/BigWalk-archipelago
+    tag: "1.0.1"
+    asset: "bigwalk.apworld"
+  clair_obscur:
+    game: "Clair Obscur Expedition 33"
+    source: github
+    repo: Demorck/ClairObscur_APWorld
+    tag: "v0.4.3"
+    asset: "clair_obscur.apworld"
+  cluster_truck:
+    game: "ClusterTruck"
+    source: github
+    repo: Nullctipus/ArchipelagoClusterTruck
+    tag: "1.3.2"
+    asset: "cluster_truck.apworld"
+  cuphead:
+    game: "Cuphead"
+    source: github
+    repo: JKLeckr/Archipelago-cuphead
+    tag: "alpha03l"
+    asset: "cuphead.apworld"
+  deep_rock_galactic:
+    game: "Deep Rock Galactic"
+    source: github
+    repo: Cousinit117/Deep-Rock-Galactic-AP
+    tag: "0.20"
+    asset: "deep_rock_galactic.apworld"
+  dome_keeper:
+    game: "Dome Keeper"
+    source: github
+    repo: Arrcival/ArchipelagoDK
+    tag: "v1.3.0"
+    asset: "dome_keeper.apworld"
+  donutcounty:
+    game: "Donut County"
+    source: github
+    repo: 1e1001/DonutCountyAP
+    tag: "v0.2.0-preview.3"
+    asset: "donutcounty.apworld"
+  fall_guys:
+    game: "Fall Guys"
+    source: github
+    repo: ninpalk/FallGuysAP
+    tag: "0.0.2"
+    asset: "fall_guys.apworld"
+  fez:
+    game: "Fez"
+    source: github
+    repo: nhyldmar/fez-ap
+    tag: "v0.6.1"
+    asset: "fez.apworld"
+  hades:
+    game: "Hades"
+    source: github
+    repo: NaixGames/Polycosmos
+    tag: "0.16.3"
+    asset: "hades.apworld"
+  hades2rogue:
+    game: "Hades2Rogue"
+    source: github
+    repo: BrittisH39/Hades2Archipelago
+    tag: "v0.10.0"
+    asset: "Hades2Rogue.apworld"
+  ktane:
+    game: "Keep Talking and Nobody Explodes"
+    source: github
+    repo: GreenPower713/Archipelago
+    tag: "v0.3.0c"
+    asset: "ktane.apworld"
+  luigismansion:
+    game: "Luigi's Mansion"
+    source: github
+    repo: BootsinSoots/Archipelago
+    tag: "V0.6.4"
+    asset: "luigismansion.apworld"
+  nine_sols:
+    game: "Nine Sols"
+    source: github
+    repo: Ixrec/NineSolsArchipelagoRandomizer
+    tag: "0.6.4"
+    asset: "nine_sols.apworld"
+  nodebuster:
+    game: "Nodebuster"
+    source: github
+    repo: josephwhite/Emerlads-Nodebuster_AP_Mod
+    tag: "v0.1.3"
+    asset: "nodebuster.apworld"
+  peggle_deluxe:
+    game: "Peggle Deluxe"
+    source: github
+    repo: SerpentAI/Archipelago
+    tag: "peggle-deluxe-v2.2.1"
+    asset: "peggle_deluxe.apworld"
+  peggle_nights:
+    game: "Peggle Nights"
+    source: github
+    repo: SerpentAI/Archipelago
+    tag: "peggle-nights-v2.0.0"
+    asset: "peggle_nights.apworld"
+  powerwashsimulator:
+    game: "Powerwash Simulator"
+    source: github
+    repo: SWCreeperKing/PowerwashSimAP
+    tag: "v0.5.14"
+    asset: "powerwashsimulator.apworld"
+  pvzr:
+    game: "Plants vs. Zombies"
+    source: github
+    repo: dannybonz/replanted_archipelago
+    tag: "v1.10.2"
+    asset: "pvzr.apworld"
+  repo:
+    game: "R.E.P.O"
+    source: github
+    repo: Automagic00/R.E.P.O.-Archipelago-Client-Mod
+    tag: "0.4.4"
+    asset: "repo.apworld"
+  slime_rancher:
+    game: "Slime Rancher"
+    source: github
+    repo: SWCreeperKing/Slimipelago
+    tag: "v0.3.2.1"
+    asset: "slime_rancher.apworld"
+  slime_rancher_2:
+    game: "Slime Rancher 2"
+    source: github
+    repo: Rhelys/SlimeRancher2-AP
+    tag: "v0.15.0"
+    asset: "slime_rancher_2.apworld"
+  tabs:
+    game: "Totally Accurate Battle Simulator"
+    source: github
+    repo: duckboycool/TABS-Archipelago
+    tag: "v0.1.0"
+    asset: "tabs.apworld"
+  terranil:
+    game: "TerraNil"
+    source: github
+    repo: nepcore/TerraNilAP
+    tag: "v0.2.1"
+    asset: "TerraNil.apworld"
+  tfwr:
+    game: "The Farmer Was Replaced"
+    source: github
+    repo: seadoggie001/TFWR-APMod
+    tag: "v0.0.9-beta"
+    asset: "tfwr.apworld"
+  tloz_st:
+    game: "Spirit Tracks"
+    source: github
+    repo: DayKat/spirit-tracks
+    tag: "st-v0.8.3"
+    asset: "tloz_st.apworld"
+  trackmania:
+    game: "Trackmania"
+    source: github
+    repo: SerialBoxes/ArchipelagoTrackmania
+    tag: "v1.3.2"
+    asset: "trackmania.apworld"
+  ultrakill:
+    game: "ULTRAKILL"
+    source: github
+    repo: TRPG0/ArchipelagoULTRAKILL
+    tag: "3.5.6"
+    asset: "ultrakill.apworld"
+  wikipelago:
+    game: "Wikipelago"
+    source: github
+    repo: Dreskn/Wikipelago-Continued
+    tag: "1.0.3"
+    asset: "wikipelago.apworld"
+  zuma_deluxe:
+    game: "Zuma Deluxe"
+    source: github
+    repo: Movido51/Archipelago
+    tag: "zuma-deluxe-v0.2.0-b"
+    asset: "zuma_deluxe.apworld"
+
 tools:
   universal_tracker:
     game: "Universal Tracker"

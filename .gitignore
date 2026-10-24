@@ -24,3 +24,6 @@ config/players/*
 !config/players/romain/
 config/*.tmp
 frontend/.vitest/
+
+# Files handed over by hand (apworlds, yamls of the room) before they are sorted into the repo
+incoming/

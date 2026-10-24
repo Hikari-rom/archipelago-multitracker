@@ -5,3 +5,6 @@ pytest-asyncio==0.26.0
 httpx==0.28.1
 # pkg_resources, imported by the core Pokemon Emerald world (removed from setuptools 81)
 setuptools<81
+# requests/certifi: imported by apworlds of the room (Luigi's Mansion)
+requests
+certifi

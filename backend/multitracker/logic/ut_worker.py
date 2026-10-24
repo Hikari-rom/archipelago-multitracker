@@ -84,6 +84,13 @@ class LogicUnavailable(Exception):
     """Logic cannot be computed for this slot (no yaml for a world that needs one, UT disabled...)."""
 
 
+def adapter_refusal(gen_error: str) -> str | None:
+    """Universal Tracker catches what an adapter raises during the generation and keeps only the traceback:
+    the message of the last LogicUnavailable in it, if any."""
+    refused = [line.split("LogicUnavailable: ", 1)[1] for line in gen_error.splitlines() if "LogicUnavailable: " in line]
+    return refused[-1].strip() if refused else None
+
+
 def _yaml_documents(text: str) -> list[dict[str, Any]]:
     import yaml
     return [d for d in yaml.safe_load_all(text) if isinstance(d, dict)]
@@ -188,6 +195,9 @@ class SlotLogic:
         with regeneration_patch(game, world_cls, slot_data, set(location_ids or ()), start_names):
             self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path)
         if core.multiworld is None or core.player_id is None:
+            refused = adapter_refusal(core.gen_error or "")
+            if refused:
+                raise LogicUnavailable(refused)
             tail = (core.gen_error or "").strip().splitlines()[-1:] or ["raison inconnue"]
             raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
         self.core = core
@@ -195,10 +205,12 @@ class SlotLogic:
         # Locations the server lists for the slot but the regenerated world does not have: the world was built
         # with other options than the room's (typically the yaml of another generation). Its logic misses them.
         own = {loc.address for loc in core.multiworld.get_locations(core.player_id) if isinstance(loc.address, int)}
-        self.foreign_locations = len(set(location_ids or ()) - own)
-        if self.foreign_locations:
-            log.warning("%s: %d locations of the slot are not in the regenerated world (mode %s)",
-                        slot_name, self.foreign_locations, self.mode)
+        foreign = set(location_ids or ()) - own
+        self.foreign_locations = len(foreign)
+        if foreign:
+            names = sorted(world_cls.location_id_to_name.get(i, str(i)) for i in foreign)
+            log.warning("%s: %d locations of the slot are not in the regenerated world (mode %s): %s",
+                        slot_name, len(foreign), self.mode, ", ".join(names[:10]) + (" ..." if len(names) > 10 else ""))
 
     def _regenerate(self, core, world_cls, slot_name: str, game: str, slot_data: dict[str, Any],
                     yaml_path: Path | None) -> None:

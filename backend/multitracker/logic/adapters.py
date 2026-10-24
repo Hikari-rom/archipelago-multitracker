@@ -41,6 +41,26 @@ def _twwhd(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
 
 
 @contextlib.contextmanager
+def _tww(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """The Wind Waker (core): the HD apworld is a port of it, same entrances and required bosses. Randomized
+    charts (which chart leads to which sunken treasure) are drawn at generation and sent nowhere, not even the
+    option (not in slot_data): refuse when the player's yaml has it."""
+    charts = importlib.import_module(f"{world_cls.__module__}.randomizers.Charts").ChartRandomizer
+    original = charts.setup_progress_sunken_treasure_locations
+
+    def setup_progress_sunken_treasure_locations(self) -> None:
+        if self.world.options.randomize_charts:
+            from .ut_worker import LogicUnavailable
+            raise LogicUnavailable("The Wind Waker : cartes mélangées (randomize_charts), le serveur n'envoie pas "
+                                   "où mène chaque carte")
+        original(self)
+
+    with patch_attr(charts, "setup_progress_sunken_treasure_locations", setup_progress_sunken_treasure_locations), \
+            _twwhd(world_cls, slot_data, location_ids):
+        yield
+
+
+@contextlib.contextmanager
 def _twwhd_required_bosses(world_cls: type, location_ids: set[int]):
     """The Wind Waker HD, required bosses mode: the generator picks the required dungeons at random and
     does not create the locations of the other ("banned") dungeons. The slot's location list, which the
@@ -48,8 +68,9 @@ def _twwhd_required_bosses(world_cls: type, location_ids: set[int]):
     """
     module = importlib.import_module(f"{world_cls.__module__}.randomizers.RequiredBosses")
     names = {world_cls.location_id_to_name[i] for i in location_ids if i in world_cls.location_id_to_name}
+    flag = getattr(module, "TWWHDFlag", None) or module.TWWFlag  # HD port / core world
     zones = {module.split_location_name_by_zone(name)[0] for name in names
-             if module.TWWHDFlag.DUNGEON in module.LOCATION_TABLE[name].flags}
+             if flag.DUNGEON in module.LOCATION_TABLE[name].flags}
     required = zones & set(module.DUNGEON_NAMES)  # the dungeons the generator chooses from
     randomizer = module.RequiredBossesRandomizer
     original = randomizer.randomize_required_bosses
@@ -58,7 +79,7 @@ def _twwhd_required_bosses(world_cls: type, location_ids: set[int]):
         options = self.world.options
         if not (required and len(required) == options.num_required_bosses.value):
             from .ut_worker import LogicUnavailable
-            raise LogicUnavailable("TWWHD : impossible de déduire les donjons requis (options required bosses)")
+            raise LogicUnavailable("The Wind Waker : impossible de déduire les donjons requis (options required bosses)")
         options.included_dungeons.value = set(required)  # nothing left to sample at random
         original(self)
 
@@ -368,6 +389,7 @@ def _celeste(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
 ADAPTERS: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
     "Celeste (Open World)": _celeste,
     "The Wind Waker HD": _twwhd,
+    "The Wind Waker": _tww,
     "Super Mario 64": _sm64ex,
     "Ori and the Will of the Wisps": _ori_wotw,
     "Mario Kart Wii": _mkwii,
