@@ -199,6 +199,48 @@ def _cuphead(world_cls: type, slot_data: dict[str, Any], location_ids: set[int])
         yield
 
 
+@contextlib.contextmanager
+def _tloz_st(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Spirit Tracks, like Phantom Hourglass: Universal Tracker leaves the shuffled entrances and the "UT events"
+    (stamp stations, passengers, bosses...) disconnected until the game client reports them in the data storage.
+    The world reconnects all of them (pairings in slot_data["er_pairings"], no spoiler) when
+    `multiworld.enforce_deferred_connections == "off"`, which gives the generator's own logic.
+    The regeneration also keeps the default section count (slot_data["section_count"] is never read back), and
+    slot_data lacks tear_size: a slot only has tears of one size, so let the tear rules accept both sizes.
+    Last, fill_slot_data rewrites two Lost at Sea pairings for the game client (redirect_boss_warps): the dungeon's
+    one-way loop entrance (never shuffled) and the exit that leads into the loop. Put back what the generation had."""
+    from rule_builder.options import OptionFilter
+
+    entrances = importlib.import_module(f"{world_cls.__module__}.data.Entrances").ENTRANCES
+    las_entrance, las_exit, las_loop, las_spawn = (entrances[name].id for name in (
+        "Lost at Sea Lobby Enter Dungeon", "Lost at Sea Dungeon Reward Room Warp",
+        "Lost at Sea Lobby Enter Dungeon One-Way", "Lost at Sea Dungeon Plain Phantom Spawn"))
+    tear_size = world_cls.options_dataclass.type_hints["tear_size"]
+    original_early, original_check = world_cls.generate_early, OptionFilter.check
+
+    def generate_early(self) -> None:
+        self.multiworld.enforce_deferred_connections = "off"
+        original_early(self)
+        pairings = {int(k): int(v) for k, v in self.ut_pairings.items()}
+        if las_entrance in pairings:
+            pairings.pop(las_loop, None)
+            into_loop = pairings.get(las_exit)
+            # With coupled entrances the exit into the loop was paired back with the loop's warp.
+            if pairings.get(into_loop) == las_spawn and not self.options.decouple_shuffled_entrances:
+                pairings[into_loop] = las_exit
+            self.ut_pairings = pairings
+        if "section_count" in slot_data:
+            count = min(int(slot_data["section_count"]), 5)
+            self.sections_included = int(slot_data["section_count"])
+            self.tears_included_small, self.tears_included_big = count * 3 + 1, count + 1
+
+    def check(self, options) -> bool:
+        return self.option is tear_size or original_check(self, options)
+
+    with patch_attr(world_cls, "generate_early", generate_early), patch_attr(OptionFilter, "check", check):
+        yield
+
+
 def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
     """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
     locations go to the start inventory with their pool classification (often useful), which the real generation's
@@ -231,5 +273,6 @@ ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManage
     "Deep Rock Galactic": _deep_rock_galactic,
     "PEAK": _peak,
     "Slime Rancher 2": _slime_rancher_2,
+    "Spirit Tracks": _tloz_st,
     "Trackmania": _trackmania,
 }

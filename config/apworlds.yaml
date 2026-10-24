@@ -445,6 +445,7 @@ apworlds:
     repo: DayKat/spirit-tracks
     tag: "st-v0.8.3"
     asset: "tloz_st.apworld"
+    logic: true  # adapter: connections, section count, tear size, Lost at Sea
   trackmania:
     game: "Trackmania"
     source: github

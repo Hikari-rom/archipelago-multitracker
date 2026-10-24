@@ -1,0 +1,9 @@
+name: spirit
+game: "Spirit Tracks"
+"Spirit Tracks":
+  randomize_tears: anywhere
+  tear_size: large
+  tear_sections: all_sections
+  shuffle_tos_sections: shuffle_alone
+  shuffle_las: shuffle_pool_a
+  shuffle_dungeon_entrances: shuffle_pool_a
