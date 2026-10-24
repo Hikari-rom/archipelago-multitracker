@@ -247,4 +247,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   adaptateur, e2e `m24g`)
 - [x] Lot 8 (v0.2.8) : Peggle Deluxe, Peggle Nights, Powerwash Simulator, Stray, Super Meat Boy (sans adaptateur,
   e2e `m24h`)
+- [x] Lot 9 (v0.2.9) : TerraNil, Terraria Beta, Totally Accurate Battle Simulator, ULTRAKILL, Trombone Champ (sans
+  adaptateur, e2e `m24i` ; le bot de test s'annonce plus récent quand un monde demande un client > 0.6.7)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8

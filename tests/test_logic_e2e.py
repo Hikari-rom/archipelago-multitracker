@@ -302,3 +302,14 @@ async def test_bot_finishes_m24h_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24h", 17, tmp_path, spoiler=1, no_yaml=M24H_NO_YAML)
     (ROOT / "test-output" / "e2e_m24h.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+M24I_NO_YAML = frozenset({"TerraNil", "Terraria Beta", "ULTRAKILL"})
+
+
+async def test_bot_finishes_m24i_batch_using_only_in_logic_locations(tmp_path):
+    """Ninth batch of the 2026-10 room (v0.2.9), no adapter needed: TerraNil, Terraria Beta and ULTRAKILL (no yaml,
+    slot_data only), Totally Accurate Battle Simulator and Trombone Champ."""
+    result = await play_until_done("m24i", 17, tmp_path, spoiler=1, no_yaml=M24I_NO_YAML)
+    (ROOT / "test-output" / "e2e_m24i.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

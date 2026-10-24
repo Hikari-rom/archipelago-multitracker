@@ -1,0 +1,7 @@
+name: ultrakill
+game: "ULTRAKILL"
+"ULTRAKILL":
+  goal_requirement: 10
+  enemy_rewards: bosses
+  challenge_rewards: true
+  trap_percent: 10

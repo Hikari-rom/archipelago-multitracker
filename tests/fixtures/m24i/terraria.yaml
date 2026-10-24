@@ -1,0 +1,5 @@
+name: terraria
+game: "Terraria Beta"
+"Terraria Beta":
+  goal: plantera
+  randomize_npcs: false

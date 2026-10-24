@@ -1,0 +1,6 @@
+name: terranil
+game: "TerraNil"
+"TerraNil":
+  number_of_levels: 5
+  levels_cleared_to_goal: 4
+  rain_logic: true

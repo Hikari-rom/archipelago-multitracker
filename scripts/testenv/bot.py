@@ -59,11 +59,20 @@ class GameBot:
         try:
             self.sock, _ = await net.open_socket(self.server)
             self.reader = asyncio.create_task(self._read())
-            await self._send({"cmd": "Connect", "password": self.password, "game": self.game,
-                              "name": self.slot_name, "uuid": uuid.uuid4().hex, "version": net.AP_VERSION,
-                              "items_handling": 0b111, "tags": ["AP", "TestBot"], "slot_data": True})
-            await asyncio.wait_for(self._connected.wait(), timeout)
-            self._raise_if_closed()
+            version = net.AP_VERSION
+            for attempt in range(2):
+                await self._send({"cmd": "Connect", "password": self.password, "game": self.game,
+                                  "name": self.slot_name, "uuid": uuid.uuid4().hex, "version": version,
+                                  "items_handling": 0b111, "tags": ["AP", "TestBot"], "slot_data": True})
+                await asyncio.wait_for(self._connected.wait(), timeout)
+                self._raise_if_closed()
+                # Some worlds ask for a client newer than AP itself (Terraria Beta: 0.6.200); the server does not
+                # say which, so announce a version above any of them (local test server only).
+                if attempt or self._refused != ["IncompatibleVersion"]:
+                    break
+                version = {**net.AP_VERSION, "build": 9999}
+                self._refused = None
+                self._connected.clear()
             if self._refused is not None:
                 raise ConnectionError(f"connection refused: {self._refused}")
             # ReceivedItems follows Connected in a separate packet (and Sync gets no reply when there are no

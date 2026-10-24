@@ -132,3 +132,8 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | Powerwash Simulator | SWCreeperKing v0.5.14 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24h` (sans yaml) | activée, v0.2.8 | se reconstruit depuis le seul `slot_data` |
 | Stray | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24h` | activée (yaml), v0.2.8 | |
 | Super Meat Boy | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + e2e `m24h` | activée (yaml), v0.2.8 | |
+| TerraNil | nepcore v0.2.1 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24i` (sans yaml) | activée, v0.2.9 | se reconstruit depuis le seul `slot_data` |
+| Terraria Beta | importé (`source: user`) | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24i` (sans yaml) | activée, v0.2.9 | demande un client 0.6.200 : sans effet sur l'app (connexion `Tracker` sans jeu), le bot de test s'annonce plus récent |
+| Totally Accurate Battle Simulator | duckboycool v0.1.0 | ✅ 3/3 + 2/2 yaml + e2e `m24i` | activée (yaml), v0.2.9 | |
+| ULTRAKILL | TRPG0 3.5.6 | ✅ 3/3 + 2/2 yaml + 2/2 sans yaml + e2e `m24i` (sans yaml) | activée, v0.2.9 | se reconstruit depuis le seul `slot_data` |
+| Trombone Champ | importé (`source: user`) | ✅ 1/1 généré + 2/2 yaml + e2e `m24i` | activée (yaml), v0.2.9 | beaucoup d'options aléatoires refusées par l'apworld lui-même (`OptionError`) |

@@ -420,12 +420,15 @@ apworlds:
     repo: duckboycool/TABS-Archipelago
     tag: "v0.1.0"
     asset: "tabs.apworld"
+    logic: true
+    needs_yaml: true
   terranil:
     game: "TerraNil"
     source: github
     repo: nepcore/TerraNilAP
     tag: "v0.2.1"
     asset: "TerraNil.apworld"
+    logic: true
   tfwr:
     game: "The Farmer Was Replaced"
     source: github
@@ -454,6 +457,7 @@ apworlds:
     repo: TRPG0/ArchipelagoULTRAKILL
     tag: "3.5.6"
     asset: "ultrakill.apworld"
+    logic: true
   wikipelago:
     game: "Wikipelago"
     source: github
@@ -551,9 +555,12 @@ apworlds:
   terraria_beta:
     game: "Terraria Beta"
     source: user
+    logic: true
   trombone:
     game: "Trombone Champ"
     source: user
+    logic: true
+    needs_yaml: true
   mm_recomp:
     game: "Majora's Mask Recompiled"
     source: user

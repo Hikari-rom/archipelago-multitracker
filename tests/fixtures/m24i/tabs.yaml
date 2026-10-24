@@ -1,0 +1,5 @@
+name: tabs
+game: "Totally Accurate Battle Simulator"
+"Totally Accurate Battle Simulator":
+  progressive_factions: true
+  secret_type: all
