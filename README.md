@@ -11,8 +11,17 @@ Pour chaque slot :
   piloté en headless. Jeux validés : voir [`docs/COMPAT.md`](docs/COMPAT.md).
 
 Et aussi : fil des derniers items reçus, tri des jeux (conseillé, nombre ou % de checks en logique), jeu en cours mis
-en avant, page **Objectifs** (le but de chaque jeu et où tu en es), page **Configuration** (room, yamls, slots) et
-page **Journal** (logs en direct).
+en avant, page **Historique** (checks envoyés et items reçus, jour par jour, avec leur heure et leur contenu), page
+**Objectifs** (le but de chaque jeu et où tu en es), page **Configuration** (room, yamls, slots) et page **Journal**
+(logs en direct).
+
+Deux interfaces, mêmes données :
+- **v2 « Observatoire »** sur `/v2` : affichage Cartes ou Focus, thèmes Nuit et Plan, téléphone. Un jeu en **BK**
+  (plus rien en logique) est en rouge, un jeu **terminé** en or. Page **Room complète** en option (menu Plus) :
+  classement, qui joue, activité et fil des checks de toute la room.
+- **v1** sur `/` : l'interface d'origine, gardée tant que la v2 n'est pas validée.
+
+Sur Linux (testé sur Raspberry Pi), ou sur Windows avec la [version portable](#windows--version-portable).
 
 **Zéro spoiler** : l'app ne sait que ce que sait un tracker classique (items reçus, checks, hints, `slot_data`,
 datapackage et tes yamls). Elle se connecte en **lecture seule** (tag `Tracker`) : elle n'envoie jamais de check,
@@ -83,11 +92,10 @@ Si ta distribution n'a qu'un Python 3.14 ou plus récent, installe un 3.13 à c�
 
 ### 2. Récupérer le code
 
-Le dépôt GitHub est privé : il faut un compte GitHub qui y a accès (celui de Romain, ou un compte invité comme
-collaborateur), avec une clé SSH ajoutée à ce compte (ou `gh auth login` puis `gh repo clone Hikari-rom/archipelago-multitracker`).
+Le dépôt est public : pas besoin de compte GitHub.
 
 ```bash
-git clone git@github.com:Hikari-rom/archipelago-multitracker.git
+git clone https://github.com/Hikari-rom/archipelago-multitracker.git
 cd archipelago-multitracker
 ```
 
@@ -160,7 +168,7 @@ normal.
 1. colle le lien de la room, « Découvrir les slots », mets le mot de passe et « Tester la connexion » ;
 2. importe tes yamls (« Importer des yamls ») puis « Associer automatiquement » : certains jeux en ont besoin pour
    calculer la logique ;
-3. coche tes slots et « Enregistrer ».
+3. coche tes slots et « Enregistrer » (en haut de la page).
 
 Le tableau de bord se remplit dès que l'app est connectée. Si la room dort, il affiche « Room endormie » : l'app se
 reconnecte toute seule quand quelqu'un la réveille, ou tout de suite avec le bouton « Réveiller maintenant ».
@@ -219,8 +227,16 @@ Le plus simple : ouvre l'app, bouton **Configuration**.
 3. **Slots** : recherche, filtre par jeu, « Cocher les affichés », « Cocher ceux qui ont un yaml ». Sous chaque slot
    coché, un diagnostic : pas d'apworld (suivi des checks seulement), logique pas encore validée, yaml nécessaire mais
    absent, yaml d'un autre jeu ou d'un autre nom.
-4. **Enregistrer** : l'ancienne configuration est gardée (`config/room.yaml.bak`) et « Restaurer la configuration
-   précédente » la remet.
+4. **Enregistrer** (barre en haut de la page) : l'ancienne configuration est gardée (`config/room.yaml.bak`) et
+   « Restaurer la configuration précédente » la remet.
+
+Deux réglages de la carte Room :
+- **Demander au serveur le contenu des checks déjà faits** (activé par défaut) : pour l'Historique, l'app demande ce
+  que contenaient tes checks **déjà faits**, sans créer de hint (rien n'est dévoilé, D20).
+- **Tableau de bord de la room complète** (désactivé par défaut) : une connexion d'écoute en plus, en lecture seule,
+  pour la page « Room complète » de la v2. Les checks de toute la room sont écrits dans `data/room_feed/` ; ceux faits
+  pendant que l'app était arrêtée sont rattrapés depuis le site (sans leur heure exacte, D22). Les noms de joueurs se
+  corrigent dans `config/room_players.yaml` (`slot: joueur`).
 
 Lien direct pour partager la page pré-remplie : `http://<ip-du-pi>:42753/#config?room=<lien de la room>`.
 
@@ -235,6 +251,8 @@ quelqu'un a ouvert la room. La case « Réveiller automatiquement la room » cha
 room_url: "https://archipelago.gg/room/AbC…"   # ou server: "host:port" pour un serveur hors archipelago.gg
 password: "le mot de passe"
 wake_room: false
+scout_checked: true      # contenu des checks déjà faits (Historique)
+room_dashboard: false    # page « Room complète »
 slots:
   - name: "Romain_Celeste"                # nom exact du slot
     game: "Celeste (Open World)"          # optionnel (le serveur le donne)
@@ -299,8 +317,11 @@ cd frontend && npm test && npm run build
 ```
 
 Environnement de test (jamais utilisé par l'app) dans `scripts/testenv/` : génération de seeds sans ROM, serveur local
-sur `127.0.0.1:38281-38290`, bot qui envoie des checks, campagnes de validation de la logique
+sur `127.0.0.1:38281-38291`, bot qui envoie des checks, campagnes de validation de la logique
 (`validate_logic.py`, `campaign.sh`). Seul ce code de test lit les spoilers et le multidata.
+
+Version Windows : `scripts/windows/` (lanceur, `Multitracker.exe`, assemblage du dossier), construite par
+`.github/workflows/windows.yml` sur GitHub Actions (lancement à la main, ou release sur un tag `v*`, D23).
 
 Docs : [`docs/API.md`](docs/API.md) (API REST + SSE), [`docs/COMPAT.md`](docs/COMPAT.md) (jeux),
 [`DECISIONS.md`](DECISIONS.md), [`PROGRESS.md`](PROGRESS.md).
@@ -311,3 +332,5 @@ Docs : [`docs/API.md`](docs/API.md) (API REST + SSE), [`docs/COMPAT.md`](docs/CO
 - [Universal Tracker](https://github.com/FarisTheAncient/Archipelago/tree/tracker) de FarisTheAncient (MIT, licence du
   dépôt), téléchargé comme apworld et utilisé comme bibliothèque.
 - Les apworlds des jeux appartiennent à leurs auteurs respectifs (liens dans `config/apworlds.yaml`).
+- Version Windows : CPython de [python-build-standalone](https://github.com/astral-sh/python-build-standalone)
+  (licence PSF et licences de ses composants), installé avec [uv](https://github.com/astral-sh/uv).
