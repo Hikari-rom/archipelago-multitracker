@@ -266,4 +266,7 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   appareil, `amt-v2-ticker`) : Statique (défaut), Fil d'agence, Tableau des arrivées, Ruban céleste
   (`v2/components/NewsTicker.vue`, maquettes Claude Design) ; 15 items, pause au survol ou au focus, immobile et
   défilable à la main avec « réduire les animations », ne défile que si les items débordent
+- [x] Mode manuel des jeux actifs (Configuration › Affichage, sur cet appareil, dans `amt-activity`) : seuls les jeux
+  activés à la main sont actifs, plusieurs à la fois, les checks n'y changent rien ; en passant en manuel, les jeux
+  actifs à ce moment sont gardés ; la liste est conservée en repassant en automatique
 - [ ] Vérifier les trois styles à l'œil sur ordinateur et téléphone (pas de Chromium sur la machine de dev)

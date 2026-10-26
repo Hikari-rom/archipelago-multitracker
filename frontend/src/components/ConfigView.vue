@@ -31,7 +31,7 @@ import {
   type YamlEntry,
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
-import { refreshMeta, setView, tracker } from '../stores/tracker'
+import { refreshMeta, setActiveMode, setView, tracker } from '../stores/tracker'
 import { saveTicker, TICKER_LABELS, type TickerStyle } from '../v2/lib/prefs'
 
 const emit = defineEmits<{ saved: [] }>()
@@ -566,6 +566,22 @@ const selectClass =
         </CardHeader>
         <CardContent class="flex flex-col gap-3 px-5">
           <label class="flex flex-wrap items-center gap-2 text-sm">
+            Jeux actifs (affichés en premier)
+            <select
+              :value="tracker.activity.mode ?? 'auto'"
+              data-active-mode
+              :class="cn(selectClass, 'w-auto')"
+              @change="setActiveMode(($event.target as HTMLSelectElement).value as 'auto' | 'manual')"
+            >
+              <option value="auto">Automatique : check récent</option>
+              <option value="manual">Manuel : choisis à la main</option>
+            </select>
+          </label>
+          <p v-if="tracker.activity.mode === 'manual'" class="text-muted-foreground text-xs">
+            Seuls les jeux activés à la main (« Activer », « Définir comme actif ») sont actifs, et le restent jusqu'à
+            « Plus actif », quels que soient les checks. Plusieurs jeux peuvent l'être en même temps.
+          </p>
+          <label v-else class="flex flex-wrap items-center gap-2 text-sm">
             Un jeu est « actif » (affiché en premier) s'il a fait un check depuis
             <select
               :value="tracker.activeMinutes"

@@ -67,18 +67,28 @@ export interface ActivityOverrides {
   /** games set inactive by hand ("Plus actif"): their last check at that moment (0: none). They become active
    * again with their next check. */
   dismissed: Record<string, number>
+  /** "manual": only the games chosen by hand are active, checks change nothing (default: "auto") */
+  mode?: 'auto' | 'manual'
+  /** games chosen by hand in manual mode, the most recently chosen first */
+  chosen?: string[]
 }
 export const NO_OVERRIDES: ActivityOverrides = { pinned: null, dismissed: {} }
 
+/** The game was made active by hand: the one pinned in auto mode, one of the chosen ones in manual mode. */
+export function isChosen(name: string, ov: ActivityOverrides = NO_OVERRIDES): boolean {
+  return ov.mode === 'manual' ? !!ov.chosen?.includes(name) : ov.pinned?.name === name
+}
+
 /** "Active" = the slot checked a location recently (the server's client status cannot tell, see DECISIONS D11),
  * unless set inactive by hand since; the game chosen by hand is always active, and once one is chosen the other
- * games are active only with a check made after that choice. */
+ * games are active only with a check made after that choice. In manual mode, only the games chosen by hand are. */
 export function isActive(
   s: SlotSummary,
   nowMs: number,
   minutes = DEFAULT_ACTIVE_MINUTES,
   ov: ActivityOverrides = NO_OVERRIDES,
 ): boolean {
+  if (ov.mode === 'manual') return isChosen(s.name, ov)
   if (ov.pinned?.name === s.name) return true
   const last = s.last_check_at
   if (s.goal || !last || nowMs / 1000 - last >= minutes * 60) return false

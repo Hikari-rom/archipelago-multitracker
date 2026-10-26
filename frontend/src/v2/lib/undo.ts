@@ -1,7 +1,7 @@
 // "Plus actif" with a 6 s "Annuler".
 import { reactive } from 'vue'
 import type { ActivityOverrides } from '../../lib/logic'
-import { restoreActivity, setInactive, tracker } from '../../stores/tracker'
+import { cloneActivity, restoreActivity, setInactive, tracker } from '../../stores/tracker'
 
 export const UNDO_MS = 6000
 export const undo = reactive({ message: '', prev: null as ActivityOverrides | null })
@@ -14,11 +14,12 @@ export function clearUndo(): void {
 }
 
 export function dismissWithUndo(name: string, game: string): void {
-  const prev = { pinned: tracker.activity.pinned ? { ...tracker.activity.pinned } : null, dismissed: { ...tracker.activity.dismissed } }
+  const prev = cloneActivity(tracker.activity)
+  const manual = tracker.activity.mode === 'manual'
   setInactive(name)
   clearTimeout(timer)
   undo.prev = prev
-  undo.message = `${game} n'est plus actif jusqu'à son prochain check.`
+  undo.message = manual ? `${game} n'est plus actif.` : `${game} n'est plus actif jusqu'à son prochain check.`
   timer = setTimeout(clearUndo, UNDO_MS)
 }
 

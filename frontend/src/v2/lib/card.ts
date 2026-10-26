@@ -1,5 +1,5 @@
 // State of a game card in the v2: activity, logic, big number, connection.
-import { connectionMessage, isActive, isBK, statusLabel, type ActivityOverrides } from '../../lib/logic'
+import { connectionMessage, isActive, isBK, isChosen, statusLabel, type ActivityOverrides } from '../../lib/logic'
 export { isBK }
 import type { SlotSummary } from '../../lib/types'
 import { computed, type ComputedRef } from 'vue'
@@ -22,7 +22,7 @@ export function hhmm(epochSeconds: number): string {
 }
 
 function activityOf(s: SlotSummary, c: CardCtx): CardActivity {
-  if (c.activity.pinned?.name === s.name) return { kind: 'chosen' }
+  if (isChosen(s.name, c.activity)) return { kind: 'chosen' }
   if (!isActive(s, c.nowMs, c.activeMinutes, c.activity) || !s.last_check_at) return null
   const agoMin = Math.max(0, Math.floor((c.nowMs / 1000 - s.last_check_at) / 60))
   return { kind: 'auto', agoMin, expiresInMin: Math.max(1, c.activeMinutes - agoMin) }

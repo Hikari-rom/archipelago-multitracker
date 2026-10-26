@@ -2,6 +2,7 @@ import { reactive } from 'vue'
 import * as api from '../lib/api'
 import { roomFromLocation } from '../lib/config'
 import { clockOffset, loadActiveMinutes } from '../lib/history'
+import { splitFeatured } from '../lib/dashboard'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
@@ -49,7 +50,9 @@ function loadActivity(): ActivityOverrides {
     if (v && typeof v === 'object') {
       const pinned = v.pinned && typeof v.pinned.name === 'string' && typeof v.pinned.at === 'number' ? v.pinned : null
       const dismissed = v.dismissed && typeof v.dismissed === 'object' ? v.dismissed : {}
-      return { pinned, dismissed }
+      const mode = v.mode === 'manual' ? 'manual' : 'auto'
+      const chosen = Array.isArray(v.chosen) ? v.chosen.filter((n: unknown) => typeof n === 'string') : []
+      return { pinned, dismissed, mode, chosen }
     }
   } catch {
     /* ignore */
@@ -64,18 +67,46 @@ function saveActivity(): void {
   }
 }
 
-/** "Définir comme actif": this game is the one being played; the others stay active only with a newer check. */
-export function pinActive(name: string): void {
-  const dismissed = { ...tracker.activity.dismissed }
-  delete dismissed[name]
-  tracker.activity = { pinned: { name, at: serverNowMs() / 1000 }, dismissed }
+export function cloneActivity(a: ActivityOverrides): ActivityOverrides {
+  return { ...a, pinned: a.pinned ? { ...a.pinned } : null, dismissed: { ...a.dismissed }, ...(a.chosen && { chosen: [...a.chosen] }) }
+}
+
+/** Auto (recent checks) or manual (chosen by hand) "active" games. Going manual with nothing chosen yet keeps the games
+ * active at that moment. */
+export function setActiveMode(mode: 'auto' | 'manual'): void {
+  const a = tracker.activity
+  if ((a.mode ?? 'auto') === mode) return
+  let chosen = a.chosen ?? []
+  if (mode === 'manual' && !chosen.length)
+    chosen = splitFeatured(tracker.slots, tracker.nowMs, tracker.activeMinutes, a).featured.map((s) => s.name)
+  tracker.activity = { ...cloneActivity(a), mode, chosen }
   saveActivity()
 }
 
-/** "Plus actif": not active any more, until its next check. */
+/** "Définir comme actif": this game is the one being played; the others stay active only with a newer check.
+ * Manual mode: the game joins the chosen ones. */
+export function pinActive(name: string): void {
+  if (tracker.activity.mode === 'manual') {
+    tracker.activity = { ...cloneActivity(tracker.activity), chosen: [name, ...(tracker.activity.chosen ?? []).filter((n) => n !== name)] }
+    saveActivity()
+    return
+  }
+  const dismissed = { ...tracker.activity.dismissed }
+  delete dismissed[name]
+  tracker.activity = { ...cloneActivity(tracker.activity), pinned: { name, at: serverNowMs() / 1000 }, dismissed }
+  saveActivity()
+}
+
+/** "Plus actif": not active any more, until its next check (manual mode: until chosen again). */
 export function setInactive(name: string): void {
+  if (tracker.activity.mode === 'manual') {
+    tracker.activity = { ...cloneActivity(tracker.activity), chosen: (tracker.activity.chosen ?? []).filter((n) => n !== name) }
+    saveActivity()
+    return
+  }
   const s = tracker.slots.find((x) => x.name === name)
   tracker.activity = {
+    ...cloneActivity(tracker.activity),
     pinned: tracker.activity.pinned?.name === name ? null : tracker.activity.pinned,
     dismissed: { ...tracker.activity.dismissed, [name]: s?.last_check_at ?? 0 },
   }
@@ -84,7 +115,7 @@ export function setInactive(name: string): void {
 
 /** "Annuler" after "Plus actif": put back the choices as they were. */
 export function restoreActivity(prev: ActivityOverrides): void {
-  tracker.activity = { pinned: prev.pinned ? { ...prev.pinned } : null, dismissed: { ...prev.dismissed } }
+  tracker.activity = cloneActivity(prev)
   saveActivity()
 }
 

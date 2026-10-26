@@ -75,7 +75,7 @@ watch(
       <template v-if="split.featured.length">
         <div class="mt-6 mb-3 flex flex-wrap items-baseline gap-x-4">
           <h2 class="text-lg font-semibold">◉ Actifs · {{ split.featured.length }}</h2>
-          <span class="font-mono text-xs text-muted-foreground">auto = check il y a moins de {{ tracker.activeMinutes }} min</span>
+          <span class="font-mono text-xs text-muted-foreground">{{ tracker.activity.mode === 'manual' ? 'manuel = choisis à la main' : `auto = check il y a moins de ${tracker.activeMinutes} min` }}</span>
         </div>
         <div class="space-y-3">
           <ActiveCard v-for="s in split.featured" :key="s.name" :summary="s" />

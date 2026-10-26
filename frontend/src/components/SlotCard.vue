@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { percent } from '../lib/dashboard'
 import { counterText, mainCounter } from '../lib/goals'
 import { formatWhen } from '../lib/history'
-import { connectionMessage, isActive, isBK, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
+import { connectionMessage, isActive, isBK, isChosen, logicBadge, logicUnavailable, pluralize, statusLabel } from '../lib/logic'
 import type { SlotSummary } from '../lib/types'
 import { isOpen, loadDetail, markSeen, pinActive, setInactive, toggleOpen, tracker } from '../stores/tracker'
 import ProgressSplit from './ProgressSplit.vue'
@@ -19,7 +19,8 @@ const props = defineProps<{ summary: SlotSummary; featured?: boolean }>()
 
 const badge = computed(() => logicBadge(props.summary))
 const active = computed(() => isActive(props.summary, tracker.nowMs, tracker.activeMinutes, tracker.activity))
-const pinned = computed(() => tracker.activity.pinned?.name === props.summary.name)
+const pinned = computed(() => isChosen(props.summary.name, tracker.activity))
+const manual = computed(() => tracker.activity.mode === 'manual')
 const activeText = computed(() =>
   pinned.value ? 'Actif · choisi' : `Actif · ${formatWhen(props.summary.last_check_at, tracker.nowMs)}`,
 )
@@ -144,7 +145,7 @@ async function onSeen() {
         variant="ghost"
         size="sm"
         class="set-inactive text-muted-foreground"
-        title="Ce jeu ne sera plus mis en avant, jusqu’à son prochain check"
+        :title="manual ? 'Ce jeu ne sera plus mis en avant' : 'Ce jeu ne sera plus mis en avant, jusqu’à son prochain check'"
         @click="setInactive(summary.name)"
       >
         <PinOff aria-hidden="true" /> Plus actif

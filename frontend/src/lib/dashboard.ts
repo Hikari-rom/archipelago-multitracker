@@ -1,5 +1,5 @@
 // Dashboard: totals of the selected slots, sort modes, two-colour progress bars, feed of received items.
-import { isActive, NO_OVERRIDES, sortSlots, type ActivityOverrides } from './logic'
+import { isActive, isChosen, NO_OVERRIDES, sortSlots, type ActivityOverrides } from './logic'
 import type { RecentItem, SlotSummary } from './types'
 
 export interface Totals {
@@ -87,14 +87,16 @@ export function saveSortMode(v: SortMode): void {
 }
 
 /** Active games (a location checked in the last minutes, or chosen by hand) go first, in full-width cards: the
- * game chosen by hand, then the most recent first; the other games keep the chosen order. */
+ * game chosen by hand, then the most recent first (manual mode: the most recently chosen first); the other games
+ * keep the chosen order. */
 export function splitFeatured(
   slots: SlotSummary[],
   nowMs: number,
   activeMinutes?: number,
   ov: ActivityOverrides = NO_OVERRIDES,
 ) {
-  const pinnedFirst = (s: SlotSummary) => (ov.pinned?.name === s.name ? 0 : 1)
+  const pinnedFirst = (s: SlotSummary) =>
+    ov.mode === 'manual' ? (ov.chosen ?? []).indexOf(s.name) : isChosen(s.name, ov) ? 0 : 1
   const featured = slots
     .filter((s) => isActive(s, nowMs, activeMinutes, ov))
     .sort((a, b) => pinnedFirst(a) - pinnedFirst(b) || (b.last_check_at ?? 0) - (a.last_check_at ?? 0))

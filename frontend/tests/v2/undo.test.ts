@@ -25,6 +25,15 @@ describe('Plus actif + Annuler', () => {
     expect(JSON.parse(localStorage.getItem('amt-activity')!)).toEqual(tracker.activity)
     expect(undo.message).toBe('')
   })
+  it('manual mode: the game leaves the chosen list, and comes back with Annuler', () => {
+    tracker.slots = [mk({ name: 'celeste', last_check_at: 100 })]
+    tracker.activity = { pinned: null, dismissed: {}, mode: 'manual', chosen: ['celeste', 'ph'] }
+    dismissWithUndo('celeste', 'Celeste (Open World)')
+    expect(tracker.activity.chosen).toEqual(['ph'])
+    expect(undo.message).toBe("Celeste (Open World) n'est plus actif.")
+    undoLast()
+    expect(tracker.activity.chosen).toEqual(['celeste', 'ph'])
+  })
   it('the message disappears after 6 s', () => {
     vi.useFakeTimers()
     tracker.slots = [mk({ name: 'a', last_check_at: 1 })]

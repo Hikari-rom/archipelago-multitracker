@@ -8,7 +8,7 @@ import { compactMain, splitFeatured } from '../src/lib/dashboard'
 import { formatChecked, sentText } from '../src/lib/history'
 import { isActive, NO_OVERRIDES, sortSlots } from '../src/lib/logic'
 import type { HistoryPage, SentCheck } from '../src/lib/types'
-import { pinActive, setInactive, tracker } from '../src/stores/tracker'
+import { pinActive, setActiveMode, setInactive, tracker } from '../src/stores/tracker'
 import { mk } from './helpers'
 
 const NOW = 1_800_000_000_000
@@ -74,8 +74,56 @@ describe('active game chosen by hand, after a reload', () => {
     localStorage.setItem('amt-activity', JSON.stringify(saved))
     vi.resetModules()
     const fresh = await import('../src/stores/tracker')
-    expect(fresh.tracker.activity).toEqual(saved)
+    expect(fresh.tracker.activity).toEqual({ ...saved, mode: 'auto', chosen: [] })
+    localStorage.setItem('amt-activity', JSON.stringify({ ...saved, mode: 'manual', chosen: ['a', 3, 'b'] }))
+    vi.resetModules()
+    const again = await import('../src/stores/tracker')
+    expect(again.tracker.activity).toMatchObject({ mode: 'manual', chosen: ['a', 'b'] })
     localStorage.removeItem('amt-activity')
+  })
+})
+
+describe('manual mode: only the games chosen by hand are active', () => {
+  const played = mk({ name: 'played', last_check_at: ago(5) })
+  const older = mk({ name: 'older', last_check_at: ago(20) })
+  const idle = mk({ name: 'idle', last_check_at: null })
+  const done = mk({ name: 'done', last_check_at: ago(1), goal: true })
+
+  it('checks change nothing; several games can be chosen, the latest first', () => {
+    const ov = { pinned: { name: 'played', at: ago(1) }, dismissed: {}, mode: 'manual' as const, chosen: ['idle', 'done'] }
+    expect(isActive(played, NOW, 30, ov)).toBe(false) // recent check, pinned in auto mode: not chosen here
+    expect(isActive(idle, NOW, 30, ov)).toBe(true)
+    expect(isActive(done, NOW, 30, ov)).toBe(true)
+    expect(splitFeatured([played, older, done, idle], NOW, 30, ov).featured.map((s) => s.name)).toEqual(['idle', 'done'])
+    expect(compactMain([played, older, idle], NOW, 30, ov)?.name).toBe('idle')
+  })
+
+  it('going manual keeps the games active at that moment; pin and unpin edit the chosen list', () => {
+    tracker.slots = [played, older, idle]
+    tracker.nowMs = NOW
+    tracker.activeMinutes = 30
+    setActiveMode('manual')
+    expect(tracker.activity.chosen).toEqual(['played', 'older'])
+    pinActive('idle')
+    pinActive('older')
+    expect(tracker.activity.chosen).toEqual(['older', 'idle', 'played'])
+    expect(tracker.activity.pinned).toBeNull() // auto-mode choices stay untouched
+    setInactive('idle')
+    expect(tracker.activity.chosen).toEqual(['older', 'played'])
+    expect(tracker.activity.dismissed).toEqual({})
+    // back to auto: the recent checks rule again; the manual list is kept for next time
+    setActiveMode('auto')
+    expect(isActive(played, NOW, 30, tracker.activity)).toBe(true)
+    expect(isActive(idle, NOW, 30, tracker.activity)).toBe(false)
+    setActiveMode('manual')
+    expect(tracker.activity.chosen).toEqual(['older', 'played'])
+  })
+
+  it('a chosen card reads « Actif · choisi »', () => {
+    tracker.slots = [idle]
+    tracker.nowMs = NOW
+    tracker.activity = { pinned: null, dismissed: {}, mode: 'manual', chosen: ['idle'] }
+    expect(mount(SlotCard, { props: { summary: idle } }).text()).toContain('Actif · choisi')
   })
 })
 
