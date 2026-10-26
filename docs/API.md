@@ -182,7 +182,10 @@ document avec `name` et `game`). Réponse `{"path": "...", "players": [...], "st
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}]}
 ```
 Écrit `config/room.yaml` (l'ancienne version va dans `config/room.yaml.bak`) et recharge les connexions (un `snapshot`
-SSE suit). `yaml` doit être un fichier de `config/players/` (sinon 400).
+SSE suit). `yaml` doit être un fichier de `config/players/` (sinon 400). Seul ce qui change se reconnecte (D29) : autre
+serveur, room, mot de passe ou `scout_checked` → tous les slots ; sinon les slots retirés se déconnectent, les ajoutés
+se connectent (et ceux qui changent de jeu se reconnectent), les autres restent connectés ; un autre `yaml` relance
+seulement le calcul de la logique. Enregistrer sans rien changer ne déconnecte rien.
 
 ### `POST /api/config/restore`
 Échange `config/room.yaml` et `config/room.yaml.bak` (un deuxième appel annule le premier) et recharge les connexions.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_OWNERS, NO_OWNER, autoAssociate, buildPutBody, checkByName, diagnose, distinctGames, distinctOwners,
   filterByOwner, filterRows, mergeDiscovered, mergeRows, nameMatches, passwordPayload, probeMessage, roomFromLocation,
-  setAll, setChecked, showOwnerFilter,
+  setAll, setChecked, showOwnerFilter, withDiscovered,
 } from '../src/lib/config'
 import { summaryText } from '../src/lib/logic'
 import { mk } from './helpers'
@@ -32,6 +32,20 @@ describe('config rows', () => {
     expect(out).toHaveLength(3)
     expect(out[0].owner).toBe('Zed')
     expect(out[2]).toMatchObject({ name: 'Alice_Hades', checked: false })
+  })
+  it('after a discover, the saved selection stays: matching yamls only pre-check slots at the first setup', () => {
+    const roomYamls = [
+      { path: 'config/players/room/alice.yaml', players: [{ name: 'Alice_Hades', game: 'Hades' }], error: null },
+    ]
+    const saved = withDiscovered(mergeRows(configured, null), found, roomYamls, false)
+    expect(saved.map((r) => [r.name, r.checked])).toEqual([['Romain_KH2', true], ['Old_Slot', true], ['Alice_Hades', false]])
+    expect(saved[2].yaml).toBe('config/players/room/alice.yaml') // associated, ready if ticked by hand
+    const first = withDiscovered([], found, roomYamls, true)
+    expect(first.map((r) => [r.name, r.checked])).toEqual([['Romain_KH2', false], ['Alice_Hades', true]])
+  })
+  it('after a discover, unchecked slots of another room are dropped', () => {
+    const rows = mergeRows(configured, null).map((r) => (r.name === 'Old_Slot' ? { ...r, checked: false } : r))
+    expect(withDiscovered(rows, found, [], false).map((r) => r.name)).toEqual(['Romain_KH2', 'Alice_Hades'])
   })
   it('quick actions', () => {
     const rows = setAll(mergeRows(configured, found), false)

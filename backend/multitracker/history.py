@@ -9,7 +9,9 @@
   started recording check times have no time. Older databases recorded item times before check times: their
   `checks_started_at` is set at the first sync that records checks.
 - Activity: the time of the last location check made by the slot while the app was watching ("active" slots).
-  Big bursts of checks (`!release`, `!collect`, another game's goal) are not activity.
+  Big bursts of checks (`!release`, `!collect`, another game's goal) are not activity, nor checks that reach
+  several tracked slots at the same moment: a collect checks, in every world at once, the locations holding the
+  collecting player's items (the server does not count it as activity either), often a few per world.
 
 Writes are throttled (SD card): `last_seen_at` and `last_check_at` live in memory and reach SQLite at most every
 WRITE_INTERVAL seconds, on disconnection and in `flush()`. Losing them in a crash only widens a range.
@@ -24,6 +26,7 @@ from .store import Store
 WRITE_INTERVAL = 30.0
 EXACT_GAP = 120.0  # items found at a sync less than this after the app last watched the slot keep an exact time
 ACTIVITY_MAX_BURST = 10  # more new checks than this in one update: release/collect, not someone playing
+ACTIVITY_SAME_TIME = 2.0  # checks in several slots less than this many seconds apart: a collect/release
 
 ItemTime = tuple[float | None, float | None]  # (received_at, received_after)
 
@@ -45,6 +48,8 @@ class History:
         self.store = store
         self._slots: dict[tuple[str, str], _Slot] = {}
         self._untracked: set[tuple[str, str]] = set()  # known not to be in the database (only History adds rows)
+        # latest checks of the tracked slots: (time, slot key, last_check before them), at most ACTIVITY_SAME_TIME old
+        self._recent_checks: list[tuple[float, tuple[str, str], float | None]] = []
 
     def _load(self, seed: str, slot: str) -> _Slot | None:
         key = (seed, slot)
@@ -114,14 +119,31 @@ class History:
                     for loc, row in self.store.check_log(seed, slot).items() if row["checked_at"] or row["checked_after"]}
         return dict(s.checks)
 
-    def on_checks(self, seed: str, slot: str, new_checks: int = 1, now: float | None = None) -> None:
-        """The slot checked `new_checks` new locations while the app was connected (call on_items first)."""
+    def on_checks(self, seed: str, slot: str, new_checks: int = 1, now: float | None = None) -> set[str]:
+        """The slot checked `new_checks` new locations while the app was connected (call on_items first).
+        Returns the slots whose activity was taken back: their checks of a moment ago came with these ones."""
         now = time.time() if now is None else now
         s = self._load(seed, slot)
-        if s is None or new_checks > ACTIVITY_MAX_BURST:
-            return  # not synced yet (initial state), or a release/collect
+        if s is None:
+            return set()  # not synced yet (initial state)
+        key = (seed, slot)
+        self._recent_checks = [r for r in self._recent_checks if now - r[0] < ACTIVITY_SAME_TIME]
+        others = [r for r in self._recent_checks if r[1] != key]
+        self._recent_checks.append((now, key, s.last_check))
+        if new_checks > ACTIVITY_MAX_BURST:
+            return set()  # a release/collect
+        if others:  # checks in several slots at once: a collect/release, the earlier ones were not activity either
+            undone = set()
+            for at, other_key, before in reversed(others):
+                other = self._slots.get(other_key)
+                if other is not None and other.last_check == at:
+                    other.last_check = before
+                    self._write(*other_key, other, now, force=True)
+                    undone.add(other_key[1])
+            return undone
         s.last_check = now
         self._write(seed, slot, s, now)
+        return set()
 
     def seen(self, seed: str, slot: str, now: float | None = None) -> None:
         """The app is watching this slot (connected and synced) at `now`."""

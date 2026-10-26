@@ -5,6 +5,7 @@ import asyncio
 import logging
 import time
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 from .ap.tracker import SlotTracker
@@ -23,6 +24,15 @@ HINT_STATUS = {0: "unspecified", 10: "no_priority", 20: "avoid", 30: "priority",
 # Changes that can modify which locations are in logic.
 LOGIC_KINDS = {"items", "checks", "status", "synced"}
 RECENT_PER_SLOT = 20  # dashboard feed of received items: latest items kept per slot
+
+
+def _connection(config: RoomConfig) -> tuple:
+    """What every tracker's connection depends on: a change reconnects them all."""
+    return config.server, config.room_url, config.password, config.scout_checked
+
+
+def _same_yaml(a, b) -> bool:
+    return (Path(a).resolve() if a else None) == (Path(b).resolve() if b else None)
 
 
 class Service:
@@ -69,14 +79,20 @@ class Service:
         if self.config.room_url:
             self.refresh_room(force=True)
         for slot in self.config.slots:
-            tracker = SlotTracker(lambda: self.current_server, self.config.password, slot.name, slot.game or "",
-                                  self.datapackage, on_change=self._on_change,
-                                  min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1],
-                                  on_connect_error=lambda _t: self.refresh_room(),
-                                  scout_checked=self.config.scout_checked)
-            self.trackers[slot.name] = tracker
-            self.logic[slot.name] = LogicResult("pending")
-            tracker.start()
+            self._start_tracker(slot)
+        self._start_roomfeed()
+
+    def _start_tracker(self, slot: SlotConfig) -> None:
+        tracker = SlotTracker(lambda: self.current_server, self.config.password, slot.name, slot.game or "",
+                              self.datapackage, on_change=self._on_change,
+                              min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1],
+                              on_connect_error=lambda _t: self.refresh_room(),
+                              scout_checked=self.config.scout_checked)
+        self.trackers[slot.name] = tracker
+        self.logic[slot.name] = LogicResult("pending")
+        tracker.start()
+
+    def _start_roomfeed(self) -> None:
         if self.config.room_dashboard:
             self.roomfeed = RoomFeed(
                 server=lambda: self.current_server, password=self.config.password,
@@ -95,13 +111,16 @@ class Service:
         return bool(logic is not None and logic.state == "ok" and not logic.in_logic
                     and not tracker.state.goal_reached and tracker.state.missing)
 
-    async def _stop_trackers(self) -> None:
+    async def _stop_roomfeed(self) -> None:
         if self.roomfeed is not None:
             feed, self.roomfeed = self.roomfeed, None
             try:
                 await feed.stop()
             except Exception:
                 log.exception("room feed did not stop cleanly")
+
+    async def _stop_trackers(self) -> None:
+        await self._stop_roomfeed()
         # Trackers first (stopping them may still schedule logic/publish tasks), then every task.
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
         self.history.flush()
@@ -119,18 +138,62 @@ class Service:
 
     async def reload(self, config: RoomConfig, before_start=None) -> None:
         """Apply a new room configuration (from the web UI) without restarting the app.
+        Only what changed reconnects: another server, room, password or scout option restarts every tracker;
+        otherwise removed slots disconnect, added ones connect and the others stay connected.
         `before_start` (e.g. saving the file) runs under the same lock, between stop and start."""
         async with self._reload_lock:
-            await self._stop_trackers()
-            if before_start is not None:
-                before_start()
-            self.config = config
-            self.slot_configs = {s.name: s for s in config.slots}
-            self.room_error, self._room_checked_at, self._room_woken_at = None, 0.0, 0.0
-            self.room_sleeping = False
-            self._start_trackers()
+            if _connection(config) != _connection(self.config):
+                await self._stop_trackers()
+                if before_start is not None:
+                    before_start()
+                self.config = config
+                self.slot_configs = {s.name: s for s in config.slots}
+                self.room_error, self._room_checked_at, self._room_woken_at = None, 0.0, 0.0
+                self.room_sleeping = False
+                self._start_trackers()
+            else:
+                await self._update_slots(config, before_start)
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
         self._publish_room()
+
+    async def _update_slots(self, config: RoomConfig, before_start=None) -> None:
+        """Same server and room: reconnect only the slots that changed (added, removed, or another game)."""
+        old, new = self.slot_configs, {s.name: s for s in config.slots}
+        gone = [n for n in old if n not in new or (new[n].game or "") != (old[n].game or "")]
+        feed_changed = (config.room_dashboard != self.config.room_dashboard
+                        or (config.room_dashboard and list(new) != list(old)))  # first slot and tracked set
+        if feed_changed:
+            await self._stop_roomfeed()
+        await asyncio.gather(*(self.trackers[n].stop() for n in gone if n in self.trackers), return_exceptions=True)
+        for name in gone:
+            self._drop_slot(name)
+        if before_start is not None:
+            before_start()
+        self.config = config
+        self.slot_configs = new
+        for name, slot in new.items():
+            if name not in self.trackers:
+                self._start_tracker(slot)
+            elif _same_yaml(slot.yaml, old[name].yaml):
+                continue
+            elif self.trackers[name].state.status == "connected":  # another yaml: same items, new logic
+                self._session[name] = self._session.get(name, 0) + 1
+                self.logic[name] = LogicResult("pending")
+                self._schedule_logic(name)
+        self.trackers = {s.name: self.trackers[s.name] for s in config.slots}  # the configured order
+        if feed_changed:
+            self._start_roomfeed()
+
+    def _drop_slot(self, name: str) -> None:
+        tracker = self.trackers.pop(name, None)
+        if tracker is not None and tracker.state.seed_name:
+            self.history.lost(tracker.state.seed_name, name)
+        task = self._logic_tasks.pop(name, None)
+        if task is not None:
+            task.cancel()
+        self._logic_dirty.discard(name)
+        self._publish_pending.discard(name)
+        self.logic.pop(name, None)
 
     async def restart_logic(self) -> None:
         """Restart the logic worker (it loads the worlds once, e.g. newly imported apworlds) and recompute every slot."""
@@ -222,7 +285,8 @@ class Service:
         elif st.synced and st.seed_name and kinds & {"items", "synced", "checks"}:
             self.history.on_items(st.seed_name, name, len(st.items), fresh="synced" in kinds, checked=set(st.checked))
             if "checks" in kinds and "connected" not in kinds:
-                self.history.on_checks(st.seed_name, name, st.new_checks)
+                for other in self.history.on_checks(st.seed_name, name, st.new_checks):
+                    self.publish(other)
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results

@@ -778,6 +778,42 @@ async def test_service_starts_and_stops_the_feed_with_the_flag(tmp_path, monkeyp
     assert service.roomfeed is None
 
 
+async def test_service_reload_reconnects_only_what_changed(tmp_path, monkeypatch):
+    from multitracker.config import PLAYERS_DIR, RoomConfig, SlotConfig
+    from multitracker.service import Service
+    from multitracker.store import Store
+
+    def config(*slots, password="pw", **kw):
+        return RoomConfig(server="127.0.0.1:1", password=password, slots=list(slots), **kw)
+
+    a, b, c = SlotConfig("a", "GameA"), SlotConfig("b", "GameB"), SlotConfig("c", "GameC")
+    service = Service(config(a, b), Store(tmp_path / "db.sqlite3"), reconnect_delays=(0.3, 1.0))
+    await service.start()
+    try:
+        before = dict(service.trackers)
+        await service.reload(config(SlotConfig("a", "GameA"), SlotConfig("b", "GameB")))  # saved again unchanged
+        assert service.trackers == before and all(service.trackers[n] is t for n, t in before.items())
+        await service.reload(config(a, b, wake_room=True))  # an option the trackers do not use
+        assert all(service.trackers[n] is t for n, t in before.items())
+        # owner and yaml: same connection
+        await service.reload(config(SlotConfig("a", "GameA", owner="Zed", yaml=PLAYERS_DIR / "x.yaml"), b))
+        assert service.trackers["a"] is before["a"] and service.slot_configs["a"].owner == "Zed"
+        # c added first, b removed: only those two change, in the configured order
+        await service.reload(config(c, a))
+        assert list(service.trackers) == ["c", "a"] and service.trackers["a"] is before["a"]
+        assert before["b"]._task is None or before["b"]._task.done()
+        assert "b" not in service.logic and service.logic["c"].state == "pending"
+        # another game for a slot: that one reconnects
+        kept_c = service.trackers["c"]
+        await service.reload(config(c, SlotConfig("a", "GameZ")))
+        assert service.trackers["a"] is not before["a"] and service.trackers["c"] is kept_c
+        # another password: everything reconnects
+        await service.reload(config(c, SlotConfig("a", "GameZ"), password="other"))
+        assert service.trackers["c"] is not kept_c
+    finally:
+        await service.stop()
+
+
 async def test_service_bk_of(tmp_path):
     from multitracker.config import RoomConfig, SlotConfig
     from multitracker.logic import LogicResult

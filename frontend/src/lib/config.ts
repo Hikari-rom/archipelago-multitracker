@@ -103,6 +103,24 @@ export function mergeDiscovered(rows: SlotRow[], players: { name: string; game: 
   return out
 }
 
+/** Rows after a discover: unchecked rows of another room dropped, new players added and given their yaml when exactly
+ * one matches. Those are also checked only when nothing was configured yet (first setup): afterwards the saved
+ * selection stays as it is, a room's yamls must not tick every slot. */
+export function withDiscovered(
+  rows: SlotRow[],
+  players: { name: string; game: string }[],
+  yamls: YamlEntry[],
+  firstSetup: boolean,
+): SlotRow[] {
+  const inRoom = new Set(players.map((p) => p.name))
+  const kept = rows.filter((r) => r.checked || inRoom.has(r.name)) // e.g. slots of another room
+  const known = new Set(kept.map((r) => r.name))
+  const merged = mergeDiscovered(kept, players)
+  const fresh = autoAssociate(merged.filter((r) => !known.has(r.name)), yamls, firstSetup).rows
+  const byName = new Map(fresh.map((r) => [r.name, r]))
+  return merged.map((r) => byName.get(r.name) ?? r)
+}
+
 export interface PasswordInput {
   value: string
   clear: boolean

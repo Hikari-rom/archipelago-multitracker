@@ -43,6 +43,32 @@ def test_history_rules(tmp_path):
     assert h2.times("other-seed", "A") == [] and h2.last_check("other-seed", "A") is None
 
 
+def test_checks_in_several_slots_at_once_are_not_activity(tmp_path):
+    """A collect checks, at the same moment, a few locations in each world holding the collector's items."""
+    from multitracker.history import ACTIVITY_SAME_TIME, History
+    from multitracker.store import Store
+    store = Store(tmp_path / "db.sqlite3")
+    h = History(store)
+    for slot in "ABC":
+        h.on_items("S", slot, 0, fresh=True, now=10)
+    assert h.on_checks("S", "A", now=100) == set()  # someone playing A
+    assert h.on_checks("S", "A", now=100 + ACTIVITY_SAME_TIME) == set()
+    assert h.last_check("S", "A") == 100 + ACTIVITY_SAME_TIME
+    # a collect, 10 minutes later: A, B and C get a few checks within a second
+    assert h.on_checks("S", "A", new_checks=3, now=700) == set()
+    assert h.last_check("S", "A") == 700  # alone so far: activity, until B shows the same moment
+    assert h.on_checks("S", "B", new_checks=2, now=700.2) == {"A"}
+    assert h.on_checks("S", "C", new_checks=1, now=700.4) == set()  # nothing left to take back
+    assert [h.last_check("S", x) for x in "ABC"] == [100 + ACTIVITY_SAME_TIME, None, None]
+    assert store.tracking("S", "A")["last_check_at"] == 100 + ACTIVITY_SAME_TIME
+    # a big burst in one slot counts as the same moment for the others
+    h.on_checks("S", "A", new_checks=40, now=2000)
+    assert h.on_checks("S", "B", now=2001) == set() and h.last_check("S", "B") is None
+    # later, one slot at a time again: activity
+    h.on_checks("S", "B", now=2000 + 2 * ACTIVITY_SAME_TIME)
+    assert h.last_check("S", "B") == 2000 + 2 * ACTIVITY_SAME_TIME
+
+
 def test_history_writes_are_throttled_and_migrated(tmp_path):
     import sqlite3
     from multitracker.history import WRITE_INTERVAL, History

@@ -20,7 +20,6 @@ import {
   diagnose,
   distinctGames,
   filterRows,
-  mergeDiscovered,
   mergeRows,
   probeMessage,
   setChecked,
@@ -29,6 +28,7 @@ import {
   type DiscoverResponse,
   type SlotRow,
   type YamlEntry,
+  withDiscovered,
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setActiveMode, setView, tracker } from '../stores/tracker'
@@ -154,15 +154,7 @@ async function onDiscover(wake = false): Promise<void> {
     const d = await api.discover(roomUrl.value.trim(), wake)
     room.value = d
     if (d.room_url) roomUrl.value = d.room_url
-    const inRoom = new Set(d.players.map((p) => p.name))
-    const kept = rows.value.filter((r) => r.checked || inRoom.has(r.name)) // e.g. slots of another room
-    const known = new Set(kept.map((r) => r.name))
-    const merged = mergeDiscovered(kept, d.players)
-    // newly found slots that have exactly one matching yaml are pre-selected
-    const fresh = merged.filter((r) => !known.has(r.name))
-    const assoc = autoAssociate(fresh, yamls.value, true).rows
-    const byName = new Map(assoc.map((r) => [r.name, r]))
-    rows.value = merged.map((r) => byName.get(r.name) ?? r)
+    rows.value = withDiscovered(rows.value, d.players, yamls.value, !cfg.value?.slots.length)
   } catch (e) {
     discoverError.value = errText(e)
   } finally {

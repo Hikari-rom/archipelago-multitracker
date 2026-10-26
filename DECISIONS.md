@@ -89,7 +89,8 @@ le serveur ne remet pas le statut à CLIENT_UNKNOWN quand le jeu se déconnecte.
 un check dans les 30 dernières minutes (horodatage vu par l'app, persisté). « Le plus de checks » = le plus de checks
 en logique (ce qu'il y a à faire tout de suite), puis le plus de checks restants.
 Limites acceptées (relecture M12) : une mise à jour de plus de 10 checks d'un coup (`!release`, `!collect`, but d'un
-autre jeu) n'est pas de l'activité ; un `!collect` plus petit d'un autre joueur, si. L'heure affichée est celle du
+autre jeu) n'est pas de l'activité ; un `!collect` plus petit d'un autre joueur, si. Depuis D29, des checks qui
+arrivent au même moment dans plusieurs slots suivis ne sont pas de l'activité non plus. L'heure affichée est celle du
 serveur : le navigateur corrige son horloge avec `now` de `/api/slots`.
 
 ## D12 — Logique d'autres jeux seulement à version identique (2026-10-11)
@@ -303,3 +304,22 @@ d'Archipelago :
   `_pokemon_emerald`). Le reste du slot est exact.
 - Restent sans logique : Musipelago_Mathcroft-Music (apworld absent des fichiers de la room), Factorio (slot_data vide),
   Archipelago (pas un jeu), OoT (mis de côté).
+
+## D29 — Configuration : garder la sélection, ne reconnecter que ce qui change ; collects pas actifs (2026-10-26, demandé par Romain)
+- **Sélection des slots** : à l'ouverture de la page Configuration, la découverte de la room cochait tout nouveau slot
+  qui a exactement un yaml correspondant. Avec les yamls de toute la room dans `config/players/room/`, tous les slots
+  se retrouvaient cochés. Ce pré-cochage n'a plus lieu qu'à la première configuration (aucun slot enregistré) ; ensuite
+  on retrouve exactement les slots enregistrés (les autres reçoivent quand même leur yaml, prêt si on les coche).
+- **Rechargement** : `Service.reload` arrêtait et relançait toutes les connexions à chaque enregistrement. Il compare
+  maintenant l'ancienne et la nouvelle config : serveur, room, mot de passe ou `scout_checked` différents → tout se
+  reconnecte (comme avant) ; sinon seuls les slots retirés, ajoutés ou qui changent de jeu se (dé)connectent, un autre
+  yaml relance seulement la logique, et l'écouteur de la room complète ne redémarre que si son option ou la liste des
+  slots change. `wake_room` et les propriétaires ne reconnectent rien.
+- **Activité et collects** : quand un joueur finit, le serveur coche d'un coup, dans tous les mondes, les locations
+  qui contiennent ses items (collect ; le serveur lui-même ne compte pas ça comme de l'activité). Chaque monde n'en
+  reçoit souvent que quelques-uns, sous le seuil de 10 de D11 : tous les jeux devenaient actifs. Les trackers ont le
+  tag `NoText` (pas de messages « X has collected… » : ils recevraient aussi tout le texte de la room), donc la règle
+  est temporelle : des checks dans plusieurs slots suivis à moins de 2 s d'intervalle sont un collect/release, et
+  l'activité déjà notée pour les premiers est reprise. Limites acceptées : un collect qui ne touche qu'un seul slot
+  suivi le rend encore actif ; deux joueurs suivis par la même app qui font un check dans la même seconde perdent
+  ce check comme activité (le suivant compte).
