@@ -17,6 +17,8 @@
 #                     false/absent = "Logique indisponible" (level 1 tracking only)
 #   needs_yaml        true = the logic needs the player's yaml (the world cannot be rebuilt from slot_data alone);
 #                     the Configuration page warns when such a slot has no yaml
+#   replaces_core     true = newer version of a core world: imported instead of the core folder of the same module
+#                     (`filename` required, D28); without it AP 0.6.7 keeps its core world and skips the apworld
 
 apworlds:
   celeste_open_world: {game: "Celeste (Open World)", source: core, logic: true, needs_yaml: true}
@@ -575,6 +577,18 @@ apworlds:
     source: user
     logic: true
     needs_yaml: true  # adapter: shop prices from slot_data
+  # Batch 12 (v0.2.13, D28): the room's TUNIC is the 5.0.2 apworld (core of AP 0.6.8), not the core world of
+  # 0.6.7; Pokemon Emerald is the core world (its checksum needed sorted region files).
+  tunic:
+    game: "TUNIC"
+    source: github
+    repo: silent-destroyer/tunic-randomizer
+    tag: "5.0.2"
+    asset: "tunic.apworld"
+    filename: "tunic.apworld"
+    replaces_core: true
+    logic: true  # adapter: deferred entrances reconnected from slot_data
+  pokemon_emerald: {game: "Pokemon Emerald", source: core, logic: true, needs_yaml: true}  # adapter: no Pokedex with random wilds
 
 tools:
   universal_tracker:

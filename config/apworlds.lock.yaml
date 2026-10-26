@@ -851,6 +851,22 @@ apworlds:
   mm_recomp:
     source: user
     game: Majora's Mask Recompiled
+  tunic:
+    repo: silent-destroyer/tunic-randomizer
+    tag: 5.0.2
+    published: '2026-08-27T02:13:40Z'
+    asset_pattern: tunic.apworld
+    asset: tunic.apworld
+    url: https://github.com/silent-destroyer/tunic-randomizer/releases/download/5.0.2/tunic.apworld
+    size: 154407
+    file: tunic.apworld
+    sha256: 56327b238abb1a5ca6edea0578dda7f5aa030c98ac2f5850cfad9352dd5c9278
+    downloaded_at: '2026-10-26T12:46:51+00:00'
+    source: github
+    game: TUNIC
+  pokemon_emerald:
+    source: core
+    game: Pokemon Emerald
   universal_tracker:
     repo: FarisTheAncient/Archipelago
     tag: Tracker_v0.3.0

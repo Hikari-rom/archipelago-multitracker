@@ -82,4 +82,8 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - Génération de test sans ROM : `generate_output`/`assert_generate` neutralisés, et `fill_slot_data` d'OoT débloqué
   (`scripts/testenv/generate.py`).
 - Le nom de jeu de Super Mario Odyssey dans l'apworld est « Spicy Meatball Overdrive ».
+- Monde du core remplacé par un apworld plus récent (TUNIC 5.0.2) : `replaces_core: true` dans `config/apworlds.yaml`,
+  appliqué par `apenv.setup()` (D28). Tout process qui importe `worlds` doit d'abord appeler `apenv.setup()`.
+- Checksums : l'ordre de listage des fichiers d'un monde change le checksum (Emerald, ext4 ≠ NTFS) ;
+  `apenv.setup()` trie `pkg_resources.resource_listdir` comme Windows (D28).
 - `scripts/app.sh` prend un verrou (`.run/app.lock`) : le process lancé ne doit pas hériter du descripteur 9.

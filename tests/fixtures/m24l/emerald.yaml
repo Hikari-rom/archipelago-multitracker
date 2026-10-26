@@ -1,0 +1,10 @@
+name: emerald
+game: "Pokemon Emerald"
+"Pokemon Emerald":
+  badges: completely_random
+  hms: completely_random
+  wild_pokemon: completely_random
+  trainersanity: true
+  require_flash: both
+  norman_requirement: badges
+  norman_count: 4

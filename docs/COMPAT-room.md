@@ -2,7 +2,7 @@
 
 Généré par `scripts/room_inventory.py` (room de 156 slots, 102 jeux). « Checksum » compare le datapackage de l'apworld installé ici à celui de la room : la logique d'un jeu n'est activée que s'il est identique (D12). « UT sans yaml » : Universal Tracker sait régénérer ce monde sans le yaml du joueur (seule possibilité pour les slots des autres joueurs).
 
-Bilan : 99 identiques, 2 versions différentes, 1 jeux sans apworld ici.
+Bilan : 101 identiques, 0 versions différentes, 1 jeux sans apworld ici.
 
 | Jeu | Slots | Romain | Apworld ici | Checksum | UT sans yaml | Logique activée |
 |---|---|---|---|---|---|---|
@@ -35,7 +35,7 @@ Bilan : 99 identiques, 2 versions différentes, 1 jeux sans apworld ici.
 | Subnautica | 2 |  | core | ✅ |  | ✅ |
 | Super Mario 64 | 2 | oui | core | ✅ |  | ✅ |
 | The Legend of Zelda - Phantom Hourglass | 2 | oui | custom | ✅ | oui | ✅ |
-| TUNIC | 2 |  | core | ❌ autre version | oui |  |
+| TUNIC | 2 |  | custom | ✅ | oui | ✅ |
 | Undertale | 2 |  | core | ✅ |  | ✅ |
 | 2048 | 1 |  | custom | ✅ |  |  |
 | A Short Hike | 1 |  | core | ✅ |  | ✅ |
@@ -78,7 +78,7 @@ Bilan : 99 identiques, 2 versions différentes, 1 jeux sans apworld ici.
 | Peggle Deluxe | 1 |  | custom | ✅ | oui |  |
 | Peggle Nights | 1 |  | custom | ✅ | oui |  |
 | Plants vs. Zombies | 1 |  | custom | ✅ | oui |  |
-| Pokemon Emerald | 1 |  | core | ❌ autre version |  |  |
+| Pokemon Emerald | 1 |  | core | ✅ |  | ✅ |
 | Pokemon Platinum | 1 | oui | custom | ✅ | oui | ✅ |
 | PokePark | 1 | oui | custom | ✅ | oui | ✅ |
 | Powerwash Simulator | 1 |  | custom | ✅ | oui |  |

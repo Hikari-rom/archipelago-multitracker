@@ -1,0 +1,11 @@
+name: tunic
+game: "TUNIC"
+"TUNIC":
+  entrance_rando: "yes"
+  decoupled: true
+  shuffle_ladders: true
+  shuffle_fuses: true
+  shuffle_bells: true
+  grass_randomizer: true
+  breakable_shuffle: true
+  shuffle_enemy_drops: "on"

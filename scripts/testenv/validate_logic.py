@@ -110,7 +110,7 @@ def _run_once(game: str, companions: list[str], run: int, keep_default: bool, at
     bad += [{"error": r["error"]} for r in reports if r.get("error")]
     return {"run": run, "generated": True, "ok": not bad and bool(reports),
             "mode": reports[0]["mode"] if reports else None,
-            "snapshots": sum(len(r["snapshots"]) for r in reports), "bad": bad[:5],
+            "snapshots": sum(len(r["snapshots"]) for r in reports), "bad": bad,
             "options": (players / f"{next(iter(names))}.yaml").read_text()[:2000]}
 
 

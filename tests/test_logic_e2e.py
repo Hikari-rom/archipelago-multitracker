@@ -334,3 +334,12 @@ async def test_bot_finishes_m24k_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24k", 17, tmp_path, spoiler=1, no_yaml=frozenset({"Spirit Tracks"}))
     (ROOT / "test-output" / "e2e_m24k.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_bot_finishes_m24l_batch_using_only_in_logic_locations(tmp_path):
+    """TUNIC 5.0.2 in place of the core world (D28; no yaml, slot_data only) with decoupled entrance rando, ladders,
+    fuses, bells, grass, breakables and enemy drops shuffled; Pokemon Emerald (checksum D28) with random wild Pokemon
+    and trainersanity (no dexsanity: it needs random wilds, so its Pokedex locations are never in logic)."""
+    result = await play_until_done("m24l", 17, tmp_path, spoiler=1, no_yaml=frozenset({"TUNIC"}))
+    (ROOT / "test-output" / "e2e_m24l.json").write_text(json.dumps(result, indent=1))
+    assert result["rounds"] > 1

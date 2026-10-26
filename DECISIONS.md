@@ -260,7 +260,7 @@ Room `rsRyiqQFQWGRdqg3zHurYw` : 156 slots, 102 jeux, dont 55 sans apworld ici. R
 - **Yamls des autres joueurs** : `config/players/room/` (gitignoré, le repo est public) ; jamais dans les fixtures de
   test (yamls générés au hasard par `validate_logic.py`).
 - **Archipelago reste en 0.6.7** : seuls TUNIC et Pokemon Emerald (mondes core modifiés en 0.6.8, un apworld ne peut
-  pas remplacer un monde core) en dépendent ; ils attendent un éventuel passage en 0.6.8. Musipelago_Mathcroft-Music
+  pas remplacer un monde core) en dépendent ; ils attendaient un passage en 0.6.8 (réglé sans, voir D28). Musipelago_Mathcroft-Music
   (1 slot) : apworld absent.
 - **Releases** : un lot de 5 jeux validés = une version `v0.2.N`.
 
@@ -282,3 +282,24 @@ installé avec ces apworlds (ils jouent dans la room) : option retenue par Romai
   « Vérifier les versions » compare tout de suite les checksums (commande `checksums` du worker).
 - Après un import, le worker de logique est redémarré (il ne charge les mondes qu'une fois) et tous les slots recalculés.
 
+
+## D28 — Derniers jeux de la room : TUNIC 5.0.2 à la place du core, checksum d'Emerald (2026-10-26)
+D26 laissait TUNIC et Pokemon Emerald « en attente d'Archipelago 0.6.8 ». Les deux se règlent sans changer de version
+d'Archipelago :
+- **TUNIC** : la room a l'apworld 5.0.2 (`silent-destroyer/tunic-randomizer`, même sha256 que le fichier du
+  générateur ; c'est aussi le TUNIC du core 0.6.8). AP 0.6.7 charge d'abord son dossier `worlds/tunic` et ignore un
+  apworld du même jeu. Nouvelle clé `replaces_core: true` dans `config/apworlds.yaml` : `apenv.setup()` installe un
+  `MetaPathFinder` qui importe `worlds.<module>` depuis `custom_worlds/<filename>` au lieu du dossier du core
+  (`vendor/` reste intact). Tout process qui charge AP passe par `apenv.setup()` (worker, génération, scripts ; les
+  sondes de `room_inventory.py` et `check_apworlds.py` aussi). Le serveur de test garde le TUNIC du core : il prend
+  noms et checksums dans la multidata.
+- **Pokemon Emerald** : même version que la room (core 0.6.7), checksum différent seulement parce qu'Emerald construit
+  ses régions dans l'ordre de `pkg_resources.resource_listdir` : alphabétique sous Windows (NTFS, là où la room a été
+  générée), ordre de hachage sur ext4. Même contenu, autre ordre des clés, autre checksum (D12). `apenv.setup()` trie
+  ce listing pour les dossiers (pas pour les apworlds zippés, déjà dans l'ordre de l'archive sous Windows).
+- **Limite d'Emerald** : avec `wild_pokemon` aléatoire, l'espèce de chaque rencontre sauvage est tirée à la
+  génération et ni le `slot_data` ni le serveur ne la donnent. « Pokedex - X » (événement `CATCH_X`) et le sceau des
+  Regi (Wailord + Relicanth) ne sont jamais comptés en logique : retard possible, jamais d'avance (adaptateur
+  `_pokemon_emerald`). Le reste du slot est exact.
+- Restent sans logique : Musipelago_Mathcroft-Music (apworld absent des fichiers de la room), Factorio (slot_data vide),
+  Archipelago (pas un jeu), OoT (mis de côté).

@@ -280,6 +280,41 @@ def _wikipelago(world_cls: type, slot_data: dict[str, Any], location_ids: set[in
         yield
 
 
+@contextlib.contextmanager
+def _tunic(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """TUNIC, like Phantom Hourglass: with entrance rando, Universal Tracker disconnects every shuffled entrance
+    until the game client reports it in the data storage (connect_entrances). The pairings come from slot_data (no
+    spoiler) and stay connected when `multiworld.enforce_deferred_connections == "off"`: the generator's logic."""
+    original = world_cls.generate_early
+
+    def generate_early(self) -> None:
+        self.multiworld.enforce_deferred_connections = "off"
+        original(self)
+
+    with patch_attr(world_cls, "generate_early", generate_early):
+        yield
+
+
+@contextlib.contextmanager
+def _pokemon_emerald(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Pokemon Emerald: with wild Pokemon randomized, create_regions draws which species lives where; each wild slot
+    carries a CATCH_<species> event. Neither slot_data nor the server tell where a species is, so "Pokedex - X"
+    (needs CATCH_X) and the Regi seal (needs CATCH Wailord and Relicanth) cannot be known: never count them in logic
+    (late, never early). Every other rule is exact."""
+    original = world_cls.set_rules
+
+    def set_rules(self) -> None:
+        original(self)
+        if self.options.wild_pokemon.value == self.options.wild_pokemon.option_vanilla:
+            return
+        for location in self.multiworld.get_locations(self.player):
+            if location.name.startswith("Pokedex - ") or location.name == "EVENT_UNDO_REGI_SEAL":
+                location.access_rule = lambda state: False
+
+    with patch_attr(world_cls, "set_rules", set_rules):
+        yield
+
+
 def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
     """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
     locations go to the start inventory with their pool classification (often useful), which the real generation's
@@ -312,8 +347,10 @@ ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManage
     "Deep Rock Galactic": _deep_rock_galactic,
     "Majora's Mask Recompiled": _mm_recomp,
     "PEAK": _peak,
+    "Pokemon Emerald": _pokemon_emerald,
     "Slime Rancher 2": _slime_rancher_2,
     "Spirit Tracks": _tloz_st,
     "Trackmania": _trackmania,
+    "TUNIC": _tunic,
     "Wikipelago": _wikipelago,
 }
