@@ -22,6 +22,7 @@ def generated_seed(fixture: str, seed: int = 42, spoiler: int = 3) -> Path:
     for path in sorted(players.glob("*.yaml")):
         digest.update(path.name.encode() + path.read_bytes())
     digest.update((ROOT / "scripts/testenv/generate.py").read_bytes())
+    digest.update((ROOT / "backend/multitracker/apenv.py").read_bytes())  # core overrides, listing order (D28)
     digest.update((ROOT / "config/apworlds.lock.yaml").read_bytes())
     out = SEEDS / f"{fixture}-{seed}-s{spoiler}-{digest.hexdigest()[:12]}"
     info = out / "generation.json"
