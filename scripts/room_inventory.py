@@ -28,7 +28,7 @@ PROBE = r"""
 import io, json, sys, contextlib
 buf = io.StringIO()
 with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-    sys.path.insert(0, "@BACKEND@")
+    sys.path.insert(0, @BACKEND@)
     from multitracker import apenv
     apenv.setup()  # core worlds replaced by an apworld (D28)
     import worlds
@@ -42,7 +42,7 @@ for game, w in AutoWorldRegister.world_types.items():
         "ut_can_gen_without_yaml": bool(getattr(w, "ut_can_gen_without_yaml", False)),
     }
 print("@@RESULT@@" + json.dumps(out))
-""".replace("@BACKEND@", str(ROOT / "backend"))
+""".replace("@BACKEND@", repr(str(ROOT / "backend")))
 
 
 def fetch(url: str) -> dict:

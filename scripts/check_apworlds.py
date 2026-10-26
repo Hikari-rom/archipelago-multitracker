@@ -27,7 +27,7 @@ buf = io.StringIO()
 result = {"game": game}
 try:
     with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-        sys.path.insert(0, "@BACKEND@")
+        sys.path.insert(0, @BACKEND@)
         from multitracker import apenv
         apenv.setup()  # core worlds replaced by an apworld (D28)
         import worlds
@@ -46,7 +46,7 @@ except BaseException as exc:
     result["error"] = "".join(traceback.format_exception_only(type(exc), exc)).strip()
 result["log_tail"] = buf.getvalue()[-3000:]
 print("@@RESULT@@" + json.dumps(result))
-""".replace("@BACKEND@", str(ROOT / "backend"))
+""".replace("@BACKEND@", repr(str(ROOT / "backend")))
 
 
 def check(game: str) -> dict:
