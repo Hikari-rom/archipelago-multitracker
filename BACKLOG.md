@@ -257,9 +257,10 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Lot 10 (v0.2.10) : Plants vs. Zombies, Cuphead (adaptateur), CloverPit, Zuma Deluxe, Librarian (e2e `m24j`)
 - [x] Lot 11 (v0.2.11) : Spirit Tracks (adaptateur `_tloz_st` : connexions UT, sections, taille des larmes,
   Lost at Sea), Majora's Mask Recompiled (prix des boutiques), Wikipelago (branches) (e2e `m24k`)
-- [x] Lot 12 (v0.2.13) : TUNIC (apworld 5.0.2 à la place du core, adaptateur `_tunic`) et Pokemon Emerald (tri
+- [x] Lot 12 (v0.2.14) : TUNIC (apworld 5.0.2 à la place du core, adaptateur `_tunic`) et Pokemon Emerald (tri
   des fichiers de régions pour le checksum ; Pokédex jamais en logique avec Pokémon sauvages aléatoires), sans
-  passer en Archipelago 0.6.8 (D28, e2e `m24l`)
+  passer en Archipelago 0.6.8 (D28, e2e `m24l`) ; v0.2.13 sans release (build Windows en échec : chemin
+  `backend` mal échappé dans les sondes de `check_apworlds.py` et `room_inventory.py`)
 
 ## M25 — Finitions de style (demandé par Romain le 2026-10-26)
 - [x] Curseur « main » sur tout ce qui est cliquable (règle de base dans `style.css` ; interdit sur les contrôles

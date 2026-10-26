@@ -577,7 +577,7 @@ apworlds:
     source: user
     logic: true
     needs_yaml: true  # adapter: shop prices from slot_data
-  # Batch 12 (v0.2.13, D28): the room's TUNIC is the 5.0.2 apworld (core of AP 0.6.8), not the core world of
+  # Batch 12 (v0.2.14, D28): the room's TUNIC is the 5.0.2 apworld (core of AP 0.6.8), not the core world of
   # 0.6.7; Pokemon Emerald is the core world (its checksum needed sorted region files).
   tunic:
     game: "TUNIC"
