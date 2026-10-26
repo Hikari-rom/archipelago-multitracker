@@ -43,3 +43,14 @@ export const saveSkyAnimated = (v: boolean) => write('amt-v2-sky', v ? '1' : '0'
 
 export const loadHideReached = () => bool('amt-v2-hide-reached', false)
 export const saveHideReached = (v: boolean) => write('amt-v2-hide-reached', v ? '1' : '0')
+
+/** « Derniers reçus » strip of the dashboard: the static list, or a news ticker in one of three looks. */
+export type TickerStyle = 'off' | 'agence' | 'arrivees' | 'ruban'
+export const TICKER_LABELS: Record<TickerStyle, string> = {
+  off: 'Statique',
+  agence: "Défilant · Fil d'agence",
+  arrivees: 'Défilant · Tableau des arrivées',
+  ruban: 'Défilant · Ruban céleste',
+}
+export const loadTicker = () => oneOf<TickerStyle>('amt-v2-ticker', ['off', 'agence', 'arrivees', 'ruban'], 'off')
+export const saveTicker = (v: TickerStyle) => write('amt-v2-ticker', v)

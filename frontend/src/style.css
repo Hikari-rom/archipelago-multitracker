@@ -166,4 +166,18 @@
     outline: 3px solid var(--ring);
     outline-offset: 2px;
   }
+  /* Everything clickable shows the hand (Tailwind 4 resets buttons to the default cursor). */
+  :where(
+      button, a[href], summary, select, label[for], [role='button'], [role='tab'], [role='combobox'], [role='option'],
+      [role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox'], [role='checkbox'], [role='radio'],
+      [role='switch'], label:has(input[type='checkbox'], input[type='radio']),
+      input:is([type='checkbox'], [type='radio'], [type='file'], [type='range'], [type='color'], [type='button'], [type='submit'], [type='reset'])
+    ) {
+    cursor: pointer;
+  }
+  :where(button, select, input, [role='option'], [role='menuitem'], [role='menuitemradio'], [role='menuitemcheckbox']):is(
+      :disabled, [aria-disabled='true'], [data-disabled]
+    ) {
+    cursor: not-allowed;
+  }
 }

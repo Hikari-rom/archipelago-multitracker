@@ -6,6 +6,7 @@ import { clockOffset, loadActiveMinutes } from '../lib/history'
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
 import type { RecentItem, SlotDetail, SseState } from '../lib/types'
+import { loadTicker } from '../v2/lib/prefs'
 
 // declared before the store: its initializer reads it (a later const would throw there, silently caught)
 const ACTIVITY_KEY = 'amt-activity'
@@ -26,6 +27,8 @@ export const tracker = reactive({
   nowMs: Date.now(),
   /** a slot is "active" when it checked a location in the last N minutes (setting of this device) */
   activeMinutes: loadActiveMinutes(),
+  /** look of the « Derniers reçus » strip of the v2 dashboard (setting of this device) */
+  ticker: loadTicker(),
   details: {} as Record<string, SlotDetail>,
   /** details shown or hidden by the user (overrides the default: hidden, except for featured slots) */
   open: {} as Record<string, boolean>,

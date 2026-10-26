@@ -14,6 +14,7 @@ describe('v2 prefs', () => {
     expect(p.loadThemeChoice()).toBe('nuit')
     expect(p.loadSkyAnimated()).toBe(true)
     expect(p.loadHideReached()).toBe(false)
+    expect(p.loadTicker()).toBe('off')
   })
   it('round-trips and uses v2 keys only', () => {
     p.saveLayout('focus')
@@ -22,12 +23,14 @@ describe('v2 prefs', () => {
     p.saveThemeChoice('plan')
     p.saveSkyAnimated(false)
     p.saveHideReached(true)
+    p.saveTicker('ruban')
     expect(p.loadLayout()).toBe('focus')
     expect(p.loadSort()).toBe('percent')
     expect(p.loadHideDone()).toBe(true)
     expect(p.loadThemeChoice()).toBe('plan')
     expect(p.loadSkyAnimated()).toBe(false)
     expect(p.loadHideReached()).toBe(true)
+    expect(p.loadTicker()).toBe('ruban')
     expect(Object.keys(localStorage).every((k) => k.startsWith('amt-v2-'))).toBe(true)
   })
   it('ignores invalid values and storage errors', () => {

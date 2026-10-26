@@ -5,7 +5,7 @@ import { setView, tracker } from '../../stores/tracker'
 
 const props = defineProps<{ compact?: boolean }>()
 const hash = () => globalThis.location.hash
-const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-lg px-3 py-1.5 text-sm outline-none data-[highlighted]:bg-accent'
+const item = 'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-1.5 text-sm outline-none data-[highlighted]:bg-accent'
 </script>
 
 <template>

@@ -258,3 +258,12 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Lot 11 (v0.2.11) : Spirit Tracks (adaptateur `_tloz_st` : connexions UT, sections, taille des larmes,
   Lost at Sea), Majora's Mask Recompiled (prix des boutiques), Wikipelago (branches) (e2e `m24k`)
 - [ ] TUNIC et Pokemon Emerald : passage en Archipelago 0.6.8
+
+## M25 — Finitions de style (demandé par Romain le 2026-10-26)
+- [x] Curseur « main » sur tout ce qui est cliquable (règle de base dans `style.css` ; interdit sur les contrôles
+  désactivés ; les entrées de menu et de liste déroulante ne gardent plus le curseur par défaut)
+- [x] Bandeau « Derniers reçus » en défilant façon fil d'actualité, choisi dans Configuration › Affichage (sur cet
+  appareil, `amt-v2-ticker`) : Statique (défaut), Fil d'agence, Tableau des arrivées, Ruban céleste
+  (`v2/components/NewsTicker.vue`, maquettes Claude Design) ; 15 items, pause au survol ou au focus, immobile et
+  défilable à la main avec « réduire les animations », ne défile que si les items débordent
+- [ ] Vérifier les trois styles à l'œil sur ordinateur et téléphone (pas de Chromium sur la machine de dev)

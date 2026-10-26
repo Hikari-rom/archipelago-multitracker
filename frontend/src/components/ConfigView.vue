@@ -32,6 +32,7 @@ import {
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setView, tracker } from '../stores/tracker'
+import { saveTicker, TICKER_LABELS, type TickerStyle } from '../v2/lib/prefs'
 
 const emit = defineEmits<{ saved: [] }>()
 
@@ -241,6 +242,11 @@ function onAssociate(): void {
 function onActiveMinutes(e: Event): void {
   tracker.activeMinutes = Number((e.target as HTMLSelectElement).value)
   saveActiveMinutes(tracker.activeMinutes)
+}
+const tickerStyles = Object.keys(TICKER_LABELS) as TickerStyle[]
+function onTicker(e: Event): void {
+  tracker.ticker = (e.target as HTMLSelectElement).value as TickerStyle
+  saveTicker(tracker.ticker)
 }
 
 /** Enter never saves the whole configuration by accident; in the room field it runs the discovery. */
@@ -558,7 +564,7 @@ const selectClass =
         <CardHeader class="px-5">
           <CardTitle>Affichage <span class="text-muted-foreground text-sm font-normal">(sur cet appareil)</span></CardTitle>
         </CardHeader>
-        <CardContent class="px-5">
+        <CardContent class="flex flex-col gap-3 px-5">
           <label class="flex flex-wrap items-center gap-2 text-sm">
             Un jeu est « actif » (affiché en premier) s'il a fait un check depuis
             <select
@@ -569,6 +575,16 @@ const selectClass =
               <option v-for="m in ACTIVE_CHOICES" :key="m" :value="m">{{ m >= 60 ? `${m / 60} h` : `${m} min` }}</option>
             </select>
           </label>
+          <label class="flex flex-wrap items-center gap-2 text-sm">
+            Bandeau « Derniers reçus » du tableau de bord
+            <select :value="tracker.ticker" data-ticker-style :class="cn(selectClass, 'w-auto')" @change="onTicker">
+              <option v-for="t in tickerStyles" :key="t" :value="t">{{ TICKER_LABELS[t] }}</option>
+            </select>
+          </label>
+          <p class="text-muted-foreground text-xs">
+            Défilant : les derniers items reçus passent en continu comme un fil d'actualité (pause au survol). Interface
+            v2 seulement.
+          </p>
         </CardContent>
       </Card>
 

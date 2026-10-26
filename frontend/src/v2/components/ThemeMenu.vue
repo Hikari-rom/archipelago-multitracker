@@ -12,7 +12,7 @@ const OPTIONS: { key: ThemeChoice; title: string; sub: string }[] = [
   { key: 'plan', title: 'Plan', sub: 'Clair, grille de dessin' },
   { key: 'auto', title: 'Auto', sub: 'Suit le système : Plan ou Nuit' },
 ]
-const item = 'flex min-h-11 cursor-default items-center gap-3 rounded-lg px-3 py-1.5 text-sm outline-none data-[highlighted]:bg-accent'
+const item = 'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py-1.5 text-sm outline-none data-[highlighted]:bg-accent'
 </script>
 
 <template>
