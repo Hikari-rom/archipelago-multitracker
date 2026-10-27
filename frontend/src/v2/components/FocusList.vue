@@ -2,7 +2,7 @@
 import { useMediaQuery } from '@vueuse/core'
 import { barParts } from '../../lib/dashboard'
 import type { SlotSummary } from '../../lib/types'
-import { pinActive, pinsOf } from '../../stores/tracker'
+import { pinActive } from '../../stores/tracker'
 import { cardState, useCardCtx } from '../lib/card'
 import BigNumber from './BigNumber.vue'
 
@@ -48,7 +48,6 @@ const barClass = (s: SlotSummary): string =>
           </span>
           <span class="shrink-0 font-mono text-xs">
             <span v-if="s.hints.in_my_world_in_logic" class="text-hint">◆{{ s.hints.in_my_world_in_logic }} </span>
-            <span v-if="pinsOf(s.name).length" class="text-new">📌{{ pinsOf(s.name).length }} </span>
             <span v-if="s.items.new" class="text-new">★{{ s.items.new }}</span>
           </span>
           <span class="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">{{ s.checks.remaining }} rest.</span>

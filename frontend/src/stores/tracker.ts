@@ -32,7 +32,7 @@ export const tracker = reactive({
   ticker: loadTicker(),
   /** layout of the Indices page (setting of this device) */
   hintsLayout: loadHintsLayout(),
-  /** pinned checks of the room (shared by every device, D31) */
+  /** pinned checks of the room, Indices page (shared by every device, D31) */
   pins: [] as Pin[],
   pinError: '' as string,
   details: {} as Record<string, SlotDetail>,
@@ -284,13 +284,9 @@ export async function markSeen(name: string): Promise<void> {
   if (isOpen(name)) void loadDetail(name)
 }
 
-// -- pinned checks (D31) ---------------------------------------------------------------------
+// -- pinned checks, Indices page (D31) ---------------------------------------------------------------------
 export function isPinned(slot: string, location: number): boolean {
   return tracker.pins.some((p) => p.slot === slot && p.location === location)
-}
-
-export function pinsOf(slot: string): Pin[] {
-  return tracker.pins.filter((p) => p.slot === slot)
 }
 
 let pinsSeq = 0

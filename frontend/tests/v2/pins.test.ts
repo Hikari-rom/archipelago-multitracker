@@ -1,12 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installMock } from '../../src/lib/api'
-import type { HintRow, Pin, SlotDetail } from '../../src/lib/types'
+import type { HintRow, Pin } from '../../src/lib/types'
 import { isPinned, togglePin, tracker } from '../../src/stores/tracker'
-import DetailTabs from '../../src/v2/components/DetailTabs.vue'
 import HintsTable from '../../src/v2/components/HintsTable.vue'
 import ThemeMenu from '../../src/v2/components/ThemeMenu.vue'
-import { mk } from '../helpers'
 
 const pin = (slot: string, location: number, name: string): Pin => ({ slot, game: 'G', location, name, at: 1 })
 
@@ -23,7 +21,6 @@ function server(initial: Pin[] = []) {
 afterEach(() => {
   tracker.pins = []
   tracker.pinError = ''
-  tracker.details = {}
   document.body.innerHTML = ''
 })
 
@@ -39,25 +36,6 @@ describe('pinned checks', () => {
     await togglePin('Me_A', 100, 'Chest')
     expect(isPinned('Me_A', 100)).toBe(true)
     expect(tracker.pinError).toContain('hors ligne')
-  })
-
-  it('details: pinned checks on top, in logic first, and a pin on every location', async () => {
-    const putPin = server()
-    tracker.details = {
-      Me_A: {
-        ...mk({ name: 'Me_A', game: 'Game A' }), items_list: [], hints_mine_elsewhere: [], hints_in_my_world: [],
-        in_logic_locations: [{ id: 1, name: 'Chest', region: 'Cave', hint: null }, { id: 2, name: 'Boss', region: 'Cave', hint: null }],
-      } as SlotDetail,
-    }
-    tracker.pins = [pin('Me_A', 9, 'Far Away'), pin('Me_A', 2, 'Boss'), pin('Other', 1, 'Not mine')]
-    const w = mount(DetailTabs, { props: { name: 'Me_A' } })
-    await flushPromises()
-    expect(w.find('[data-tab="logic"]').text()).toContain('📌2')
-    const rows = w.findAll('[data-pinned-location]')
-    expect(rows.map((r) => r.text())).toEqual([expect.stringContaining('Boss'), expect.stringContaining('pas en logique')])
-    const chest = w.findAll('[data-location]').find((l) => l.text().includes('Chest'))!
-    await chest.find('[data-pin]').trigger('click')
-    expect(putPin).toHaveBeenCalledWith('Me_A', 1, true)
   })
 
   it('Indices table: pinned rows stay on top whatever the sort', () => {

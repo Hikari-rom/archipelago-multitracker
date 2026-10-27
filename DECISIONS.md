@@ -345,8 +345,9 @@ d'Archipelago :
   *un* ensemble suffisant minimal, pas forcément le seul.
 - **Rafraîchissement** : événement SSE `hints` (au plus un par seconde) ; la page refait `GET /api/hints`.
 
-## D31 — Checks épinglés côté serveur (2026-10-27, demandé par Romain)
-- **Où** : table `pins` de la base SQLite (`seed_name`, `slot_name`, `location`), et non `localStorage` : une épingle
+## D31 — Indices épinglés côté serveur (2026-10-27, demandé par Romain)
+- **Où dans l'interface** : seulement la page Indices (Romain ne veut pas d'épingles dans le tableau de bord).
+- **Stockage** : table `pins` de la base SQLite (`seed_name`, `slot_name`, `location`), et non `localStorage` : une épingle
   posée sur l'ordinateur se retrouve sur le téléphone. Événement SSE `pins` à chaque changement ; le front recharge
   `GET /api/pins` (et à chaque reconnexion).
 - **Quoi** : un check = une location dans le monde d'un slot de la room, suivi ou non (page Indices : on peut épingler
