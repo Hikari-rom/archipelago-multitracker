@@ -273,6 +273,6 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   activés à la main sont actifs, plusieurs à la fois, les checks n'y changent rien ; en passant en manuel, les jeux
   actifs à ce moment sont gardés ; la liste est conservée en repassant en automatique
 - [ ] Vérifier les trois styles à l'œil sur ordinateur et téléphone (pas de Chromium sur la machine de dev)
-- [x] Configuration : on retrouve les slots déjà enregistrés au lieu de tous les slots qui ont un yaml (D29)
+- [x] Configuration : on retrouve les slots déjà enregistrés au lieu de tous les slots qui ont un yaml (D29, v0.2.15)
 - [x] Enregistrer la configuration ne reconnecte que ce qui a changé ; sans changement, aucune déconnexion (D29)
 - [x] Un collect/release (jeu fini) ne rend plus tous les jeux actifs : checks simultanés dans plusieurs slots (D29)
