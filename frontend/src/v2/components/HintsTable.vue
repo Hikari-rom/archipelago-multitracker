@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { mdiPinOutline } from '@mdi/js'
 import { computed } from 'vue'
 import { COLUMN_LABEL, STATUS_LABEL, hintPin, sortHints, type HintColumn } from '../../lib/hints'
 import type { HintRow } from '../../lib/types'
 import type { HintsSort } from '../lib/prefs'
 import { isPinned } from '../../stores/tracker'
 import HintAccessCell from './HintAccessCell.vue'
+import MdiIcon from './MdiIcon.vue'
 import PinButton from './PinButton.vue'
 
 const props = defineProps<{
@@ -52,7 +54,7 @@ function here(h: HintRow) {
     <table class="w-full min-w-[760px] border-collapse text-sm" :aria-label="label">
       <thead>
         <tr class="border-b text-left text-xs text-muted-foreground">
-          <th scope="col" class="w-8 px-1"><span class="sr-only">Épingle</span></th>
+          <th scope="col" class="w-8 px-1"><span class="sr-only">Épinglé</span><MdiIcon :path="mdiPinOutline" class="mx-auto" /></th>
           <th v-for="c in columns" :key="c" scope="col" :aria-sort="ariaSort(c)" class="px-3 py-2 font-medium">
             <button type="button" class="flex min-h-8 items-center gap-1 hover:text-foreground" :class="sort.key === c ? 'text-foreground' : ''" @click="toggle(c)">
               {{ COLUMN_LABEL[c] }}

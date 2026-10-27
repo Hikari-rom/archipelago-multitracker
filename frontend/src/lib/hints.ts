@@ -127,7 +127,7 @@ export const FILTER_LABEL: Record<HintsFilter, string> = {
   mine: 'Mes items',
   world: 'Dans mes mondes',
   ok: 'Accessibles',
-  pinned: '📌 Épinglés',
+  pinned: 'Épinglés',
 }
 
 /** Rows of the selected slots, after the page's filters. */

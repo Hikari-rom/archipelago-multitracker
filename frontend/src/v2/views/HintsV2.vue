@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { mdiPin } from '@mdi/js'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getHints } from '../../lib/api'
 import { FILTER_LABEL, doneBy, filterHints, groupBySlot, hintPin, type HintColumn, type HintsFilter } from '../../lib/hints'
 import type { HintRow, HintsResponse, SlotSummary } from '../../lib/types'
 import { hintsListeners, isPinned, tracker } from '../../stores/tracker'
 import HintsTable from '../components/HintsTable.vue'
+import MdiIcon from '../components/MdiIcon.vue'
 import OwnerSelect from '../components/OwnerSelect.vue'
 import { loadHideFoundHints, loadHintsSort, saveHideFoundHints, saveHintsSort } from '../lib/prefs'
 
@@ -103,11 +105,11 @@ const FILTERS = Object.keys(FILTER_LABEL) as HintsFilter[]
       <div role="group" aria-label="Filtrer les indices" class="flex flex-wrap gap-1.5">
         <button
           v-for="f in FILTERS" :key="f" type="button" :aria-pressed="filter === f" :data-filter="f"
-          class="min-h-9 rounded-full border px-3 text-sm max-[699px]:min-h-11"
+          class="inline-flex min-h-9 items-center gap-1 rounded-full border px-3 text-sm max-[699px]:min-h-11"
           :class="filter === f ? 'border-logic bg-logic/15 text-foreground' : 'text-muted-foreground hover:text-foreground'"
           @click="filter = f"
         >
-          {{ FILTER_LABEL[f] }}
+          <MdiIcon v-if="f === 'pinned'" :path="mdiPin" class="text-new" />{{ FILTER_LABEL[f] }}
         </button>
       </div>
       <input

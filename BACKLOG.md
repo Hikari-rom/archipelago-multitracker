@@ -307,4 +307,5 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Épingles enregistrées par le serveur (même liste sur tous les appareils), par seed ; un check fait est
   désépinglé tout seul
 - [x] Menu Thème : l'option « Ciel animé » n'apparaît qu'en Nuit (pas de ciel en Plan)
+- [x] Icônes Material Design pour l'épingle (`@mdi/js` : `mdiPin` / `mdiPinOutline`, composant `v2/components/MdiIcon.vue`)
 
