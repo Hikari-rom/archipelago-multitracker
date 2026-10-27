@@ -7,8 +7,9 @@
    2026-10-26 : la Configuration garde les slots enregistrés et ne reconnecte que ce qui change ; un collect (jeu
    fini) ne rend plus tous les jeux actifs (D29, v0.2.15).
    2026-10-27 : page « Indices » (M26, D30) : hints de tous les slots suivis, triables, accessibilité pour celui qui
-   doit faire le check (autres joueurs compris) et ce qui la bloque ; trois présentations ; message après une mise à jour.
-   Indices épinglés (page Indices), gardés par le serveur (M27, D31) ; « Ciel animé » seulement en Nuit.
+   doit faire le check (autres joueurs compris) et ce qui la bloque ; trois présentations ; message après une mise à jour (v0.2.17).
+   Indices épinglés (page Indices), gardés par le serveur (M27, D31) ; « Ciel animé » seulement en Nuit ; messages
+   « Logique indisponible » en clair (v0.2.18).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
