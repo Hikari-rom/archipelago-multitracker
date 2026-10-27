@@ -29,6 +29,8 @@ class LogicResult:
     state: str
     in_logic: list[int] = field(default_factory=list)
     message: str | None = None
+    # the logic is knowingly late for this slot (never early): why, for the player (adapters.LOGIC_NOTES)
+    note: str | None = None
     regions: dict[int, str] = field(default_factory=dict)  # location id -> region name (when known)
     # location id (of LogicRequest.explain, out of logic) -> {"kind": single|set|many|none, "items": ...}
     blockers: dict[int, dict[str, Any]] = field(default_factory=dict)
@@ -36,7 +38,7 @@ class LogicResult:
     seconds: float | None = None
 
     def to_json(self) -> dict[str, Any]:
-        return {"state": self.state, "count": len(self.in_logic), "message": self.message,
+        return {"state": self.state, "count": len(self.in_logic), "message": self.message, "note": self.note,
                 "computed_at": self.computed_at, "seconds": self.seconds}
 
 

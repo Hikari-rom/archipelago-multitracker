@@ -46,8 +46,6 @@ def game_catalog(path: Path = APWORLDS_CONFIG) -> dict[str, dict[str, bool]]:
 
 # Shown after « Logique indisponible : » (docs/COMPAT.md has the details, for us).
 NO_LOGIC_REASONS = {
-    "Factorio": "impossible pour Factorio : les recettes des technologies sont tirées au hasard à la génération et "
-                "le jeu ne les transmet pas",
     "Ocarina of Time": "impossible pour Ocarina of Time : les récompenses de donjon (pierres, médaillons) ne sont "
                        "connues que du spoiler",
 }
@@ -164,7 +162,8 @@ class UTLogicEngine(LogicEngine):
         return LogicResult("ok", in_logic=list(res.get("in_logic", [])),
                            regions={int(k): v for k, v in (res.get("regions") or {}).items()},
                            blockers={int(k): v for k, v in (res.get("blockers") or {}).items()},
-                           message=("; ".join(res["errors"]) if res.get("errors") else None))
+                           message=("; ".join(res["errors"]) if res.get("errors") else None),
+                           note=res.get("note"))
 
 
 def default_engine() -> LogicEngine:

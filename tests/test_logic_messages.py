@@ -7,7 +7,7 @@ import asyncio
 def test_no_logic_reasons():
     from multitracker.logic import LogicRequest
     from multitracker.logic.engine import UTLogicEngine, no_logic_reason
-    assert no_logic_reason("Factorio", False).startswith("impossible pour Factorio")
+    assert no_logic_reason("Ocarina of Time", False).startswith("impossible pour Ocarina of Time")
     assert "pas encore assez fiable" in no_logic_reason("Ocarina of Time 2", True)
     assert "ne sait pas encore" in no_logic_reason("Musipelago", False)
     engine = UTLogicEngine({"Game A": False})  # never started: unavailable games do not reach the worker

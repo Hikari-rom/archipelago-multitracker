@@ -166,6 +166,7 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
                 report["ok"] = False
                 return report
             report["mode"] = res.get("mode")
+            report["note"] = res.get("note")  # logic knowingly late for this slot (adapters.LOGIC_NOTES)
             foreign = [e for e in res.get("errors") or [] if "manquent au monde recalculé" in e]
             if foreign:  # the regenerated world lacks locations of the slot: not the same options
                 report["error"] = foreign[0]

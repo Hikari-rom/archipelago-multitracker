@@ -533,10 +533,25 @@ from .adapters_m7 import ADAPTERS_M7  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M7)
 
-from .adapters_m24 import ADAPTERS_M24, RECEIVED_HOOKS_M24  # noqa: E402
+from .adapters_m24 import ADAPTERS_M24, LOGIC_NOTES_M24, RECEIVED_HOOKS_M24, STATE_HOOKS_M24  # noqa: E402
 
 ADAPTERS.update(ADAPTERS_M24)
 RECEIVED_HOOKS.update(RECEIVED_HOOKS_M24)
+LOGIC_NOTES: dict[str, Callable[[Any], str | None]] = dict(LOGIC_NOTES_M24)
+STATE_HOOKS: dict[str, Callable[[Any, Any, set[int]], None]] = dict(STATE_HOOKS_M24)
+
+
+def adjust_state(game: str, world: Any, state: Any, checked: set[int]) -> None:
+    """Per-game use of the slot's checked locations, once the received items are collected and before the sweep."""
+    hook = STATE_HOOKS.get(game)
+    if hook:
+        hook(world, state, checked)
+
+
+def logic_note(game: str, world: Any) -> str | None:
+    """Why this slot's logic may show some locations later than the game allows (None: exact)."""
+    note = LOGIC_NOTES.get(game)
+    return note(world) if note else None
 
 
 def needs_start_items(game: str) -> bool:

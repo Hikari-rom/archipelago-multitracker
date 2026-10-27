@@ -31,6 +31,7 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
     "state": "ok",                      // ok | unavailable | pending | error
     "count": 14,                        // nombre de locations en logique (si state == ok)
     "message": null,                    // explication si unavailable/error
+    "note": null,                       // si ok : pourquoi la logique est minorée (jamais en avance), D32 ; sablier dans l'interface
     "computed_at": 1791593223.0,
     "seconds": 0.42
   },

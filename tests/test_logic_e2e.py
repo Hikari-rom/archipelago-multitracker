@@ -343,3 +343,20 @@ async def test_bot_finishes_m24l_batch_using_only_in_logic_locations(tmp_path):
     result = await play_until_done("m24l", 17, tmp_path, spoiler=1, no_yaml=frozenset({"TUNIC"}))
     (ROOT / "test-output" / "e2e_m24l.json").write_text(json.dumps(result, indent=1))
     assert result["rounds"] > 1
+
+
+async def test_factorio_logic_is_never_early():
+    """Factorio has no slot_data: its research tree and recipes are drawn at generation and only written in the
+    game's mod. The adapter's rules are sufficient whatever the draw (D32): at every sphere, nothing in logic that
+    the full multiworld says is not, and the slot carries the note shown to the player."""
+    import logic_reference as lr
+    zip_path = generated_seed("m28", 3, spoiler=1)
+    multiworld = lr.regenerate("m28", 3)
+    multidata = lr.load_multidata(zip_path)
+    lr.check_same_fill(multiworld, multidata)
+    player = next(p for p in multiworld.player_ids if multiworld.game[p] == "Factorio")
+    report = lr.compare_slot(multiworld, multidata, player, FIXTURES / "m28" / "factorio.yaml", max_snapshots=12)
+    assert not report.get("error"), report
+    assert not [s["over"] for s in report["snapshots"] if s["over"]], report
+    assert sum(s["tool"] for s in report["snapshots"]) > 0
+    assert report["note"] and "minorée" in report["note"]

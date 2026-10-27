@@ -210,6 +210,7 @@ class SlotLogic:
         from worlds.tracker.TrackerCore import TrackerCore
 
         self.slot_name, self.game, self.team, self.slot = slot_name, game, team, slot
+        self.location_ids = set(location_ids or ())
         self.random_options: list[str] = []
         self._pool_cache = None
         self._blockers_cache: tuple[tuple, dict[int, dict[str, Any]]] | None = None
@@ -249,6 +250,8 @@ class SlotLogic:
             raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
         self.core = core
         self.init_seconds = round(time.perf_counter() - started, 2)
+        from .adapters import logic_note
+        self.note = logic_note(game, core.multiworld.worlds[core.player_id])
         # Locations the server lists for the slot but the regenerated world does not have: the world was built
         # with other options than the room's (typically the yaml of another generation). Its logic misses them.
         own = {loc.address for loc in core.multiworld.get_locations(core.player_id) if isinstance(loc.address, int)}
@@ -345,6 +348,8 @@ class SlotLogic:
         adjust_received(world.game, world, received, start)
         for item in received:
             state.collect(item, True)
+        from .adapters import adjust_state
+        adjust_state(world.game, world, state, self.location_ids - missing)
         state.sweep_for_advancements(locations=[loc for loc in mw.get_locations(pid) if not loc.address])
         reachable_locations = [loc for loc in mw.get_reachable_locations(state, pid)
                                if isinstance(loc.address, int) and loc.address in missing]
@@ -556,7 +561,7 @@ class Worker:
         if logic.random_options:
             result["errors"] = [f"options aléatoires dans le yaml, logique peut-être approximative : "
                                 f"{', '.join(logic.random_options[:5])}"] + result.get("errors", [])
-        return {"state": "ok", "mode": logic.mode, **result}
+        return {"state": "ok", "mode": logic.mode, "note": logic.note, **result}
 
 
 def worker_main(conn) -> None:

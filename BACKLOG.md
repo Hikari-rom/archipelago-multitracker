@@ -141,7 +141,7 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 ## M15 — Écarts restants sur les jeux de la room (en attendant que la room se réveille)
 - [x] Hollow Knight : coûts (encoches, CostSanity) tirés au hasard et non rejoués → adaptateur, 5/5 + e2e (2026-10-11)
 - [x] Stardew Valley : items de progression comptés selon leur classification avant remplissage → crochet `RECEIVED_HOOKS` sur les items reçus, 6/8 (2 retards d'un point, jamais d'avance) + e2e (2026-10-11)
-- [x] Factorio : bloqué [!] — slot_data vide, coûts des technologies seulement dans le mod (2026-10-11)
+- [x] Factorio : bloqué [!] — slot_data vide, coûts des technologies seulement dans le mod (2026-10-11) ; activé en logique minorée le 2026-10-27 (M28, D32)
 - [x] Lethal Company : lune de départ et carte des scraps tirées au hasard → adaptateur (inventaire de départ transmis aux adaptateurs `START_ADAPTERS`), 8/8 + e2e (2026-10-11)
 - [x] (2026-10-11 : le test rejoue un tour sans progrès après 2 s avant de conclure ; une vraie sous-estimation
   reste bloquée et échoue toujours) e2e `m14b` instable (1 échec sur 4, le premier lancement, celui qui a généré la seed) : slot Stardew bloqué
@@ -313,3 +313,11 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   pas pris en charge ; yaml à importer dans la page Configuration)
 - [x] Bandeaux du haut (room endormie, mise à jour disponible / installée) alignés sur la page aux grandes largeurs
 
+## M28 — Factorio en logique minorée, icône « Logique minorée » (demandé par Romain le 2026-10-27, D32)
+- [x] Adaptateur `_factorio` : règles suffisantes quel que soit le tirage (jamais en avance, 7 seeds), exact sans
+  recettes tirées ; une recherche `AP-N-…` faite prouve le pack N (`STATE_HOOKS`)
+- [x] `validate_logic.py --lower-bound` (seule une avance compte comme différence) ; e2e `m28`
+- [x] `logic.note` dans l'API ; sablier avec tooltip à côté du nombre de checks en logique (Factorio, Pokemon Emerald
+  avec Pokémon sauvages aléatoires)
+- [ ] Ajouter le slot Factorio de la room (Mathcroft-Factor) dans la page Configuration, avec son yaml
+- [ ] Mesurer le retard en vraie partie (la mesure par sphère ignore la preuve par les checks)

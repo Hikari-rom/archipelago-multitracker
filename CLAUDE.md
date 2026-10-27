@@ -27,7 +27,7 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
 - M14/M15 : logique aussi pour 23 autres jeux de la room (joués par les amis de Romain) (liste et limites dans `docs/COMPAT.md`), dont
   Stardew Valley (crochet `RECEIVED_HOOKS` dans `adapters.py`) et Lethal Company (`START_ADAPTERS` : adaptateur qui
   reçoit aussi l'inventaire de départ), Satisfactory (`YAML_REQUIRED` dans `ut_worker.py` : yaml + slot_data).
-  Factorio impossible (slot_data vide).
+  Factorio en logique minorée (D32 : règles suffisantes, `validate_logic.py --lower-bound`, `logic.note`).
 - `config/room.yaml` (gitignoré) pointe sur la **vraie room** de Romain depuis le 2026-10-11 (elle dort souvent :
   `curl localhost:42753/api/slots` → `room_sleeping`) ; ne jamais y connecter le bot ni les tests.
 - 2026-10-23 : tableau de bord de la room complète (M21, D22), désactivé par défaut (`room_dashboard`) :

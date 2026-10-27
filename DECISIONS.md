@@ -357,3 +357,27 @@ d'Archipelago :
   slots connectés). Pour un slot qu'on ne suit pas du tout, l'épingle reste jusqu'à ce qu'on la retire.
 - Pas d'épingle dans l'interface v1.
 
+## D32 — Factorio : logique minorée (jamais en avance) et icône « Logique minorée » (2026-10-27, demandé par Romain)
+- **Le problème** : le monde Factorio d'AP 0.6.7 n'a pas de `fill_slot_data`. Ce qui est tiré au hasard à la
+  génération n'est écrit que dans le mod du jeu : packs de chaque recherche (`tech_cost_mix`), prérequis
+  (`tech_tree_layout`), recettes des packs (`recipe_ingredients`), du silo, du satellite et de la pièce de fusée.
+  Seul le choix des locations se retrouve, avec la liste des locations du slot.
+- **Règles suffisantes** (`_factorio`, `adapters_m24.py`) : le tirage des locations rejoue celles du slot
+  (`_SlotSample`) ; chaque recette tirée est remplacée par une recette qui contient tous les ingrédients possibles de
+  son pool (et, pour un pack, toutes les machines possibles), d'où les technologies de progression recalculées ;
+  chaque recherche `AP-N-…` exige l'automatisation de tous les packs jusqu'au palier N (le nom donne le pack le plus
+  élevé ; dans toutes les formes d'arbre, les prérequis ont un palier inférieur ou égal). Ces règles impliquent les
+  vraies : rien n'est en logique trop tôt. Exact quand l'arbre est `single` et le mix à 0 ou 100, sans recettes tirées.
+- **Preuve par les checks** (`STATE_HOOKS`, appliqué après les items reçus, avant le sweep) : une recherche `AP-N-…`
+  déjà faite prouve que le pack du palier N est automatisé ; le reste du palier apparaît alors en logique.
+- **Mesure** (`validate_logic.py --lower-bound`, seul un « over » compte comme différence) : aucune location en
+  avance sur 7 seeds. Exact (100 %) sur les 2 seeds sans recettes tirées ; 35 à 50 % des locations en logique
+  trouvées avec recettes tirées ; 22 à 31 % avec le yaml de la room (`recipe_ingredients: science_pack`). La mesure
+  par sphère coche tout un palier d'un coup : elle ne voit pas le gain de la preuve par les checks, qui compte en
+  vraie partie.
+- **Choix de Romain** : activer quand même (ce qui est affiché est sûr), en le disant dans l'interface.
+- **Icône** : `logic.note` (API) porte une explication quand la logique d'un slot est minorée en connaissance de
+  cause (`LOGIC_NOTES`, `adapters.py`) : Factorio sauf cas exact, Pokemon Emerald avec `wild_pokemon` aléatoire
+  (« Pokedex - … » jamais en logique). Le front affiche un sablier à côté du nombre de checks en logique, avec un
+  tooltip (survol, focus, ou appui sur mobile) ; dans la liste Focus (lignes-boutons), un simple `title`.
+

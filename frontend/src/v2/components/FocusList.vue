@@ -34,7 +34,7 @@ const barClass = (s: SlotSummary): string =>
           @click="pinActive(s.name)"
         >
           <span class="absolute inset-y-0 left-0 w-[3px]" :class="barClass(s)" aria-hidden="true" />
-          <span class="w-12 shrink-0 text-right"><BigNumber :state="st(s)" size="md" /></span>
+          <span class="w-12 shrink-0 text-right"><BigNumber :state="st(s)" size="md" in-button /></span>
           <span class="min-w-0 flex-1">
             <span class="flex items-baseline gap-2">
               <span class="truncate text-sm font-medium" :title="s.game">{{ s.game }}</span>

@@ -8,7 +8,7 @@ import { tracker } from '../../stores/tracker'
 export interface CardCtx { nowMs: number; activeMinutes: number; activity: ActivityOverrides; roomSleeping: boolean }
 export type CardActivity = { kind: 'chosen' } | { kind: 'auto'; agoMin: number; expiresInMin: number } | null
 export type CardLogic =
-  | { kind: 'ok'; count: number; approx: boolean; message: string | null }
+  | { kind: 'ok'; count: number; approx: boolean; message: string | null; note: string | null }
   | { kind: 'unavailable'; message: string | null }
   | { kind: 'pending'; waiting: boolean }
 export type CardConnection = { kind: 'ok' } | { kind: 'connecting' } | { kind: 'sleeping'; since: string | null } | { kind: 'error'; message: string }
@@ -30,7 +30,7 @@ function activityOf(s: SlotSummary, c: CardCtx): CardActivity {
 
 function logicOf(s: SlotSummary): CardLogic {
   const l = s.logic
-  if (l.state === 'ok') return { kind: 'ok', count: l.count, approx: !!l.message, message: l.message }
+  if (l.state === 'ok') return { kind: 'ok', count: l.count, approx: !!l.message, message: l.message, note: l.note ?? null }
   if (l.state === 'pending') return { kind: 'pending', waiting: s.status !== 'connected' }
   return { kind: 'unavailable', message: l.message }
 }

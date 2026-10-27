@@ -35,6 +35,23 @@ describe('card blocks', () => {
     // render `<span aria-label="approximatif">≈</span>{{ big }}` with no whitespace between them
     expect(mount(BigNumber, { props: { state: cardState(mk({ name: 'a', logic: { state: 'ok', count: 21, message: 'x' } }), ctx) } }).text()).toBe('≈21')
   })
+  it('knowingly late logic: an hourglass whose tooltip says why, a plain title inside a button', async () => {
+    const why = 'Logique minorée : le serveur ne transmet ni l’arbre des technologies'
+    const s = mk({ name: 'f', game: 'Factorio', logic: { state: 'ok', count: 12, message: null, note: why } })
+    const big = mount(BigNumber, { props: { state: cardState(s, ctx) }, attachTo: document.body })
+    expect(big.text()).toBe('12')
+    const icon = big.get('button[data-logic-note]')
+    expect(icon.attributes('aria-label')).toBe('Logique minorée')
+    await icon.trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain(why)
+    big.unmount()
+    const inButton = mount(BigNumber, { props: { state: cardState(s, ctx), inButton: true } })
+    expect(inButton.find('button').exists()).toBe(false)
+    expect(inButton.get('[data-logic-note]').attributes('title')).toBe(why)
+    const exact = mk({ name: 'g', logic: { state: 'ok', count: 12, message: null } })
+    expect(mount(BigNumber, { props: { state: cardState(exact, ctx) } }).find('[data-logic-note]').exists()).toBe(false)
+  })
   it('chips: auto active and error', () => {
     const s = mk({ name: 'a', last_check_at: NOW / 1000 - 12 * 60, status: 'error', error: 'connexion refusée : mot de passe' })
     const t = mount(StateChips, { props: { state: cardState(s, ctx) } }).text()

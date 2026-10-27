@@ -43,6 +43,8 @@ export interface SlotSummary {
     state: LogicState
     count: number
     message: string | null
+    /** the logic is knowingly late for this slot, never early: why (backend adapters.LOGIC_NOTES) */
+    note?: string | null
     computed_at?: number | null
     seconds?: number | null
   }

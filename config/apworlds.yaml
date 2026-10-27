@@ -44,6 +44,7 @@ apworlds:
   hk: {game: "Hollow Knight", source: core, logic: true, needs_yaml: true}  # adapter: notch and location costs
   stardew: {game: "Stardew Valley", source: core, logic: true, needs_yaml: true}  # hook: pre-fill progression count of received items
   satisfactory: {game: "Satisfactory", source: core, logic: true, needs_yaml: true}  # adapter: Hub tiers as generated; yaml + slot_data
+  factorio: {game: "Factorio", source: core, logic: true, needs_yaml: true}  # adapter: sufficient rules (never early, sometimes late)
   tww: {game: "The Wind Waker", source: core, logic: true, needs_yaml: true}  # adapter: entrances, required bosses; randomize_charts refused (M24)
 
   twwhd:

@@ -1,0 +1,13 @@
+name: factorio
+game: Factorio
+Factorio:
+  max_science_pack: utility_science_pack
+  goal: satellite
+  silo: randomize_recipe
+  satellite: randomize_recipe
+  recipe_ingredients: science_pack
+  tech_tree_layout: trees
+  tech_cost_mix: 45
+  progressive: "on"
+  craftsanity: 20
+  attack_traps: 2

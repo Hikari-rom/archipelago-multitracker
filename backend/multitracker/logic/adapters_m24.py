@@ -315,6 +315,160 @@ def _pokemon_emerald(world_cls: type, slot_data: dict[str, Any], location_ids: s
         yield
 
 
+class _SlotSample:
+    """Stands for a world's random generator: `sample` returns the slot's own locations out of the population,
+    everything else draws as usual. A second sample of the same population (the world rejected the first one and
+    draws again) is a real draw: the world then misses some of the slot's locations, which the worker reports."""
+
+    def __init__(self, random: Any, names: set[str]) -> None:
+        self._random = random
+        self._names = names
+        self._drawn: list[list] = []
+
+    def sample(self, population: list, k: int) -> list:
+        if any(population is drawn for drawn in self._drawn):
+            return self._random.sample(population, k)
+        self._drawn.append(population)
+        return [name for name in population if name in self._names]
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._random, name)
+
+
+@contextlib.contextmanager
+def _factorio(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Factorio has no slot_data and draws at generation what its rules depend on: which "AP-<pack>-<cost>" research
+    and "Craft <item>" locations exist (the slot's location list says), the lower science packs mixed into each
+    research (tech_cost_mix), the prerequisites between researches (tech_tree_layout) and, depending on the options,
+    the recipes of the science packs, the silo, the satellite and always the rocket part. Only the game's mod knows
+    them. Use rules that are always sufficient, never early, sometimes late:
+    - a research of pack N needs every pack up to N automated (its prerequisites are researches of packs <= N);
+    - a randomized recipe counts as made of every item it could have been drawn from, in any of its possible
+      crafting machines;
+    - a pack is also automated once a research of that pack is checked (`_factorio_state`): every "AP-N-..."
+      research needs pack N whatever the draw, so the player already makes it, and technologies are never lost.
+    Exact when nothing is randomized (single layout, tech_cost_mix 0 or 100, recipes as in the game)."""
+    module = importlib.import_module(world_cls.__module__)
+    technologies = importlib.import_module(f"{world_cls.__module__}.Technologies")
+    names = {world_cls.location_id_to_name[i] for i in location_ids if i in world_cls.location_id_to_name}
+    original_regions, original_recipes, original_rules = \
+        world_cls.create_regions, world_cls.set_custom_recipes, world_cls.set_rules
+
+    def create_regions(self) -> None:
+        if not names:
+            return original_regions(self)
+        self.random, random = _SlotSample(self.random, names), self.random
+        try:
+            original_regions(self)
+        finally:
+            self.random = random
+
+    def every_ingredient(name: str, pool: set[str], machines: bool = False) -> Any:
+        original = technologies.recipes[name]
+        ingredients = dict.fromkeys(sorted(pool & technologies.valid_ingredients), 1)
+        if machines:  # a pack recipe with 1 or 2 fluids moves to another crafting category (make_quick_recipe)
+            fluids = len(pool & technologies.fluids)
+            categories = {original.category} | ({"crafting-with-fluid"} if fluids else set()) | \
+                ({"chemistry"} if fluids > 1 else set())
+            ingredients |= dict.fromkeys(sorted(technologies.machine_per_category[c] for c in categories), 1)
+        return technologies.Recipe(name, original.category, ingredients, original.products, original.energy)
+
+    def set_custom_recipes(self) -> None:
+        original_recipes(self)
+        options, pools = self.options, technologies.get_science_pack_pools()
+        self.custom_recipes["rocket-part"] = every_ingredient("rocket-part", pools[options.max_science_pack.get_max_pack()])
+        if options.recipe_ingredients:
+            pool: set[str] = set()
+            for pack in options.max_science_pack.get_ordered_science_packs():
+                pool |= pools[pack]
+                if pack in technologies.recipes:
+                    self.custom_recipes[pack] = every_ingredient(pack, pool, machines=True)
+        allowed = set().union(*(pools[pack] for pack in options.max_science_pack.get_allowed_packs()))
+        if options.silo.value == options.silo.option_randomize_recipe:
+            self.custom_recipes["rocket-silo"] = every_ingredient("rocket-silo", allowed)
+        if options.satellite.value == options.satellite.option_randomize_recipe:
+            self.custom_recipes["satellite"] = every_ingredient("satellite", allowed)
+        # The original computed the progression technologies from the drawn recipes: from these ones instead.
+        for recipe in self.custom_recipes.values():
+            self.advancement_technologies |= {tech.name for tech in recipe.recursive_unlocking_technologies}
+        self.advancement_technologies |= {technologies.tech_to_progressive_lookup[tech]
+                                          for tech in self.advancement_technologies
+                                          if tech in technologies.tech_to_progressive_lookup}
+
+    def set_rules(self) -> None:
+        original_rules(self)
+        if _factorio_exact_researches(self):
+            return
+        packs = module.Factorio.ordered_science_packs
+        for location in self.science_locations:
+            needed = frozenset(f"Automated {pack}" for pack in packs[:location.complexity + 1])
+            location.access_rule = lambda state, needed=needed: state.has_all(needed, self.player)
+
+    with patch_attr(world_cls, "create_regions", create_regions), \
+            patch_attr(world_cls, "set_custom_recipes", set_custom_recipes), \
+            patch_attr(world_cls, "set_rules", set_rules):
+        yield
+
+
+def _factorio_exact_researches(world: Any) -> bool:
+    """No prerequisites between researches, and each research's packs do not depend on the draw."""
+    options = world.options
+    return options.tech_tree_layout.value == options.tech_tree_layout.option_single \
+        and options.tech_cost_mix.value in (0, 100)
+
+
+def _factorio_note(world: Any) -> str | None:
+    options = world.options
+    rocket = {"Craft rocket-part"} | ({"Craft rocket-silo"} if options.silo.value == options.silo.option_randomize_recipe
+                                     else set()) | \
+        ({"Craft satellite"} if options.satellite.value == options.satellite.option_randomize_recipe else set())
+    if _factorio_exact_researches(world) and not options.recipe_ingredients \
+            and not rocket & {loc.name for loc in world.craftsanity_locations}:
+        return None
+    return ("Logique minorée : le serveur ne transmet ni l'arbre des technologies ni les recettes tirées au hasard. "
+            "Ce qui est affiché en logique l'est vraiment, mais certains checks n'y apparaissent que plus tard "
+            "(un pack de science compte dès qu'une recherche qui l'utilise a été faite).")
+
+
+def _pokemon_emerald_note(world: Any) -> str | None:
+    if world.options.wild_pokemon.value == world.options.wild_pokemon.option_vanilla:
+        return None
+    return ("Logique minorée : avec les Pokémon sauvages aléatoires, le serveur ne dit pas où vit chaque espèce. "
+            "Les « Pokedex - … » ne sont jamais comptés en logique.")
+
+
+def _factorio_received(world: Any, items: list, start: list) -> None:
+    """Factorio: the server sends each technology with the classification of the real generation, where only the
+    technologies of the real (drawn) recipes are progression. The rules of `_factorio` count every technology a
+    recipe could need: those must count once received, whatever the real recipe was."""
+    from BaseClasses import ItemClassification
+    for item in items:
+        if item.name in world.advancement_technologies:
+            item.classification |= ItemClassification.progression
+
+
+def _factorio_state(world: Any, state: Any, checked: set[int]) -> None:
+    """A checked "AP-<N>-<cost>" research proves pack N is made (see `_factorio`)."""
+    packs = world.ordered_science_packs
+    for code in checked:
+        name = world.location_id_to_name.get(code, "")
+        if name.startswith("AP-") and name[3:4].isdigit() and 1 <= int(name[3]) <= len(packs):
+            event = f"Automated {packs[int(name[3]) - 1]}"
+            state.prog_items[world.player][event] = max(1, state.prog_items[world.player][event])
+
+
+STATE_HOOKS_M24: dict[str, Callable[[Any, Any, set[int]], None]] = {
+    "Factorio": _factorio_state,
+}
+
+
+# Games whose logic is knowingly late (never early) for some options: what to tell the player.
+LOGIC_NOTES_M24: dict[str, Callable[[Any], str | None]] = {
+    "Factorio": _factorio_note,
+    "Pokemon Emerald": _pokemon_emerald_note,
+}
+
+
 def _dont_starve_together_received(world: Any, items: list, start: list) -> None:
     """Don't Starve Together: World.create_item makes every item progression, but the items that do not fit in the
     locations go to the start inventory with their pool classification (often useful), which the real generation's
@@ -336,6 +490,7 @@ def _dont_starve_together_received(world: Any, items: list, start: list) -> None
 
 RECEIVED_HOOKS_M24: dict[str, Callable[[Any, list, list], None]] = {
     "Don't Starve Together": _dont_starve_together_received,
+    "Factorio": _factorio_received,
 }
 
 
@@ -345,6 +500,7 @@ ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManage
     "Don't Starve Together": _dont_starve_together,
     "The Farmer Was Replaced": _tfwr,
     "Deep Rock Galactic": _deep_rock_galactic,
+    "Factorio": _factorio,
     "Majora's Mask Recompiled": _mm_recomp,
     "PEAK": _peak,
     "Pokemon Emerald": _pokemon_emerald,

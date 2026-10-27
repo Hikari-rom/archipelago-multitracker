@@ -10,6 +10,7 @@
    doit faire le check (autres joueurs compris) et ce qui la bloque ; trois présentations ; message après une mise à jour (v0.2.17).
    Indices épinglés (page Indices), gardés par le serveur (M27, D31) ; « Ciel animé » seulement en Nuit ; messages
    « Logique indisponible » en clair (v0.2.18).
+   Factorio en logique minorée (jamais en avance) et sablier « Logique minorée » avec tooltip (M28, D32, v0.2.19).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
@@ -111,7 +112,7 @@
   utilisables pour les slots de tes amis — et Haste). Les autres demandent le yaml du joueur (clé `yaml` du slot).
   Hollow Knight ajouté ensuite (adaptateur des coûts), puis Stardew Valley (crochet sur les items reçus ; peut retarder
   d'un point de pourcentage, jamais avancer). Lethal Company et Satisfactory aussi (adaptateurs). Non activés : Factorio (impossible
-  sans spoiler : slot_data vide), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
+  sans spoiler : slot_data vide ; activé en logique minorée le 2026-10-27, D32), TUNIC (autre version). Détail : `docs/COMPAT.md`, inventaire : `docs/COMPAT-room.md`.
 
 - 2026-10-13 : README réécrit avec la procédure d'installation complète (prérequis, bootstrap, config, lancement,
   mise à jour, désinstallation, dépannage). Procédure rejouée sur un clone neuf : bootstrap 1 min 10, ~400 Mo,
