@@ -345,3 +345,14 @@ d'Archipelago :
   *un* ensemble suffisant minimal, pas forcément le seul.
 - **Rafraîchissement** : événement SSE `hints` (au plus un par seconde) ; la page refait `GET /api/hints`.
 
+## D31 — Checks épinglés côté serveur (2026-10-27, demandé par Romain)
+- **Où** : table `pins` de la base SQLite (`seed_name`, `slot_name`, `location`), et non `localStorage` : une épingle
+  posée sur l'ordinateur se retrouve sur le téléphone. Événement SSE `pins` à chaque changement ; le front recharge
+  `GET /api/pins` (et à chaque reconnexion).
+- **Quoi** : un check = une location dans le monde d'un slot de la room, suivi ou non (page Indices : on peut épingler
+  la location d'un autre joueur qui contient un de nos items). La seed est celle de la room en cours : une nouvelle
+  room repart sans épingles, les anciennes restent en base.
+- **Fin** : un check fait est désépinglé (à la réception des checks pour un slot suivi, à la lecture pour les autres
+  slots connectés). Pour un slot qu'on ne suit pas du tout, l'épingle reste jusqu'à ce qu'on la retire.
+- Pas d'épingle dans l'interface v1.
+

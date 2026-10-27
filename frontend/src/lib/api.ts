@@ -2,7 +2,7 @@ import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, Up
 import type { UpdateInfo } from './update'
 import type { ApworldsInfo } from './apworlds'
 import type {
-  HintsResponse, HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
+  HintsResponse, HistoryPage, Pin, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
   SentCheck, SlotDetail, SlotSummary,
 } from './types'
 
@@ -55,6 +55,8 @@ export interface MockApi {
   getRoomFeedChecks?(params: RoomFeedChecksParams): Promise<RoomFeedChecksPage>
   getRoomFeedActivity?(bucket: 'hour' | 'day', player?: string): Promise<RoomFeedActivity>
   getHints?(): Promise<HintsResponse>
+  getPins?(): Promise<{ pins: Pin[] }>
+  putPin?(slot: string, location: number, pinned: boolean): Promise<{ pins: Pin[] }>
 }
 let mock: MockApi | null = null
 export function installMock(m: MockApi): void {
@@ -92,6 +94,13 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(body),
 })
+
+export const getPins = () => (mock?.getPins ? mock.getPins() : fetch('/api/pins').then((r) => json<{ pins: Pin[] }>(r)))
+
+export const putPin = (slot: string, location: number, pinned: boolean) =>
+  mock?.putPin
+    ? mock.putPin(slot, location, pinned)
+    : fetch('/api/pins', jsonInit('PUT', { slot, location, pinned })).then((r) => json<{ pins: Pin[] }>(r))
 
 export const getConfig = () =>
   mock?.getConfig ? mock.getConfig() : fetch('/api/config').then((r) => json<ConfigResponse>(r))

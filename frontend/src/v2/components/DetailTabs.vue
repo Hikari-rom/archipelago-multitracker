@@ -3,10 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { formatReceived } from '../../lib/history'
 import { hintInMyWorld, hintMineElsewhere } from '../../lib/logic'
-import { loadDetail, markSeen, tracker } from '../../stores/tracker'
+import { loadDetail, markSeen, pinsOf, tracker } from '../../stores/tracker'
 import { CATEGORY_CLASS, category, itemOrigin } from '../lib/days'
 import { regionsOf } from '../lib/regions'
 import GoalBlock from './GoalBlock.vue'
+import PinButton from './PinButton.vue'
 
 export type DetailTab = 'logic' | 'new' | 'received' | 'hints' | 'goal'
 const props = defineProps<{ name: string; initial?: DetailTab }>()
@@ -22,6 +23,12 @@ onMounted(() => {
 })
 
 const regions = computed(() => regionsOf(d.value?.in_logic_locations ?? []))
+// pinned checks of this world: in logic first (with their hint), then the others
+const pinned = computed(() => {
+  const byId = new Map((d.value?.in_logic_locations ?? []).map((l) => [l.id, l]))
+  const ps = pinsOf(props.name).map((p) => ({ ...p, logic: byId.get(p.location) ?? null }))
+  return [...ps.filter((p) => p.logic), ...ps.filter((p) => !p.logic)]
+})
 const region = computed(() => regions.value.find((r) => r.name === picked.value) ?? regions.value[0])
 const news = computed(() => (d.value?.items_list ?? []).filter((i) => i.new).sort((a, b) => b.index - a.index))
 const received = computed(() => [...(d.value?.items_list ?? [])].sort((a, b) => b.index - a.index))
@@ -32,7 +39,7 @@ const hintsWorld = computed(() => {
 })
 const hintsElsewhere = computed(() => d.value?.hints_mine_elsewhere ?? [])
 const tabs = computed<{ key: DetailTab; label: string }[]>(() => [
-  { key: 'logic', label: `En logique ${d.value?.in_logic_locations.length ?? 0}` },
+  { key: 'logic', label: `En logique ${d.value?.in_logic_locations.length ?? 0}${pinned.value.length ? ` · 📌${pinned.value.length}` : ''}` },
   { key: 'new', label: `★ Nouveaux ${news.value.length}` },
   { key: 'received', label: `Reçus ${d.value?.items_list.length ?? 0}` },
   { key: 'hints', label: `Hints ${hintsWorld.value.length + hintsElsewhere.value.length}` },
@@ -66,6 +73,19 @@ function onKey(e: KeyboardEvent): void {
 
     <div :id="`${pid}-panel`" role="tabpanel" :aria-labelledby="`${pid}-${tab}`" class="pt-3">
       <template v-if="tab === 'logic'">
+        <section v-if="pinned.length" data-pinned class="mb-3 rounded-md border border-new/40 bg-new/5 p-2">
+          <h4 class="px-1 text-sm font-semibold"><span aria-hidden="true">📌 </span>Épinglés · {{ pinned.length }}</h4>
+          <ul class="mt-1 space-y-0.5">
+            <li v-for="p in pinned" :key="p.location" data-pinned-location class="flex items-start gap-1 text-sm">
+              <PinButton :slot="name" :location="p.location" :name="p.name" :game="d.game" />
+              <span class="min-w-0 flex-1 pt-1.5 max-[699px]:pt-3">
+                <span v-if="p.logic?.hint" class="text-hint" aria-label="hintée">◆ </span>{{ p.name }}
+                <span v-if="!p.logic" class="ml-1 rounded-full border px-1.5 text-[11px] text-muted-foreground">pas en logique</span>
+                <span v-else-if="p.logic.region" class="block text-xs text-muted-foreground">{{ p.logic.region }}</span>
+              </span>
+            </li>
+          </ul>
+        </section>
         <p v-if="!regions.length" class="text-sm text-muted-foreground">Aucun check en logique.</p>
         <div v-else-if="phone" data-regions-list class="space-y-1">
           <details v-for="r in regions" :key="r.name" class="rounded-md border">
@@ -75,9 +95,12 @@ function onKey(e: KeyboardEvent): void {
               <span class="font-mono tabular-nums">{{ r.count }}</span>
             </summary>
             <ul class="space-y-1.5 px-3 pb-3">
-              <li v-for="l in r.locations" :key="l.id" data-location class="text-sm">
-                <span v-if="l.hint" class="text-hint" aria-label="hintée">◆ </span>{{ l.name }}
-                <div v-if="l.hint" class="text-xs text-muted-foreground">hint · {{ l.hint.item }} pour {{ l.hint.receiver }}</div>
+              <li v-for="l in r.locations" :key="l.id" data-location class="flex items-start gap-1 text-sm">
+                <PinButton :slot="name" :location="l.id" :name="l.name" :game="d.game" />
+                <span class="min-w-0 flex-1 pt-1.5 max-[699px]:pt-3">
+                  <span v-if="l.hint" class="text-hint" aria-label="hintée">◆ </span>{{ l.name }}
+                  <span v-if="l.hint" class="block text-xs text-muted-foreground">hint · {{ l.hint.item }} pour {{ l.hint.receiver }}</span>
+                </span>
               </li>
             </ul>
           </details>
@@ -98,9 +121,12 @@ function onKey(e: KeyboardEvent): void {
           <div v-if="region">
             <h4 class="mb-2 text-sm font-semibold">{{ region.name }} · {{ region.count }} en logique · hintées en premier</h4>
             <ul class="space-y-1.5">
-              <li v-for="l in region.locations" :key="l.id" data-location class="text-sm">
-                <span v-if="l.hint" class="text-hint" aria-label="hintée">◆ </span>{{ l.name }}
-                <div v-if="l.hint" class="text-xs text-muted-foreground">hint · {{ l.hint.item }} pour {{ l.hint.receiver }}</div>
+              <li v-for="l in region.locations" :key="l.id" data-location class="flex items-start gap-1 text-sm">
+                <PinButton :slot="name" :location="l.id" :name="l.name" :game="d.game" />
+                <span class="min-w-0 flex-1 pt-1.5 max-[699px]:pt-3">
+                  <span v-if="l.hint" class="text-hint" aria-label="hintée">◆ </span>{{ l.name }}
+                  <span v-if="l.hint" class="block text-xs text-muted-foreground">hint · {{ l.hint.item }} pour {{ l.hint.receiver }}</span>
+                </span>
               </li>
             </ul>
           </div>

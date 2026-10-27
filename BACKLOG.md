@@ -300,3 +300,12 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   rien à la première visite (`amt-seen-version`)
 - [ ] Vérifier les trois présentations à l'œil sur ordinateur et téléphone
 
+## M27 — Checks épinglés, option du ciel (demandé par Romain le 2026-10-27, D31)
+- [x] Épingler un check (📌) dans chaque vue : détails d'un jeu (onglet « En logique », section « Épinglés » en tête,
+  y compris les checks épinglés pas encore en logique), cartes actives (liste sans ouvrir les détails), tuiles et
+  liste Focus (nombre d'épinglés), page Indices (colonne 📌, lignes épinglées en tête quel que soit le tri, filtre
+  « Épinglés »)
+- [x] Épingles enregistrées par le serveur (même liste sur tous les appareils), par seed ; un check fait est
+  désépinglé tout seul
+- [x] Menu Thème : l'option « Ciel animé » n'apparaît qu'en Nuit (pas de ciel en Plan)
+

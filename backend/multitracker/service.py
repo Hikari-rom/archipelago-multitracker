@@ -294,6 +294,8 @@ class Service:
             if "checks" in kinds and "connected" not in kinds:
                 for other in self.history.on_checks(st.seed_name, name, st.new_checks):
                     self.publish(other)
+        if st.synced and st.seed_name and kinds & {"checks", "synced"}:
+            self._unpin_done(name, st)
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
@@ -412,6 +414,49 @@ class Service:
         self.store.set_seen_count(st.seed_name, name, count)
         self.publish(name)
         return count
+
+    # -- pinned checks (D31) -------------------------------------------------------------
+    def _seed(self) -> str | None:
+        return next((t.state.seed_name for t in self.trackers.values() if t.state.seed_name), None)
+
+    def _room_games(self) -> dict[str, str]:
+        """slot name -> game, for every slot of the room (from any connected tracker)."""
+        players = next((t.state.players for t in self.trackers.values() if t.state.players), {})
+        return {p["name"]: p.get("game") for p in players.values() if p.get("name")}
+
+    def pins(self) -> list[dict[str, Any]]:
+        """Pinned checks of the room; a pinned check that is done (in a slot we follow) is unpinned here."""
+        seed = self._seed()
+        if not seed:
+            return []
+        games, out, done = self._room_games(), [], {}
+        for slot, location, at in self.store.pins(seed):
+            tracker = self.trackers.get(slot) or self.hints.trackers.get(slot)
+            if tracker is not None and tracker.state.synced and location in tracker.state.checked:
+                done.setdefault(slot, set()).add(location)
+                continue
+            game = games.get(slot)
+            out.append({"slot": slot, "game": game, "location": location, "at": at,
+                        "name": self.datapackage.location_name(game, location) if game else str(location)})
+        for slot, locations in done.items():
+            self.store.remove_pins(seed, slot, locations)
+        return out
+
+    def set_pin(self, slot: str, location: int, pinned: bool) -> None:
+        seed = self._seed()
+        if not seed:
+            raise ValueError("pas encore connecté à la room")
+        if slot not in self._room_games():
+            raise KeyError(slot)
+        self.store.set_pin(seed, slot, location, pinned)
+        self._broadcast({"type": "pins"})
+
+    def _unpin_done(self, name: str, st) -> None:
+        mine = {loc for slot, loc, _ in self.store.pins(st.seed_name) if slot == name}
+        done = mine & set(st.checked)
+        if done:
+            self.store.remove_pins(st.seed_name, name, done)
+            self._broadcast({"type": "pins"})
 
     # -- views ---------------------------------------------------------------------------
     def player_name(self, st, slot: int) -> str:

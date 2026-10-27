@@ -95,6 +95,7 @@ Corps optionnel `{"count": N}` (par défaut : tout ce qui a été reçu). Répon
 ## `GET /api/events` (Server-Sent Events)
 - `event: snapshot` — `data: {"type": "snapshot", "slots": [SlotSummary, ...]}` à la connexion.
 - `event: slot` — `data: {"type": "slot", "slot": SlotSummary}` à chaque changement d'un slot.
+- `event: pins` — `data: {"type": "pins"}` quand les checks épinglés changent (D31).
 - `event: hints` — `data: {"type": "hints"}` quand la page Indices doit se recharger (au plus un par seconde).
 - Commentaires `: keepalive` toutes les 20 s. `retry: 3000`.
 
@@ -308,6 +309,16 @@ déconnexions) et `state.json`. Les regroupements de slots par joueur peuvent ê
 `blockers` : `single` (un seul de ces items suffit), `set` (`items: [[nom, nombre], …]`, il les faut tous), `many`
 (trop long à calculer), `none` (hors logique même avec tous les items restants). Absent quand l'analyse n'a pas
 encore tourné.
+
+## Checks épinglés (D31)
+
+### `GET /api/pins`
+`{"pins": [{"slot": "Me_A", "game": "Game A", "location": 100, "name": "Chest", "at": 1793098992.1}]}` : épingles de
+la seed en cours, dans l'ordre où elles ont été posées. Un check déjà fait n'y est plus.
+
+### `PUT /api/pins` — `{"slot": "Me_A", "location": 100, "pinned": true}`
+Épingle (`pinned: true`, défaut) ou désépingle une location du monde de `slot` (n'importe quel slot de la room).
+Renvoie la liste comme `GET`. 404 si le slot n'est pas dans la room, 409 avant la première connexion.
 
 ## Mises à jour (D25)
 

@@ -97,6 +97,11 @@ function blockerRank(h: HintRow): number {
   return b.kind === 'many' ? 600 : 700
 }
 
+/** The pin of a hinted check: the finder's world and the location. */
+export function hintPin(h: HintRow): { slot: string; location: number } | null {
+  return h.finder_slot && h.location_id != null ? { slot: h.finder_slot, location: h.location_id } : null
+}
+
 export function sortHints(rows: HintRow[], key: string, dir: 1 | -1, context?: string): HintRow[] {
   const tie = (a: HintRow, b: HintRow) =>
     (sortValue(a, 'access') as number) - (sortValue(b, 'access') as number) ||
@@ -116,22 +121,28 @@ export function matchesQuery(h: HintRow, q: string): boolean {
   return [h.item, h.location, h.finder, h.receiver, h.finder_game, h.receiver_game, h.entrance].some((v) => text(v).includes(n))
 }
 
-export type HintsFilter = 'all' | 'mine' | 'world' | 'ok'
+export type HintsFilter = 'all' | 'mine' | 'world' | 'ok' | 'pinned'
 export const FILTER_LABEL: Record<HintsFilter, string> = {
   all: 'Tous',
   mine: 'Mes items',
   world: 'Dans mes mondes',
   ok: 'Accessibles',
+  pinned: '📌 Épinglés',
 }
 
 /** Rows of the selected slots, after the page's filters. */
-export function filterHints(rows: HintRow[], mine: Set<string>, opts: { filter: HintsFilter; query: string; hideFound: boolean }): HintRow[] {
+export function filterHints(
+  rows: HintRow[],
+  mine: Set<string>,
+  opts: { filter: HintsFilter; query: string; hideFound: boolean; pinned?: (h: HintRow) => boolean },
+): HintRow[] {
   return rows.filter((h) => {
     if (!h.slots.some((n) => mine.has(n))) return false
     if (opts.hideFound && h.access.state === 'found') return false
     if (opts.filter === 'mine' && !(h.receiver_slot && mine.has(h.receiver_slot))) return false
     if (opts.filter === 'world' && doneBy(h, mine) !== 'me') return false
     if (opts.filter === 'ok' && h.access.state !== 'ok') return false
+    if (opts.filter === 'pinned' && !opts.pinned?.(h)) return false
     return matchesQuery(h, opts.query)
   })
 }

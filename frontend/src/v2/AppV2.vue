@@ -94,6 +94,10 @@ const TABS: { key: View; label: string }[] = [
   <SleepBanner class="mx-4 min-[700px]:mx-8" />
   <UpdateBanner class="mx-4 min-[700px]:mx-8" />
   <UpdatedNotice class="mx-4 min-[700px]:mx-8" />
+  <p v-if="tracker.pinError" role="alert" class="mx-4 mt-3 flex max-w-[1440px] items-center gap-3 rounded-xl border border-error/50 bg-card px-4 py-2 text-sm min-[700px]:mx-8 min-[1504px]:mx-auto">
+    <span class="min-w-0 flex-1">{{ tracker.pinError }}</span>
+    <button type="button" class="min-h-9 px-2 text-muted-foreground hover:text-foreground" aria-label="Fermer" @click="tracker.pinError = ''">✕</button>
+  </p>
   <main class="mx-auto max-w-[1440px] px-4 pt-4 pb-24 min-[700px]:px-8 min-[700px]:pb-10">
     <p v-if="tracker.loadError && !tracker.slots.length" role="alert" class="rounded-xl border bg-card p-4"><span class="text-error">! </span>Impossible de joindre le serveur : {{ tracker.loadError }}</p>
     <ConfigView v-else-if="view === 'config'" />

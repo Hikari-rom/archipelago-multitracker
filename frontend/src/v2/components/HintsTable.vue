@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { COLUMN_LABEL, STATUS_LABEL, sortHints, type HintColumn } from '../../lib/hints'
+import { COLUMN_LABEL, STATUS_LABEL, hintPin, sortHints, type HintColumn } from '../../lib/hints'
 import type { HintRow } from '../../lib/types'
 import type { HintsSort } from '../lib/prefs'
+import { isPinned } from '../../stores/tracker'
 import HintAccessCell from './HintAccessCell.vue'
+import PinButton from './PinButton.vue'
 
 const props = defineProps<{
   rows: HintRow[]
@@ -14,7 +16,15 @@ const props = defineProps<{
 }>()
 const sort = defineModel<HintsSort>('sort', { required: true })
 
-const sorted = computed(() => sortHints(props.rows, sort.value.key, sort.value.dir, props.context))
+const pinned = (h: HintRow) => {
+  const p = hintPin(h)
+  return !!p && isPinned(p.slot, p.location)
+}
+// pinned rows stay on top, whatever the sort
+const sorted = computed(() => {
+  const all = sortHints(props.rows, sort.value.key, sort.value.dir, props.context)
+  return [...all.filter(pinned), ...all.filter((h) => !pinned(h))]
+})
 
 function toggle(key: HintColumn) {
   sort.value = sort.value.key === key ? { key, dir: sort.value.dir === 1 ? -1 : 1 } : { key, dir: 1 }
@@ -42,6 +52,7 @@ function here(h: HintRow) {
     <table class="w-full min-w-[760px] border-collapse text-sm" :aria-label="label">
       <thead>
         <tr class="border-b text-left text-xs text-muted-foreground">
+          <th scope="col" class="w-8 px-1"><span class="sr-only">Épingle</span></th>
           <th v-for="c in columns" :key="c" scope="col" :aria-sort="ariaSort(c)" class="px-3 py-2 font-medium">
             <button type="button" class="flex min-h-8 items-center gap-1 hover:text-foreground" :class="sort.key === c ? 'text-foreground' : ''" @click="toggle(c)">
               {{ COLUMN_LABEL[c] }}
@@ -51,7 +62,10 @@ function here(h: HintRow) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="h in sorted" :key="rowKey(h)" class="border-b align-top last:border-b-0" :class="h.access.state === 'found' ? 'opacity-60' : ''" :data-hint="h.item">
+        <tr v-for="h in sorted" :key="rowKey(h)" class="border-b align-top last:border-b-0" :class="[h.access.state === 'found' ? 'opacity-60' : '', pinned(h) ? 'bg-new/5' : '']" :data-hint="h.item" :data-pinned="pinned(h) || undefined">
+          <td class="px-1 py-1">
+            <PinButton v-if="hintPin(h)" :slot="hintPin(h)!.slot" :location="hintPin(h)!.location" :name="h.location" :game="h.finder_game" />
+          </td>
           <td v-for="c in columns" :key="c" class="px-3 py-2">
             <template v-if="c === 'item'">
               <span :class="itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span>

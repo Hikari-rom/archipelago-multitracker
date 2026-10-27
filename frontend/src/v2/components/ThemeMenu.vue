@@ -32,16 +32,18 @@ const item = 'flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 py
             <DropdownMenuItemIndicator aria-hidden="true">✓</DropdownMenuItemIndicator>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        <!-- the sky only exists in Nuit: no option to show in Plan -->
+        <template v-if="props.resolved === 'nuit'">
         <DropdownMenuSeparator class="my-1 h-px bg-border" />
         <DropdownMenuCheckboxItem
           :model-value="props.sky"
-          :disabled="props.resolved !== 'nuit'"
           :class="item"
           @update:model-value="(v) => emit('update:sky', !!v)"
         >
           <span class="flex flex-1 flex-col"><span class="font-semibold">Ciel animé</span><span class="text-xs text-muted-foreground">Coupé si le système réduit les animations</span></span>
           <DropdownMenuItemIndicator aria-hidden="true">✓</DropdownMenuItemIndicator>
         </DropdownMenuCheckboxItem>
+        </template>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>

@@ -305,3 +305,12 @@ export interface HintsResponse {
   }
   now?: number
 }
+
+/** A pinned check (GET /api/pins): `slot` is the world that holds the location, any slot of the room. */
+export interface Pin {
+  slot: string
+  game: string | null
+  location: number
+  name: string
+  at: number
+}

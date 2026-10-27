@@ -47,6 +47,13 @@ CREATE TABLE IF NOT EXISTS check_log (
     flags INTEGER,
     PRIMARY KEY (seed_name, slot_name, location)
 );
+CREATE TABLE IF NOT EXISTS pins (
+    seed_name TEXT NOT NULL,
+    slot_name TEXT NOT NULL,
+    location INTEGER NOT NULL,
+    pinned_at REAL NOT NULL,
+    PRIMARY KEY (seed_name, slot_name, location)
+);
 CREATE TABLE IF NOT EXISTS datapackage (
     game TEXT NOT NULL,
     checksum TEXT NOT NULL,
@@ -173,6 +180,29 @@ class Store:
                 "receiver=excluded.receiver, flags=excluded.flags",
                 [(seed_name, slot_name, int(loc), int(item), int(receiver), int(flags))
                  for loc, item, receiver, flags in contents])
+
+    # -- pinned checks (any slot of the room: the location's world) ----------------------------
+    def pins(self, seed_name: str) -> list[tuple[str, int, float]]:
+        with self._lock:
+            rows = self._db.execute("SELECT slot_name, location, pinned_at FROM pins WHERE seed_name=? "
+                                    "ORDER BY pinned_at", (seed_name,)).fetchall()
+        return [(slot, int(loc), float(at)) for slot, loc, at in rows]
+
+    def set_pin(self, seed_name: str, slot_name: str, location: int, pinned: bool) -> None:
+        with self._lock:
+            if pinned:
+                self._db.execute("INSERT OR IGNORE INTO pins(seed_name, slot_name, location, pinned_at) VALUES (?,?,?,?)",
+                                 (seed_name, slot_name, int(location), time.time()))
+            else:
+                self._db.execute("DELETE FROM pins WHERE seed_name=? AND slot_name=? AND location=?",
+                                 (seed_name, slot_name, int(location)))
+            self._db.commit()
+
+    def remove_pins(self, seed_name: str, slot_name: str, locations: set[int]) -> None:
+        with self._lock:
+            self._db.executemany("DELETE FROM pins WHERE seed_name=? AND slot_name=? AND location=?",
+                                 [(seed_name, slot_name, int(loc)) for loc in locations])
+            self._db.commit()
 
     # -- datapackage ---------------------------------------------------------------------
     def load_datapackages(self) -> dict[tuple[str, str], dict[str, Any]]:

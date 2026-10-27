@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getHints } from '../../lib/api'
-import { FILTER_LABEL, doneBy, filterHints, groupBySlot, type HintColumn, type HintsFilter } from '../../lib/hints'
-import type { HintsResponse, SlotSummary } from '../../lib/types'
-import { hintsListeners, tracker } from '../../stores/tracker'
+import { FILTER_LABEL, doneBy, filterHints, groupBySlot, hintPin, type HintColumn, type HintsFilter } from '../../lib/hints'
+import type { HintRow, HintsResponse, SlotSummary } from '../../lib/types'
+import { hintsListeners, isPinned, tracker } from '../../stores/tracker'
 import HintsTable from '../components/HintsTable.vue'
 import OwnerSelect from '../components/OwnerSelect.vue'
 import { loadHideFoundHints, loadHintsSort, saveHideFoundHints, saveHintsSort } from '../lib/prefs'
@@ -49,7 +49,13 @@ const query = ref('')
 
 const mine = computed(() => new Set(props.slots.map((s) => s.name)))
 const all = computed(() => (data.value?.hints ?? []).filter((h) => h.slots.some((n) => mine.value.has(n))))
-const rows = computed(() => filterHints(all.value, mine.value, { filter: filter.value, query: query.value, hideFound: hideFound.value }))
+const pinnedRow = (h: HintRow) => {
+  const p = hintPin(h)
+  return !!p && isPinned(p.slot, p.location)
+}
+const rows = computed(() =>
+  filterHints(all.value, mine.value, { filter: filter.value, query: query.value, hideFound: hideFound.value, pinned: pinnedRow }),
+)
 const count = (state: string) => all.value.filter((h) => h.access.state === state).length
 const counts = computed(() => ({ open: all.value.filter((h) => !h.found).length, ok: count('ok'), blocked: count('blocked') }))
 

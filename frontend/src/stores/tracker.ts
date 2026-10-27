@@ -6,7 +6,7 @@ import { splitFeatured } from '../lib/dashboard'
 
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
-import type { RecentItem, SlotDetail, SseState } from '../lib/types'
+import type { Pin, RecentItem, SlotDetail, SseState } from '../lib/types'
 import { loadHintsLayout, loadTicker } from '../v2/lib/prefs'
 
 // declared before the store: its initializer reads it (a later const would throw there, silently caught)
@@ -32,6 +32,9 @@ export const tracker = reactive({
   ticker: loadTicker(),
   /** layout of the Indices page (setting of this device) */
   hintsLayout: loadHintsLayout(),
+  /** pinned checks of the room (shared by every device, D31) */
+  pins: [] as Pin[],
+  pinError: '' as string,
   details: {} as Record<string, SlotDetail>,
   /** details shown or hidden by the user (overrides the default: hidden, except for featured slots) */
   open: {} as Record<string, boolean>,
@@ -281,6 +284,44 @@ export async function markSeen(name: string): Promise<void> {
   if (isOpen(name)) void loadDetail(name)
 }
 
+// -- pinned checks (D31) ---------------------------------------------------------------------
+export function isPinned(slot: string, location: number): boolean {
+  return tracker.pins.some((p) => p.slot === slot && p.location === location)
+}
+
+export function pinsOf(slot: string): Pin[] {
+  return tracker.pins.filter((p) => p.slot === slot)
+}
+
+let pinsSeq = 0
+export async function loadPins(): Promise<void> {
+  const seq = ++pinsSeq
+  try {
+    const r = await api.getPins()
+    if (seq === pinsSeq) tracker.pins = r.pins
+  } catch {
+    /* kept: the next "pins" event or reload brings them */
+  }
+}
+
+/** Optimistic: the pin shows at once, the server's list replaces it (or puts it back on error). */
+export async function togglePin(slot: string, location: number, name: string, game: string | null = null): Promise<void> {
+  const pinned = !isPinned(slot, location)
+  const before = tracker.pins
+  tracker.pins = pinned
+    ? [...before, { slot, game, location, name, at: Date.now() / 1000 }]
+    : before.filter((p) => !(p.slot === slot && p.location === location))
+  const seq = ++pinsSeq
+  try {
+    const r = await api.putPin(slot, location, pinned)
+    tracker.pinError = ''
+    if (seq === pinsSeq) tracker.pins = r.pins
+  } catch (e) {
+    if (seq === pinsSeq) tracker.pins = before
+    tracker.pinError = `Épingle non enregistrée : ${e instanceof Error ? e.message : String(e)}`
+  }
+}
+
 /** Room-wide dashboard: handlers of the `roomfeed_check` / `roomfeed` SSE events (registered by v2/lib/roomfeed.ts). */
 export const roomfeedListeners = { check: new Set<(d: any) => void>(), state: new Set<(d: any) => void>() }
 /** "hints" events: the Indices table changed (the page fetches /api/hints again) */
@@ -325,6 +366,7 @@ export function connect(): void {
   cur.addEventListener('snapshot', (e) => {
     const d = parse(e)
     if (d && Array.isArray(d.slots)) dispatch({ type: 'snapshot', slots: d.slots })
+    void loadPins() // (re)connected: pins may have changed meanwhile
   })
   cur.addEventListener('room', (e) => {
     const d = parse(e)
@@ -338,6 +380,7 @@ export function connect(): void {
     const d = parse(e)
     if (d && d.slot) dispatch({ type: 'slot', slot: d.slot })
   })
+  cur.addEventListener('pins', () => void loadPins())
   cur.addEventListener('hints', () => {
     for (const fn of [...hintsListeners]) fn()
   })
@@ -373,6 +416,7 @@ export async function start(): Promise<void> {
     tracker.roomSleeping = !!r.room_sleeping
     tracker.roomDashboard = !!r.room_dashboard
     syncClock(r.now)
+    void loadPins()
   } catch (e) {
     tracker.loadError = e instanceof Error ? e.message : String(e)
   }

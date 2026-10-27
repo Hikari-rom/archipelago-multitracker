@@ -37,6 +37,12 @@ class SeenBody(BaseModel):
     count: int | None = None  # mark items [0, count) as seen; default: everything received so far
 
 
+class PinBody(BaseModel):
+    slot: str  # the slot whose world holds the location (any slot of the room)
+    location: int
+    pinned: bool = True
+
+
 class DiscoverBody(BaseModel):
     url: str
     wake: bool = False  # load the room page first (starts a sleeping room)
@@ -410,6 +416,22 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         service = get_service(request)
         require_slot(service, name)
         return service.detail(name)
+
+    @app.get("/api/pins")
+    async def get_pins(request: Request) -> dict[str, Any]:
+        return {"pins": get_service(request).pins()}
+
+    @app.put("/api/pins")
+    async def put_pin(body: PinBody, request: Request) -> dict[str, Any]:
+        same_origin(request)
+        service = get_service(request)
+        try:
+            service.set_pin(body.slot, body.location, body.pinned)
+        except KeyError as exc:
+            raise HTTPException(404, f"slot inconnu dans la room : {body.slot}") from exc
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        return {"pins": service.pins()}
 
     @app.post("/api/slots/{name:path}/seen")
     async def mark_seen(name: str, request: Request, body: SeenBody | None = None) -> dict[str, Any]:
