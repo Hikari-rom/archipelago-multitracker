@@ -308,4 +308,8 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   désépinglé tout seul
 - [x] Menu Thème : l'option « Ciel animé » n'apparaît qu'en Nuit (pas de ciel en Plan)
 - [x] Icônes Material Design pour l'épingle (`@mdi/js` : `mdiPin` / `mdiPinOutline`, composant `v2/components/MdiIcon.vue`)
+- [x] Messages « Logique indisponible » lisibles pour un joueur : plus de renvoi à `docs/COMPAT.md` ni à
+  `config/room.yaml` ; raison selon le cas (impossible pour Factorio / Ocarina of Time, pas encore assez fiable, jeu
+  pas pris en charge ; yaml à importer dans la page Configuration)
+- [x] Bandeaux du haut (room endormie, mise à jour disponible / installée) alignés sur la page aux grandes largeurs
 
