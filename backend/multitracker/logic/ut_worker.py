@@ -20,6 +20,7 @@ import tempfile
 import time
 import traceback
 from pathlib import Path
+from collections.abc import Mapping
 from typing import Any
 
 from .. import apenv
@@ -107,14 +108,37 @@ def _is_random(value: Any) -> bool:
     return False
 
 
+def _accepted_value(option_names: set[str] | Mapping[str, type], option: str,
+                    real: bool | int | str) -> bool | int | str | None:
+    """The slot_data value as the option's yaml accepts it, or None when it does not.
+
+    Some worlds put a choice's display name in slot_data ("theory of everything" for Geometry Dash's
+    starting_level), which the yaml parser rejects: try the option key form too.
+    """
+    option_cls = option_names.get(option) if isinstance(option_names, Mapping) else None
+    if option_cls is None or not hasattr(option_cls, "from_any"):
+        return real
+    candidates = [real]
+    if isinstance(real, str):
+        candidates.append(real.strip().lower().replace(" ", "_"))
+    for value in candidates:
+        try:
+            option_cls.from_any(value)
+        except Exception:  # noqa: BLE001 - KeyError, ValueError, OptionError... depending on the option
+            continue
+        return value
+    return None
+
+
 def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Path,
                         slot_data: dict[str, Any] | None = None,
-                        option_names: set[str] | None = None) -> tuple[Path, list[str]]:
+                        option_names: set[str] | Mapping[str, type] | None = None) -> tuple[Path, list[str]]:
     """Copy the player's yaml for this game into out_dir, with `name` forced to the slot name.
 
     A yaml file may hold several documents (one per game): keep the one for this game.
     Options left to chance in the yaml (`random`, weights) are replaced by the value the seed really
     got when the world puts it in slot_data under the option's name. Returns (path, options still random).
+    With option classes (`option_names` as a mapping), the slot_data value must be one the option accepts.
     """
     import yaml
     docs = _yaml_documents(yaml_path.read_text(encoding="utf-8-sig"))
@@ -143,9 +167,13 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
                 continue
             real = (slot_data or {}).get(option)
             if option in (option_names or set()) and isinstance(real, (bool, int, str)):
-                section[option] = real
+                real = _accepted_value(option_names, option, real)
             else:
+                real = None
+            if real is None:
                 still_random.append(option)
+            else:
+                section[option] = real
         doc[game] = section
     out = out_dir / "player.yaml"
     out.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
@@ -227,7 +255,7 @@ class SlotLogic:
             def write_player_yaml(game_name: str, player_name: str, tempdir: str) -> None:
                 _, self.random_options = prepare_player_yaml(
                     Path(yaml_path), player_name, game_name, Path(tempdir), slot_data,
-                    set(world_cls.options_dataclass.type_hints))
+                    dict(world_cls.options_dataclass.type_hints))
             core.write_empty_yaml = write_player_yaml
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "yaml+slot_data"
@@ -244,7 +272,7 @@ class SlotLogic:
             with tempfile.TemporaryDirectory(prefix="mt-yaml-") as tmp:
                 _, self.random_options = prepare_player_yaml(
                     Path(yaml_path), slot_name, game, Path(tmp), slot_data,
-                    set(world_cls.options_dataclass.type_hints))
+                    dict(world_cls.options_dataclass.type_hints))
                 core.player_id = 1
                 core.run_generator(None, tmp)  # single-player regeneration from the yaml
                 if core.multiworld is not None:

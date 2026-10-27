@@ -275,6 +275,9 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] « Logique indisponible » dit pourquoi en v2 (tuile et carte active) ; pour un apworld importé de l'Archipelago du
   joueur (D27), la raison dit quoi faire : l'importer, ou importer la version de la room (cas d'Ash : Blue Prince,
   Geometry Dash, les seuls jeux `source: user` de ses slots)
+- [x] Option `random` du yaml remplacée par la valeur de `slot_data` seulement si l'option l'accepte, avec repli sur la
+  forme clé (`ut_worker._accepted_value`) : Geometry Dash met le nom affiché dans `slot_data` (« theory of
+  everything »), ce qui cassait la régénération d'ash_geometry (« Error generating option starting_level »)
 - [ ] Vérifier les trois styles à l'œil sur ordinateur et téléphone (pas de Chromium sur la machine de dev)
 - [x] Configuration : on retrouve les slots déjà enregistrés au lieu de tous les slots qui ont un yaml (D29, v0.2.15)
 - [x] Enregistrer la configuration ne reconnecte que ce qui a changé ; sans changement, aucune déconnexion (D29)

@@ -32,3 +32,25 @@ def test_prepare_player_yaml_resolves_random_options_from_slot_data(tmp_path: Pa
     assert doc["name"] == "Romain_Celeste" and doc["game"] == "Celeste (Open World)"
     assert doc["Celeste (Open World)"]["goal_area"] == 3
     assert sorted(still_random) == ["lock_goal_area", "some_unknown"]
+
+
+def test_prepare_player_yaml_takes_the_option_key_form_of_a_display_name(tmp_path: Path):
+    from multitracker import apenv
+    apenv.setup()
+    from Options import Choice
+
+    class StartingLevel(Choice):
+        option_stereo_madness = 0
+        option_theory_of_everything = 1
+
+    src = tmp_path / "in.yaml"
+    src.write_text(yaml.safe_dump({"name": "Me", "game": "Geometry Dash",
+                                   "Geometry Dash": {"starting_level": "random", "other": "random"}}))
+    out, still_random = prepare_player_yaml(
+        src, "ash_geometry", "Geometry Dash", tmp_path,
+        # Geometry Dash puts the display name in slot_data; a value no option accepts stays random
+        slot_data={"starting_level": "theory of everything", "other": "nonsense"},
+        option_names={"starting_level": StartingLevel, "other": StartingLevel})
+    section = yaml.safe_load(out.read_text())["Geometry Dash"]
+    assert section["starting_level"] == "theory_of_everything"
+    assert section["other"] == "random" and still_random == ["other"]
