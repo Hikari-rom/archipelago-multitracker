@@ -173,14 +173,20 @@ class SlotLogic:
         self.slot_name, self.game, self.team, self.slot = slot_name, game, team, slot
         self.random_options: list[str] = []
         world_cls = AutoWorldRegister.world_types.get(game)
+        from ..user_apworlds import user_games
+        imported = game in user_games()  # D27: each user imports this apworld from their own Archipelago
         if world_cls is None:
-            raise LogicUnavailable(f"apworld non installé pour « {game} »")
+            raise LogicUnavailable(f"apworld non installé pour « {game} »" + (
+                " : importe-le depuis ton Archipelago (page Configuration, bloc « Apworlds de ton Archipelago »)"
+                if imported else ""))
         if getattr(world_cls, "disable_ut", False):
             raise LogicUnavailable("l'auteur de l'apworld a désactivé Universal Tracker pour ce jeu")
         local_checksum = worlds.network_data_package["games"].get(game, {}).get("checksum")
         if room_checksum is not None and room_checksum != local_checksum:  # D12 (None: caller does not check)
             raise LogicUnavailable("la room utilise une autre version de l'apworld que celle installée ici : "
-                                   "logique désactivée pour ne pas se tromper" if room_checksum else
+                                   "logique désactivée pour ne pas se tromper" + (
+                                       " (apworld importé de ton Archipelago : importe la version avec laquelle "
+                                       "la room a été générée)" if imported else "") if room_checksum else
                                    "la room n'indique pas la version de ce jeu : logique désactivée")
 
         core = TrackerCore(logging.getLogger(f"ut.{slot_name}"), False, False)

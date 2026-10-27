@@ -32,7 +32,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
     <div class="flex flex-wrap items-center gap-2 text-sm">
       <span v-if="summary.items.new > 0" class="text-new">★{{ summary.items.new }}</span>
       <span v-if="summary.hints.in_my_world_in_logic > 0" class="text-hint">◆{{ summary.hints.in_my_world_in_logic }}</span>
-      <span v-if="state.logic.kind === 'unavailable'" class="text-muted-foreground">Logique indisponible</span>
+      <span v-if="state.logic.kind === 'unavailable'" data-unavailable class="min-w-0 basis-full break-words text-xs text-muted-foreground">Logique indisponible<template v-if="state.logic.message"> : {{ state.logic.message }}</template></span>
       <StateChips v-if="showChips" :state="state" />
     </div>
     <div class="mt-auto flex items-center gap-2">

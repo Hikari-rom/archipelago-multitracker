@@ -272,6 +272,9 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Mode manuel des jeux actifs (Configuration › Affichage, sur cet appareil, dans `amt-activity`) : seuls les jeux
   activés à la main sont actifs, plusieurs à la fois, les checks n'y changent rien ; en passant en manuel, les jeux
   actifs à ce moment sont gardés ; la liste est conservée en repassant en automatique
+- [x] « Logique indisponible » dit pourquoi en v2 (tuile et carte active) ; pour un apworld importé de l'Archipelago du
+  joueur (D27), la raison dit quoi faire : l'importer, ou importer la version de la room (cas d'Ash : Blue Prince,
+  Geometry Dash, les seuls jeux `source: user` de ses slots)
 - [ ] Vérifier les trois styles à l'œil sur ordinateur et téléphone (pas de Chromium sur la machine de dev)
 - [x] Configuration : on retrouve les slots déjà enregistrés au lieu de tous les slots qui ont un yaml (D29, v0.2.15)
 - [x] Enregistrer la configuration ne reconnecte que ce qui a changé ; sans changement, aucune déconnexion (D29)

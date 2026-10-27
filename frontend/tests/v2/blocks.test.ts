@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import BigNumber from '../../src/v2/components/BigNumber.vue'
 import DetailTabs from '../../src/v2/components/DetailTabs.vue'
+import GameTile from '../../src/v2/components/GameTile.vue'
 import StateChips from '../../src/v2/components/StateChips.vue'
 import UndoToast from '../../src/v2/components/UndoToast.vue'
 import { cardState, type CardCtx } from '../../src/v2/lib/card'
@@ -40,6 +41,14 @@ describe('card blocks', () => {
     expect(t).toContain('◔ Actif · auto · il y a 12 min')
     expect(t).toContain('connexion refusée : mot de passe')
     expect(t).toContain('Réessayer')
+  })
+  it('logic unavailable: the tile and the chips say why', () => {
+    const why = 'apworld non installé pour « Blue Prince » : importe-le depuis ton Archipelago'
+    const s = mk({ name: 'ash_blue', game: 'Blue Prince', logic: { state: 'unavailable', count: 0, message: why } })
+    expect(mount(StateChips, { props: { state: cardState(s, ctx) } }).get('[data-unavailable]').text()).toBe(`Logique indisponible pour ce jeu : ${why}`)
+    expect(mount(GameTile, { props: { summary: s } }).get('[data-unavailable]').text()).toBe(`Logique indisponible : ${why}`)
+    const bare = mk({ name: 'b', logic: { state: 'unavailable', count: 0, message: null } })
+    expect(mount(GameTile, { props: { summary: bare } }).get('[data-unavailable]').text()).toBe('Logique indisponible')
   })
   it('chips: expiry for auto-active, memorised note for chosen', () => {
     const auto = mount(StateChips, { props: { state: cardState(mk({ name: 'a', last_check_at: NOW / 1000 - 12 * 60 }), ctx) } }).text()

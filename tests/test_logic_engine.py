@@ -68,6 +68,16 @@ def test_other_apworld_version_in_the_room():
     assert "yaml" in Worker().handle(req)["message"]  # same version: goes on (and needs the yaml)
 
 
+def test_user_apworld_refusal_says_what_to_do():
+    """D27: Blue Prince's apworld comes from the player's own Archipelago. Missing (CI) or of another version than the
+    room's, the reason tells how to fix it."""
+    from multitracker.logic.ut_worker import Worker
+    res = Worker().handle({"op": "update", "slot_name": "ash_blue", "game": "Blue Prince", "team": 0, "slot": 1,
+                           "slot_data": {}, "yaml": None, "items": [], "missing": [1], "checked": [],
+                           "checksum": "0" * 40})
+    assert res["state"] == "unavailable" and "importe" in res["message"], res
+
+
 _ = pytest
 
 

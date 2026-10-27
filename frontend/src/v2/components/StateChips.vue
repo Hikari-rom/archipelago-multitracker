@@ -21,7 +21,7 @@ const pill = 'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 t
     </template>
     <span v-else :class="pill" class="text-muted-foreground">Connexion…</span>
 
-    <span v-if="state.logic.kind === 'unavailable'" :class="pill" class="text-muted-foreground">Logique indisponible pour ce jeu</span>
+    <span v-if="state.logic.kind === 'unavailable'" data-unavailable :class="pill" class="max-w-full break-words text-muted-foreground">Logique indisponible pour ce jeu<template v-if="state.logic.message"> : {{ state.logic.message }}</template></span>
     <span v-else-if="state.logic.kind === 'pending'" :class="pill" class="text-muted-foreground">{{ state.logic.waiting ? 'En attente de connexion' : 'Calcul de la logique…' }}</span>
     <span v-else-if="state.logic.approx && state.logic.message" :class="pill" class="border-transparent bg-warn text-error">! {{ state.logic.message }}</span>
 
