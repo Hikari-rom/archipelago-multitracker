@@ -6,6 +6,8 @@
    2026-10-23 : tableau de bord de la room complète (M21, D22) : v2, menu Plus → « Room complète ».
    2026-10-26 : la Configuration garde les slots enregistrés et ne reconnecte que ce qui change ; un collect (jeu
    fini) ne rend plus tous les jeux actifs (D29, v0.2.15).
+   2026-10-27 : page « Indices » (M26, D30) : hints de tous les slots suivis, triables, accessibilité pour celui qui
+   doit faire le check (autres joueurs compris) et ce qui la bloque ; trois présentations ; message après une mise à jour.
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

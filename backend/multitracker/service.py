@@ -12,6 +12,7 @@ from .ap.tracker import SlotTracker
 from .config import RoomConfig, SlotConfig
 from .datapackage import DataPackageCache
 from .goals import GoalContext, describe as describe_goal, yaml_options
+from .hints import HintsBoard, hinted_locations
 from .history import History
 from .logic import LogicEngine, LogicRequest, LogicResult, NullLogicEngine
 from .roomfeed.feed import RoomFeed
@@ -68,6 +69,8 @@ class Service:
         self._room_woken_at = 0.0
         self._reload_lock = asyncio.Lock()
         self._sent_index_cache: tuple[tuple, dict] | None = None
+        self._explained: dict[str, set[int]] = {}  # hinted locations the last logic request asked about
+        self.hints = HintsBoard(self)
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
@@ -121,6 +124,7 @@ class Service:
 
     async def _stop_trackers(self) -> None:
         await self._stop_roomfeed()
+        await self.hints.stop()
         # Trackers first (stopping them may still schedule logic/publish tasks), then every task.
         await asyncio.gather(*(t.stop() for t in self.trackers.values()), return_exceptions=True)
         self.history.flush()
@@ -155,6 +159,7 @@ class Service:
                 await self._update_slots(config, before_start)
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
         self._publish_room()
+        self.hints.reconcile_soon()  # tracked slots or the option changed
 
     async def _update_slots(self, config: RoomConfig, before_start=None) -> None:
         """Same server and room: reconnect only the slots that changed (added, removed, or another game)."""
@@ -194,6 +199,7 @@ class Service:
         self._logic_dirty.discard(name)
         self._publish_pending.discard(name)
         self.logic.pop(name, None)
+        self._explained.pop(name, None)
 
     async def restart_logic(self) -> None:
         """Restart the logic worker (it loads the worlds once, e.g. newly imported apworlds) and recompute every slot."""
@@ -205,6 +211,7 @@ class Service:
             if tracker.state.status == "connected":
                 self._schedule_logic(name)
             self.publish(name)
+        self.hints.restart_logic()
 
     def room_checksums(self) -> dict[str, str]:
         """Datapackage checksum of every game of the room, as sent by the server (RoomInfo of the slots)."""
@@ -292,6 +299,14 @@ class Service:
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
         if kinds & LOGIC_KINDS and tracker.state.status == "connected":
             self._schedule_logic(name)
+        elif ("hints" in kinds and st.status == "connected"
+              and hinted_locations(st) & st.missing != self._explained.get(name)):
+            self._schedule_logic(name)  # newly hinted locations in this world: say what blocks them
+        if kinds & {"hints", "connected"}:
+            self.hints.reconcile_soon()
+            if "hints" in kinds:
+                self.hints.schedule_explain()
+            self.hints.publish()
         self.publish(name)
 
     def _schedule_logic(self, name: str) -> None:
@@ -313,7 +328,9 @@ class Service:
                                    slot_data=st.slot_data, yaml=self.slot_configs[name].yaml,
                                    items=list(st.items), missing=set(st.missing), checked=set(st.checked),
                                    seed_name=st.seed_name,
-                                   checksum=st.datapackage_checksums.get(st.game) or "")  # "": unknown (D12)
+                                   checksum=st.datapackage_checksums.get(st.game) or "",  # "": unknown (D12)
+                                   explain=hinted_locations(st) & st.missing)
+            self._explained[name] = request.explain
             started = time.perf_counter()
             try:
                 result = await self.logic_engine.compute(request)
@@ -329,6 +346,7 @@ class Service:
             result.in_logic = [loc for loc in result.in_logic if loc in self.trackers[name].state.missing]
             self.logic[name] = result
             self.publish(name)
+            self.hints.publish()
 
     def logic_settled(self, name: str) -> bool:
         """True when no logic recomputation is pending or running for this slot."""

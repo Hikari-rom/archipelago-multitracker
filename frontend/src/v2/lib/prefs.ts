@@ -54,3 +54,31 @@ export const TICKER_LABELS: Record<TickerStyle, string> = {
 }
 export const loadTicker = () => oneOf<TickerStyle>('amt-v2-ticker', ['off', 'agence', 'arrivees', 'ruban'], 'off')
 export const saveTicker = (v: TickerStyle) => write('amt-v2-ticker', v)
+
+/** Indices page: one sortable table, two tables (your items elsewhere / in your worlds), or one block per slot. */
+export type HintsLayout = 'registre' | 'sens' | 'slots'
+export const HINTS_LAYOUT_LABELS: Record<HintsLayout, string> = {
+  registre: 'Registre : un seul tableau',
+  sens: 'Deux sens : tes items / tes mondes',
+  slots: 'Groupé par slot',
+}
+export const loadHintsLayout = () => oneOf<HintsLayout>('amt-v2-hints-layout', ['registre', 'sens', 'slots'], 'registre')
+export const saveHintsLayout = (v: HintsLayout) => write('amt-v2-hints-layout', v)
+
+export const loadHideFoundHints = () => bool('amt-v2-hints-hide-found', true)
+export const saveHideFoundHints = (v: boolean) => write('amt-v2-hints-hide-found', v ? '1' : '0')
+
+export interface HintsSort {
+  key: string
+  dir: 1 | -1
+}
+export function loadHintsSort(): HintsSort {
+  try {
+    const v = JSON.parse(read('amt-v2-hints-sort') ?? 'null')
+    if (v && typeof v.key === 'string' && (v.dir === 1 || v.dir === -1)) return { key: v.key, dir: v.dir }
+  } catch {
+    /* ignore */
+  }
+  return { key: 'access', dir: 1 }
+}
+export const saveHintsSort = (v: HintsSort) => write('amt-v2-hints-sort', JSON.stringify(v))

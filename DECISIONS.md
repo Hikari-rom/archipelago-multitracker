@@ -323,3 +323,25 @@ d'Archipelago :
   l'activité déjà notée pour les premiers est reprise. Limites acceptées : un collect qui ne touche qu'un seul slot
   suivi le rend encore actif ; deux joueurs suivis par la même app qui font un check dans la même seconde perdent
   ce check comme activité (le suivant compte).
+
+## D30 — Page « Indices » : accessibilité chez les autres joueurs et ce qui bloque (2026-10-27, demandé par Romain)
+- **Quels hints** : ceux que les trackers des slots suivis reçoivent déjà (`_read_hints_<team>_<slot>`), qui
+  contiennent les hints où le slot trouve un item et ceux où il le reçoit, autres joueurs compris. Une location hintée
+  vue par deux slots suivis n'est affichée qu'une fois (`slots` liste les deux, pour le filtre par joueur).
+- **Accessibilité chez un autre joueur** : il faut sa logique, donc ses checks et ses items reçus. Le multitracker
+  ouvre pour cela une connexion tracker en lecture seule (mêmes tags `Tracker`/`NoText`, même liste blanche) au slot de
+  celui qui doit trouver un item d'un slot suivi, si le hint n'est pas trouvé. Pas de mot de passe de slot en plus :
+  celui de la room suffit, comme pour les slots suivis. Coût mémoire : un monde régénéré par slot dans le worker de
+  logique, d'où un maximum de 12 slots (ceux qui ont le plus de hints), un recalcul au plus toutes les 5 s, et
+  l'option `hints_foreign_logic` pour tout couper. Le yaml du joueur est pris dans `config/players/` s'il existe (même
+  nom et jeu), sinon `slot_data` seul (`validate_logic.py --no-yaml`). Quand plus aucun hint ne le demande, la connexion se ferme et le worker
+  libère le monde (`forget`).
+- **Ce qui bloque** : calculé dans le worker, seulement pour les locations hintées hors logique. Candidats : les items
+  de progression du pool du monde régénéré (items du pool + items placés par le monde, moins les items reçus) ; ce sont
+  les items du jeu, pas leur emplacement : rien ne vient du spoiler. D'abord un item seul (un sweep par candidat, toutes
+  les locations d'un coup) ; sinon, si la location reste hors logique avec tous les items restants : « hors logique » ;
+  sinon un ensemble minimal (on retire les items un par un, puis on réduit les nombres par dichotomie). Budget de 5 s,
+  au-delà : « plusieurs items ». Résultats en cache tant que les items reçus ne changent pas. L'ensemble trouvé est
+  *un* ensemble suffisant minimal, pas forcément le seul.
+- **Rafraîchissement** : événement SSE `hints` (au plus un par seconde) ; la page refait `GET /api/hints`.
+

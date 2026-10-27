@@ -1,12 +1,16 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import AppV2 from '../../src/v2/AppV2.vue'
 import LogsView from '../../src/components/LogsView.vue'
 import { installMock } from '../../src/lib/api'
 import { setView, tracker } from '../../src/stores/tracker'
 import { mk } from '../helpers'
 
+// no network: the update banners ask /api/update on mount
+beforeEach(() => vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 }))))
+
 afterEach(() => {
+  vi.unstubAllGlobals()
   tracker.slots = []
   tracker.loaded = false
   tracker.roomSleeping = false

@@ -282,3 +282,21 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Configuration : on retrouve les slots déjà enregistrés au lieu de tous les slots qui ont un yaml (D29, v0.2.15)
 - [x] Enregistrer la configuration ne reconnecte que ce qui a changé ; sans changement, aucune déconnexion (D29)
 - [x] Un collect/release (jeu fini) ne rend plus tous les jeux actifs : checks simultanés dans plusieurs slots (D29)
+
+## M26 — Page « Indices » (demandé par Romain le 2026-10-27, D30)
+- [x] Onglet « Indices » (v2, à côté d'Objectifs, `#hints`) : tous les hints des slots suivis, ceux où on doit
+  trouver l'item d'un autre joueur comme ceux où un autre joueur, suivi ou non, a un item d'un slot suivi
+  (`GET /api/hints`, une ligne par location hintée même si deux slots suivis la voient)
+- [x] Tri sur toutes les colonnes (en-têtes cliquables, `aria-sort`, gardé sur cet appareil), filtre par joueur,
+  recherche, filtres Tous / Mes items / Dans mes mondes / Accessibles, « Masquer les trouvés »
+- [x] Colonne « Accessible » pour celui qui doit faire le check : accessible, bloqué, en calcul, inconnu (raison),
+  trouvé ; quand c'est bloqué, ce qui manque (un item, un item parmi plusieurs, plusieurs items avec leur nombre)
+- [x] Accessibilité chez les autres joueurs : connexion en lecture seule à leur slot (12 au plus, ceux qui ont le plus
+  de hints), option dans Configuration (activée par défaut)
+- [x] Trois présentations au choix dans Configuration › Affichage (sur cet appareil, `amt-v2-hints-layout`) :
+  Registre (un tableau), Deux sens (tes items chez les autres / dans tes mondes), Groupé par slot (maquettes Claude
+  Design)
+- [x] Message « Mise à jour installée » une fois après une mise à jour, avec les notes de la version (portable) ;
+  rien à la première visite (`amt-seen-version`)
+- [ ] Vérifier les trois présentations à l'œil sur ordinateur et téléphone
+

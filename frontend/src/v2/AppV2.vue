@@ -4,6 +4,7 @@ import { useMediaQuery } from '@vueuse/core'
 import ConfigView from '../components/ConfigView.vue'
 import LogsView from '../components/LogsView.vue'
 import UpdateBanner from '../components/UpdateBanner.vue'
+import UpdatedNotice from '../components/UpdatedNotice.vue'
 import { ALL_OWNERS, NO_OWNER, distinctOwners, filterByOwner, hasNoOwner, loadOwnerChoice, saveOwnerChoice } from '../lib/config'
 import { totals } from '../lib/dashboard'
 import { setView, tracker, type View } from '../stores/tracker'
@@ -15,6 +16,7 @@ import ThemeMenu from './components/ThemeMenu.vue'
 import UndoToast from './components/UndoToast.vue'
 import DashboardV2 from './views/DashboardV2.vue'
 import GoalsV2 from './views/GoalsV2.vue'
+import HintsV2 from './views/HintsV2.vue'
 import HistoryV2 from './views/HistoryV2.vue'
 import RoomV2 from './views/RoomV2.vue'
 import { loadSkyAnimated, loadThemeChoice, saveSkyAnimated, saveThemeChoice, type ThemeChoice } from './lib/prefs'
@@ -55,6 +57,7 @@ const TABS: { key: View; label: string }[] = [
   { key: 'dashboard', label: 'Tableau' },
   { key: 'history', label: 'Historique' },
   { key: 'goals', label: 'Objectifs' },
+  { key: 'hints', label: 'Indices' },
 ]
 </script>
 
@@ -90,6 +93,7 @@ const TABS: { key: View; label: string }[] = [
   </header>
   <SleepBanner class="mx-4 min-[700px]:mx-8" />
   <UpdateBanner class="mx-4 min-[700px]:mx-8" />
+  <UpdatedNotice class="mx-4 min-[700px]:mx-8" />
   <main class="mx-auto max-w-[1440px] px-4 pt-4 pb-24 min-[700px]:px-8 min-[700px]:pb-10">
     <p v-if="tracker.loadError && !tracker.slots.length" role="alert" class="rounded-xl border bg-card p-4"><span class="text-error">! </span>Impossible de joindre le serveur : {{ tracker.loadError }}</p>
     <ConfigView v-else-if="view === 'config'" />
@@ -97,6 +101,7 @@ const TABS: { key: View; label: string }[] = [
     <HistoryV2 v-else-if="view === 'history'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
     <RoomV2 v-else-if="view === 'room'" />
     <GoalsV2 v-else-if="view === 'goals'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
+    <HintsV2 v-else-if="view === 'hints'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
     <DashboardV2 v-else :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
   </main>
   <UndoToast />

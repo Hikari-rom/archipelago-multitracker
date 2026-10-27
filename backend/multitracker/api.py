@@ -73,6 +73,7 @@ class ConfigBody(BaseModel):
     wake_room: bool | None = None  # None = keep the current setting
     scout_checked: bool | None = None  # None = keep the current setting
     room_dashboard: bool | None = None  # None = keep the current setting
+    hints_foreign_logic: bool | None = None  # None = keep the current setting
     slots: list[SlotBody]
 
 
@@ -223,7 +224,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
                 "wake_room": cfg.wake_room, "scout_checked": cfg.scout_checked,
-                "room_dashboard": cfg.room_dashboard,
+                "room_dashboard": cfg.room_dashboard, "hints_foreign_logic": cfg.hints_foreign_logic,
                 "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml)} for s in cfg.slots],
@@ -347,9 +348,17 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                          room_url=(body.room_url or "").strip() or None,
                          wake_room=current.wake_room if body.wake_room is None else body.wake_room,
                          scout_checked=current.scout_checked if body.scout_checked is None else body.scout_checked,
-                         room_dashboard=current.room_dashboard if body.room_dashboard is None else body.room_dashboard)
+                         room_dashboard=current.room_dashboard if body.room_dashboard is None else body.room_dashboard,
+                         hints_foreign_logic=(current.hints_foreign_logic if body.hints_foreign_logic is None
+                                              else body.hints_foreign_logic))
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
+
+    # async on purpose: the trackers are mutated on the event loop
+    @app.get("/api/hints")
+    async def hints(request: Request) -> dict[str, Any]:
+        """Hints of every tracked slot, with whether the player who has to do the check can do it now."""
+        return get_service(request).hints.table()
 
     @app.get("/api/items/recent")
     async def recent_items(request: Request) -> dict[str, Any]:

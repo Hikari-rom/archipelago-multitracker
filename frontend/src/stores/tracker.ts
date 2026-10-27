@@ -7,7 +7,7 @@ import { splitFeatured } from '../lib/dashboard'
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
 import type { RecentItem, SlotDetail, SseState } from '../lib/types'
-import { loadTicker } from '../v2/lib/prefs'
+import { loadHintsLayout, loadTicker } from '../v2/lib/prefs'
 
 // declared before the store: its initializer reads it (a later const would throw there, silently caught)
 const ACTIVITY_KEY = 'amt-activity'
@@ -30,6 +30,8 @@ export const tracker = reactive({
   activeMinutes: loadActiveMinutes(),
   /** look of the « Derniers reçus » strip of the v2 dashboard (setting of this device) */
   ticker: loadTicker(),
+  /** layout of the Indices page (setting of this device) */
+  hintsLayout: loadHintsLayout(),
   details: {} as Record<string, SlotDetail>,
   /** details shown or hidden by the user (overrides the default: hidden, except for featured slots) */
   open: {} as Record<string, boolean>,
@@ -119,12 +121,13 @@ export function restoreActivity(prev: ActivityOverrides): void {
   saveActivity()
 }
 
-export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history' | 'room'
+export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history' | 'room' | 'hints'
 
 function viewFromHash(): View {
   if (typeof location === 'undefined') return 'dashboard'
   if (/^#config(\?|$)/.test(location.hash)) return 'config'
   if (location.hash === '#goals') return 'goals'
+  if (location.hash === '#hints') return 'hints'
   if (location.hash === '#history') return 'history'
   if (location.hash === '#room') return 'room'
   return location.hash === '#logs' ? 'logs' : 'dashboard'
@@ -280,6 +283,8 @@ export async function markSeen(name: string): Promise<void> {
 
 /** Room-wide dashboard: handlers of the `roomfeed_check` / `roomfeed` SSE events (registered by v2/lib/roomfeed.ts). */
 export const roomfeedListeners = { check: new Set<(d: any) => void>(), state: new Set<(d: any) => void>() }
+/** "hints" events: the Indices table changed (the page fetches /api/hints again) */
+export const hintsListeners = new Set<() => void>()
 
 let es: EventSource | null = null
 let retryTimer: ReturnType<typeof setTimeout> | undefined
@@ -332,6 +337,9 @@ export function connect(): void {
   cur.addEventListener('slot', (e) => {
     const d = parse(e)
     if (d && d.slot) dispatch({ type: 'slot', slot: d.slot })
+  })
+  cur.addEventListener('hints', () => {
+    for (const fn of [...hintsListeners]) fn()
   })
   for (const [name, handlers] of [['roomfeed_check', roomfeedListeners.check], ['roomfeed', roomfeedListeners.state]] as const) {
     cur.addEventListener(name, (e) => {

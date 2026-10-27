@@ -2,7 +2,7 @@ import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, Up
 import type { UpdateInfo } from './update'
 import type { ApworldsInfo } from './apworlds'
 import type {
-  HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
+  HintsResponse, HistoryPage, ReceivedEntry, RecentItem, RoomFeedActivity, RoomFeedChecksPage, RoomFeedStatus, RoomFeedSummary,
   SentCheck, SlotDetail, SlotSummary,
 } from './types'
 
@@ -54,6 +54,7 @@ export interface MockApi {
   getRoomFeedSummary?(): Promise<RoomFeedSummary>
   getRoomFeedChecks?(params: RoomFeedChecksParams): Promise<RoomFeedChecksPage>
   getRoomFeedActivity?(bucket: 'hour' | 'day', player?: string): Promise<RoomFeedActivity>
+  getHints?(): Promise<HintsResponse>
 }
 let mock: MockApi | null = null
 export function installMock(m: MockApi): void {
@@ -79,6 +80,9 @@ export function getHistory(kind: 'sent' | 'received', slots: string[], limit = 2
   for (const s of slots) q.append('slot', s)
   return mock?.history ? mock.history(kind, slots, limit, offset) : fetch(`/api/history?${q}`).then((r) => json<HistoryPage<SentCheck | ReceivedEntry>>(r))
 }
+
+export const getHints = () =>
+  mock?.getHints ? mock.getHints() : fetch('/api/hints').then((r) => json<HintsResponse>(r))
 
 export const getRecentItems = () =>
   mock?.recentItems ? mock.recentItems() : fetch('/api/items/recent').then((r) => json<{ items: RecentItem[] }>(r))

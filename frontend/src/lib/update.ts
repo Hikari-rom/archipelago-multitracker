@@ -86,3 +86,48 @@ export function saveDismissed(version: string): void {
 }
 
 export const UPDATE_ANCHOR = 'mises-a-jour'
+
+// « Mise à jour installée » : the version this browser last saw, to say once that the app changed.
+const SEEN_KEY = 'amt-seen-version'
+
+/** What actually runs: the release (portable) or the commit the app started on (git). */
+export function runningId(info: UpdateInfo): string | null {
+  if (info.mode === 'git') return info.current.running ?? info.current.commit ?? null
+  return info.current.version
+}
+
+export function loadSeenVersion(): string {
+  try {
+    return localStorage.getItem(SEEN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveSeenVersion(id: string): void {
+  try {
+    localStorage.setItem(SEEN_KEY, id)
+  } catch {
+    /* private mode */
+  }
+}
+
+/** Release notes of the running version, when the server has them (portable: latest release = this one). */
+export function installedNotes(info: UpdateInfo): { notes: string; url: string | null } | null {
+  const l = info.latest
+  if (info.mode !== 'portable' || !l || l.version !== info.current.version) return null
+  return { notes: (l.notes ?? '').trim(), url: l.url ?? null }
+}
+
+/** Markdown of a release, as plain lines: headings and list items without their marks. */
+export function noteLines(md: string): { text: string; heading: boolean }[] {
+  return md
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const heading = /^#{1,6}\s/.test(l)
+      const text = l.replace(/^#{1,6}\s+/, '').replace(/^[-*]\s+/, '• ').replace(/\*\*(.+?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1')
+      return { text, heading }
+    })
+}

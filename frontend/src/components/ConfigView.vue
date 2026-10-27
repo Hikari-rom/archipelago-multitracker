@@ -32,7 +32,7 @@ import {
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setActiveMode, setView, tracker } from '../stores/tracker'
-import { saveTicker, TICKER_LABELS, type TickerStyle } from '../v2/lib/prefs'
+import { HINTS_LAYOUT_LABELS, saveHintsLayout, saveTicker, TICKER_LABELS, type HintsLayout, type TickerStyle } from '../v2/lib/prefs'
 
 const emit = defineEmits<{ saved: [] }>()
 
@@ -45,6 +45,7 @@ const clearPassword = ref(false)
 const wakeRoom = ref(false)
 const scoutChecked = ref(true)
 const roomDashboard = ref(false)
+const hintsForeignLogic = ref(true)
 const rows = ref<SlotRow[]>([])
 const loading = ref(true)
 const loadError = ref('')
@@ -119,6 +120,7 @@ onMounted(async () => {
     wakeRoom.value = !!c.wake_room
     scoutChecked.value = c.scout_checked !== false
     roomDashboard.value = !!c.room_dashboard
+    hintsForeignLogic.value = c.hints_foreign_logic !== false
     rows.value = autoAssociate(mergeRows(c.slots, null), yamls.value).rows
   } catch (e) {
     loadError.value = errText(e)
@@ -240,6 +242,11 @@ function onTicker(e: Event): void {
   tracker.ticker = (e.target as HTMLSelectElement).value as TickerStyle
   saveTicker(tracker.ticker)
 }
+const hintsLayouts = Object.keys(HINTS_LAYOUT_LABELS) as HintsLayout[]
+function onHintsLayout(e: Event): void {
+  tracker.hintsLayout = (e.target as HTMLSelectElement).value as HintsLayout
+  saveHintsLayout(tracker.hintsLayout)
+}
 
 /** Enter never saves the whole configuration by accident; in the room field it runs the discovery. */
 function onEnter(ev: KeyboardEvent): void {
@@ -269,6 +276,7 @@ async function onSave(): Promise<void> {
         wakeRoom: wakeRoom.value,
         scoutChecked: scoutChecked.value,
         roomDashboard: roomDashboard.value,
+        hintsForeignLogic: hintsForeignLogic.value,
       }),
     )
     password.value = ''
@@ -442,6 +450,18 @@ const selectClass =
               </p>
             </div>
           </div>
+
+          <div class="flex items-start gap-2">
+            <Checkbox id="cfg-hints-foreign" v-model="hintsForeignLogic" class="mt-0.5" />
+            <div class="flex flex-col gap-0.5">
+              <Label for="cfg-hints-foreign" class="font-normal">Indices : calculer l'accessibilité chez les autres joueurs</Label>
+              <p class="text-muted-foreground text-xs">
+                Pour la page Indices : quand un de tes items est chez un joueur que l'app ne suit pas, elle suit aussi ce
+                slot (en lecture seule, au plus 12) pour savoir s'il peut faire le check et ce qui lui manque. Une
+                connexion et un monde recalculé de plus par slot. Désactivé : « Inconnu » pour ces indices.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -593,6 +613,12 @@ const selectClass =
             Défilant : les derniers items reçus passent en continu comme un fil d'actualité (pause au survol). Interface
             v2 seulement.
           </p>
+          <label class="flex flex-wrap items-center gap-2 text-sm">
+            Page Indices
+            <select :value="tracker.hintsLayout" data-hints-layout :class="cn(selectClass, 'w-auto')" @change="onHintsLayout">
+              <option v-for="l in hintsLayouts" :key="l" :value="l">{{ HINTS_LAYOUT_LABELS[l] }}</option>
+            </select>
+          </label>
         </CardContent>
       </Card>
 

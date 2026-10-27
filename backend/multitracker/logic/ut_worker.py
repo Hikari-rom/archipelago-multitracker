@@ -27,6 +27,8 @@ from .. import apenv
 
 log = logging.getLogger("multitracker.logic")
 
+EXPLAIN_BUDGET = 5.0  # seconds per update to work out what blocks the hinted locations
+
 _ap_ready = False
 
 
@@ -200,6 +202,8 @@ class SlotLogic:
 
         self.slot_name, self.game, self.team, self.slot = slot_name, game, team, slot
         self.random_options: list[str] = []
+        self._pool_cache = None
+        self._blockers_cache: tuple[tuple, dict[int, dict[str, Any]]] | None = None
         world_cls = AutoWorldRegister.world_types.get(game)
         from ..user_apworlds import user_games
         imported = game in user_games()  # D27: each user imports this apworld from their own Archipelago
@@ -281,8 +285,9 @@ class SlotLogic:
         else:
             raise LogicUnavailable("ce jeu a besoin du yaml du joueur (clé `yaml` du slot dans config/room.yaml)")
 
-    def in_logic(self, items: list[dict[str, Any]], missing: set[int]) -> dict[str, Any]:
-        """Locations of `missing` reachable with `items`.
+    def in_logic(self, items: list[dict[str, Any]], missing: set[int],
+                 explain: set[int] | None = None) -> dict[str, Any]:
+        """Locations of `missing` reachable with `items`, and what blocks the unreachable ones of `explain`.
 
         Same sweep as UT's `updateTracker`, with one difference: each received item gets the exact
         classification the server sent (NetworkItem.flags). UT only ORs the flags onto the default
@@ -338,7 +343,105 @@ class SlotLogic:
         reachable = sorted({loc.address for loc in reachable_locations})
         regions = {int(loc.address): plain_name(loc.parent_region.name) for loc in reachable_locations
                    if loc.parent_region is not None}
-        return {"in_logic": reachable, "regions": regions, "errors": errors[:5]}
+        result = {"in_logic": reachable, "regions": regions, "errors": errors[:5]}
+        if explain:
+            done = set(reachable)
+            targets = [loc for loc in mw.get_locations(pid)
+                       if isinstance(loc.address, int) and loc.address in explain and loc.address in missing
+                       and loc.address not in done]
+            if targets:
+                result["blockers"] = self.blockers(state, received, targets)
+        return result
+
+    def _pool(self):
+        """Progression items of the slot's world (item pool and items placed by the world itself), by name."""
+        from collections import Counter
+        if self._pool_cache is None:
+            mw, pid = self.core.multiworld, self.core.player_id
+            items = [i for i in mw.itempool if i.player == pid]
+            items += [loc.item for loc in mw.get_locations(pid) if loc.item is not None and loc.address is not None
+                      and loc.item.player == pid]
+            self._pool_cache = Counter(i.name for i in items if i.code is not None and i.advancement)
+        return self._pool_cache
+
+    def blockers(self, state, received: list, targets: list) -> dict[int, dict[str, Any]]:
+        """What the slot lacks to reach each of `targets` (unreachable locations), among the items still to come.
+
+        `single`: any one of `items` is enough. `set`: all of `items` ([name, count]) together, a minimal set
+        (nothing in it can be dropped, counts as low as they go). `many`: not worked out within EXPLAIN_BUDGET.
+        `none`: out of logic even with every item still to come. Derived from the world's rules and item pool,
+        like the logic itself: nothing about where the items are.
+        """
+        from collections import Counter
+        have = Counter(i.name for i in received)
+        key = (tuple(sorted(have.items())), tuple(sorted(int(t.address) for t in targets)))
+        if self._blockers_cache is not None and self._blockers_cache[0] == key:
+            return self._blockers_cache[1]
+        mw, pid = self.core.multiworld, self.core.player_id
+        events = [loc for loc in mw.get_locations(pid) if not loc.address]
+        deadline = time.perf_counter() + EXPLAIN_BUDGET
+        to_come = self._pool() - have
+        names = sorted(to_come)
+
+        def reach(loc, extra: Counter) -> bool:
+            trial = state.copy()
+            for name, count in extra.items():
+                for _ in range(count):
+                    trial.collect(mw.create_item(name, pid), True)
+            trial.sweep_for_advancements(locations=events)
+            return loc.can_reach(trial)
+
+        out: dict[int, dict[str, Any]] = {}
+        singles: dict[int, list[str]] = {int(t.address): [] for t in targets}
+        finished = True
+        for name in names:  # one sweep per item, for every target at once
+            if time.perf_counter() > deadline:
+                finished = False
+                break
+            trial = state.copy()
+            trial.collect(mw.create_item(name, pid), True)
+            trial.sweep_for_advancements(locations=events)
+            for loc in targets:
+                if loc.can_reach(trial):
+                    singles[int(loc.address)].append(name)
+        for loc in targets:
+            address = int(loc.address)
+            if singles[address]:
+                out[address] = {"kind": "single", "items": singles[address]}
+            elif not finished:
+                out[address] = {"kind": "many"}
+            elif not reach(loc, to_come):
+                out[address] = {"kind": "none"}
+            else:
+                out[address] = self._minimal_set(loc, to_come, reach, deadline)
+        self._blockers_cache = (key, out)
+        return out
+
+    @staticmethod
+    def _minimal_set(loc, to_come, reach, deadline: float) -> dict[str, Any]:
+        """Drop every item the location does not need, then lower the counts (binary search)."""
+        need = to_come.copy()
+        for name in sorted(to_come):
+            if time.perf_counter() > deadline:
+                return {"kind": "many"}
+            trial = need.copy()
+            del trial[name]
+            if reach(loc, trial):
+                need = trial
+        for name in sorted(need):
+            low, high = 1, need[name]
+            while low < high:
+                if time.perf_counter() > deadline:
+                    return {"kind": "many"}
+                mid = (low + high) // 2
+                trial = need.copy()
+                trial[name] = mid
+                if reach(loc, trial):
+                    high = mid
+                else:
+                    low = mid + 1
+            need[name] = high
+        return {"kind": "set", "items": [[name, count] for name, count in sorted(need.items())]}
 
 
 def plain_name(name: Any) -> str:
@@ -406,7 +509,8 @@ class Worker:
             packages = worlds.network_data_package["games"]
             return {"state": "ok", "checksums": {g: packages.get(g, {}).get("checksum") for g in req.get("games", [])}}
         if req.get("op") == "forget":
-            self.slots.pop(req["slot_name"], None)
+            if self.slots.pop(req["slot_name"], None) is not None:
+                gc.collect()  # regenerated multiworlds are cyclic
             return {"state": "ok"}
         name = req["slot_name"]
         key = request_key(req)
@@ -434,7 +538,7 @@ class Worker:
         if isinstance(logic, Exception):
             return {"state": "error", "message": str(logic)[:400]}
         try:
-            result = logic.in_logic(req.get("items", []), set(req.get("missing", [])))
+            result = logic.in_logic(req.get("items", []), set(req.get("missing", [])), set(req.get("explain", [])))
         except Exception as exc:
             log.warning("logic update failed for %s: %s", name, traceback.format_exc())
             return {"state": "error", "message": f"{type(exc).__name__}: {exc}"[:400]}

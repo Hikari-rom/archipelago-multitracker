@@ -256,3 +256,52 @@ export interface RoomFeedActivity {
   /** catch-up checks whose interval is too wide to be dated */
   undated: number
 }
+
+/** What the slot that has to do a hinted check lacks (logic of that slot, see backend hints.py). */
+export type HintBlockers =
+  | { kind: 'single'; items: string[] }
+  | { kind: 'set'; items: [string, number][] }
+  | { kind: 'many' }
+  | { kind: 'none' }
+
+export interface HintAccess {
+  state: 'ok' | 'blocked' | 'pending' | 'unknown' | 'found'
+  reason?: string
+  blockers?: HintBlockers
+}
+
+/** A row of the Indices page (GET /api/hints). */
+export interface HintRow {
+  item: string
+  item_id?: number
+  location: string
+  location_id?: number
+  finder: string
+  finder_slot?: string | null
+  finder_game: string | null
+  receiver: string
+  receiver_slot?: string | null
+  receiver_game: string | null
+  found: boolean
+  entrance?: string
+  status?: string
+  progression: boolean
+  useful: boolean
+  trap: boolean
+  finder_tracked: boolean
+  receiver_tracked: boolean
+  /** tracked slots this hint belongs to (owner filter) */
+  slots: string[]
+  access: HintAccess
+}
+
+export interface HintsResponse {
+  hints: HintRow[]
+  foreign: {
+    enabled: boolean
+    max: number
+    followed: { name: string; game: string; status: string; logic: { state: string; message?: string | null } }[]
+    capped: string[]
+  }
+  now?: number
+}

@@ -7,6 +7,7 @@ const ITEMS: { key: View; icon: string; label: string }[] = [
   { key: 'dashboard', icon: '⌂', label: 'Tableau' },
   { key: 'history', icon: '↺', label: 'Historique' },
   { key: 'goals', icon: '⚑', label: 'Objectifs' },
+  { key: 'hints', icon: '?', label: 'Indices' },
 ]
 const current = computed(() => tracker.view)
 </script>

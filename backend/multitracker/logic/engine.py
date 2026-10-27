@@ -99,6 +99,16 @@ class UTLogicEngine(LogicEngine):
             raise TimeoutError(f"logic worker did not answer within {self.timeout:.0f}s")
         return self._conn.recv()
 
+    async def forget(self, slot_name: str) -> None:
+        async with self._lock:
+            if self._proc is None or not self._proc.is_alive():
+                return  # a new worker keeps nothing
+            try:
+                await asyncio.to_thread(self._roundtrip, {"op": "forget", "slot_name": slot_name})
+            except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
+                log.warning("logic worker failed (%s), restarting it", exc)
+                await asyncio.to_thread(self._kill)
+
     async def checksums(self, games: list[str]) -> dict[str, str | None] | None:
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
@@ -119,7 +129,7 @@ class UTLogicEngine(LogicEngine):
                "yaml": str(request.yaml) if request.yaml else None,
                "items": request.items, "missing": sorted(request.missing),
                "checked": sorted(request.checked), "seed_name": request.seed_name,
-               "checksum": request.checksum}
+               "checksum": request.checksum, "explain": sorted(request.explain)}
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)
@@ -134,6 +144,7 @@ class UTLogicEngine(LogicEngine):
             return LogicResult(state, message=res.get("message"))
         return LogicResult("ok", in_logic=list(res.get("in_logic", [])),
                            regions={int(k): v for k, v in (res.get("regions") or {}).items()},
+                           blockers={int(k): v for k, v in (res.get("blockers") or {}).items()},
                            message=("; ".join(res["errors"]) if res.get("errors") else None))
 
 

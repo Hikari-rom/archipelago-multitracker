@@ -95,6 +95,7 @@ Corps optionnel `{"count": N}` (par défaut : tout ce qui a été reçu). Répon
 ## `GET /api/events` (Server-Sent Events)
 - `event: snapshot` — `data: {"type": "snapshot", "slots": [SlotSummary, ...]}` à la connexion.
 - `event: slot` — `data: {"type": "slot", "slot": SlotSummary}` à chaque changement d'un slot.
+- `event: hints` — `data: {"type": "hints"}` quand la page Indices doit se recharger (au plus un par seconde).
 - Commentaires `: keepalive` toutes les 20 s. `retry: 3000`.
 
 Quand un `slot` arrive pour le slot affiché en détail, le front refait `GET /api/slots/{name}`.
@@ -139,6 +140,7 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
  "wake_room": false,                       // réveil automatique de la room (désactivé par défaut)
   "scout_checked": true,                    // contenu des checks faits demandé au serveur (Historique, D20)
  "room_dashboard": false,                  // tableau de bord de la room complète (désactivé par défaut)
+ "hints_foreign_logic": true,              // page Indices : accessibilité chez les autres joueurs (D30)
  "has_backup": true,                       // config/room.yaml.bak existe (bouton « Restaurer »)
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}],
  "player_yamls": ["config/players/kh2.yaml", "config/players/romain/romain_kh2.yaml"],
@@ -179,6 +181,7 @@ document avec `name` et `game`). Réponse `{"path": "...", "players": [...], "st
  "password": "…",                                    // omis ou null = garder le mot de passe actuel
  "wake_room": false,                                 // omis = garder le réglage actuel
  "room_dashboard": false,                            // omis = garder le réglage actuel
+ "hints_foreign_logic": true,                        // omis = garder le réglage actuel
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}]}
 ```
 Écrit `config/room.yaml` (l'ancienne version va dans `config/room.yaml.bak`) et recharge les connexions (un `snapshot`
@@ -285,6 +288,26 @@ Dans `data/room_feed/<seed>/` (un dossier par seed, créé seulement quand la fo
 `checks-AAAA-MM-JJ.jsonl` (un check par ligne, journal en ajout seul), `presence.jsonl` (connexions et
 déconnexions) et `state.json`. Les regroupements de slots par joueur peuvent être forcés dans
 `config/room_players.yaml`.
+
+## `GET /api/hints` — page « Indices » (D30)
+```json
+{"hints": [{"item": "Hookshot", "item_id": 1, "location": "Chest", "location_id": 100, "entrance": "",
+            "finder": "Friend", "finder_slot": "Friend", "finder_game": "Game C",
+            "receiver": "Me_A", "receiver_slot": "Me_A", "receiver_game": "Game A",
+            "found": false, "status": "priority",   // unspecified|no_priority|avoid|priority|found
+            "progression": true, "useful": false, "trap": false,
+            "finder_tracked": false, "receiver_tracked": true,
+            "slots": ["Me_A"],                       // slots suivis concernés (filtre par joueur)
+            "access": {"state": "blocked",           // ok|blocked|pending|unknown|found
+                       "reason": "…",                // pending/unknown : pourquoi
+                       "blockers": {"kind": "single", "items": ["Hookshot"]}}}],
+ "foreign": {"enabled": true, "max": 12, "capped": ["Other"],
+             "followed": [{"name": "Friend", "game": "Game C", "status": "connected", "logic": {"state": "ok"}}]},
+ "now": 1793098992.1}
+```
+`blockers` : `single` (un seul de ces items suffit), `set` (`items: [[nom, nombre], …]`, il les faut tous), `many`
+(trop long à calculer), `none` (hors logique même avec tous les items restants). Absent quand l'analyse n'a pas
+encore tourné.
 
 ## Mises à jour (D25)
 

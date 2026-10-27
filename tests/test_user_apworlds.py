@@ -197,7 +197,7 @@ def test_api_config_flags_imported_games(env, tmp_path, monkeypatch):
     make_apworld(env.user / "mine.apworld", "User Game")
     service = FakeService({}, {})
     service.config = SimpleNamespace(room_url=None, server="", password="", wake_room=False, scout_checked=False,
-                                     room_dashboard=False, path=tmp_path / "room.yaml", slots=[])
+                                     room_dashboard=False, hints_foreign_logic=True, path=tmp_path / "room.yaml", slots=[])
     games = call(service, "GET", "/api/config").json()["games"]
     assert games["User Game"] == {"logic": False, "needs_yaml": False, "user": True, "imported": True}
     assert games["Shipped Game"]["imported"] is False and games["Shipped Game"]["user"] is False
