@@ -255,10 +255,10 @@ export function diagnose(
   else if (info.user && !info.imported) {
     out.push({ level: 'info', text: 'apworld à importer depuis ton Archipelago (en bas de la page) : suivi des checks seulement' })
   }
-  else if (!info.logic) out.push({ level: 'info', text: 'logique pas encore validée pour ce jeu' })
+  else if (!info.logic) out.push({ level: 'info', text: 'logique pas encore assez fiable pour ce jeu : suivi des checks seulement' })
   if (row.yaml) {
     const y = yamls.find((e) => e.path === row.yaml)
-    if (!y) out.push({ level: 'warn', text: 'yaml introuvable dans config/players/' })
+    if (!y) out.push({ level: 'warn', text: 'ce yaml n\'existe plus : choisis-en un autre ou importe-le' })
     else if (y.error) out.push({ level: 'error', text: `yaml illisible : ${y.error}` })
     else if (row.game && !y.players.some((p) => playerGames(p).includes(row.game))) {
       const other = [...new Set(y.players.flatMap(playerGames))].join(', ')

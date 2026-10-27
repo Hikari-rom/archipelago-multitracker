@@ -36,7 +36,7 @@ async def test_disabled_and_unknown_games():
     await engine.start()
     try:
         res = await engine.compute(request())
-        assert res.state == "unavailable" and "validée" in res.message
+        assert res.state == "unavailable" and "pas encore assez fiable" in res.message
         engine.games["Nope"] = True
         req = request()
         req.game = "Nope"

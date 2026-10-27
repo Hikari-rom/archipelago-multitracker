@@ -162,7 +162,7 @@ describe('yaml association and diagnosis', () => {
     const texts = (r: ReturnType<typeof row>) => diagnose(r, yamls, games).map((d) => `${d.level}:${d.text}`)
     expect(texts(row('x', 'Kingdom Hearts 2'))).toEqual(['warn:yaml nécessaire pour la logique'])
     expect(texts(row('x', 'Hades'))).toEqual(["info:pas d'apworld : suivi des checks seulement"])
-    expect(texts(row('x', 'PokePark'))).toEqual(['info:logique pas encore validée pour ce jeu'])
+    expect(texts(row('x', 'PokePark'))).toEqual(['info:logique pas encore assez fiable pour ce jeu : suivi des checks seulement'])
     expect(texts(row('romain_kh2', 'Celeste (Open World)', 'config/players/romain/kh2.yaml'))).toEqual([
       'error:ce yaml est pour Kingdom Hearts 2',
     ])
@@ -172,7 +172,7 @@ describe('yaml association and diagnosis', () => {
     expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/bad.yaml'))[0]).toMatch(/^error:yaml illisible/)
     expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/romain/kh2.yaml'))).toEqual([])
     expect(texts(row('romain_kh2', 'Kingdom Hearts 2', 'config/players/gone.yaml'))).toEqual([
-      'warn:yaml introuvable dans config/players/',
+      'warn:ce yaml n\'existe plus : choisis-en un autre ou importe-le',
     ])
   })
   it('filters and bulk checks visible rows', () => {

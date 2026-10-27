@@ -83,6 +83,15 @@ def world_loading_summary():
                         len(no_manifest), ", ".join(sorted(no_manifest)) or "-")
 
 
+YAML_NEEDED = ("il faut le yaml du joueur pour ce jeu : importe-le dans la page Configuration et choisis-le pour "
+               "ce slot")
+
+
+def yaml_missing(path) -> str:
+    return (f"le yaml de ce slot est introuvable ({Path(path).name}) : importe-le à nouveau dans la page "
+            "Configuration")
+
+
 class LogicUnavailable(Exception):
     """Logic cannot be computed for this slot (no yaml for a world that needs one, UT disabled...)."""
 
@@ -265,14 +274,13 @@ class SlotLogic:
             self.mode = "yaml+slot_data"
             return
         if game in YAML_REQUIRED:
-            raise LogicUnavailable("ce jeu a besoin du yaml du joueur (clé `yaml` du slot dans config/room.yaml)"
-                                   if yaml_path is None else f"yaml introuvable : {yaml_path}")
+            raise LogicUnavailable(YAML_NEEDED if yaml_path is None else yaml_missing(yaml_path))
         if getattr(world_cls, "ut_can_gen_without_yaml", False):
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "slot_data"
         elif yaml_path is not None:
             if not Path(yaml_path).is_file():
-                raise LogicUnavailable(f"yaml introuvable : {yaml_path}")
+                raise LogicUnavailable(yaml_missing(yaml_path))
             with tempfile.TemporaryDirectory(prefix="mt-yaml-") as tmp:
                 _, self.random_options = prepare_player_yaml(
                     Path(yaml_path), slot_name, game, Path(tmp), slot_data,
@@ -283,7 +291,7 @@ class SlotLogic:
                     core.regen_slots(core.get_current_world(), slot_data, tmp)  # interpret_slot_data hook
             self.mode = "yaml"
         else:
-            raise LogicUnavailable("ce jeu a besoin du yaml du joueur (clé `yaml` du slot dans config/room.yaml)")
+            raise LogicUnavailable(YAML_NEEDED)
 
     def in_logic(self, items: list[dict[str, Any]], missing: set[int],
                  explain: set[int] | None = None) -> dict[str, Any]:

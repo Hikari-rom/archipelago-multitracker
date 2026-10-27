@@ -44,6 +44,25 @@ def game_catalog(path: Path = APWORLDS_CONFIG) -> dict[str, dict[str, bool]]:
             for entry in (config.get("apworlds") or {}).values() if entry.get("game")}
 
 
+# Shown after « Logique indisponible : » (docs/COMPAT.md has the details, for us).
+NO_LOGIC_REASONS = {
+    "Factorio": "impossible pour Factorio : les recettes des technologies sont tirées au hasard à la génération et "
+                "le jeu ne les transmet pas",
+    "Ocarina of Time": "impossible pour Ocarina of Time : les récompenses de donjon (pierres, médaillons) ne sont "
+                       "connues que du spoiler",
+}
+STILL_TRACKED = "ses checks et ses items restent suivis"
+
+
+def no_logic_reason(game: str, known: bool) -> str:
+    """Why a game has no logic: impossible, not reliable enough yet, or not supported by the app."""
+    if game in NO_LOGIC_REASONS:
+        return f"{NO_LOGIC_REASONS[game]} ; {STILL_TRACKED}"
+    if known:
+        return f"la logique de ce jeu n'est pas encore assez fiable pour être affichée ; {STILL_TRACKED}"
+    return f"le multitracker ne sait pas encore calculer la logique de ce jeu ; {STILL_TRACKED}"
+
+
 class UTLogicEngine(LogicEngine):
     def __init__(self, games: dict[str, bool] | None = None, timeout: float = 300.0) -> None:
         self.games = enabled_games() if games is None else games
@@ -123,7 +142,7 @@ class UTLogicEngine(LogicEngine):
 
     async def compute(self, request: LogicRequest) -> LogicResult:
         if not self.games.get(request.game, False):
-            return LogicResult("unavailable", message="Logique non validée pour ce jeu (voir docs/COMPAT.md)")
+            return LogicResult("unavailable", message=no_logic_reason(request.game, request.game in self.games))
         req = {"op": "update", "slot_name": request.slot_name, "game": request.game, "team": request.team,
                "slot": request.slot, "slot_data": request.slot_data,
                "yaml": str(request.yaml) if request.yaml else None,
