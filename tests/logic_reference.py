@@ -88,11 +88,29 @@ def snapshots(multiworld, player: int) -> list[Snapshot]:
     return result
 
 
+def _counted_by_the_game(multiworld, player: int):
+    """Items the world demotes after creating them although the game counts every copy: the reference follows the
+    game (D33). Super Mario Odyssey: the moons of a gated kingdom beyond its leave threshold."""
+    if multiworld.game[player] != "Spicy Meatball Overdrive":
+        return None
+    import importlib
+    world = multiworld.worlds[player]
+    gates = importlib.import_module(f"{type(world).__module__}.hooks.World").KINGDOM_MOON_GATES
+    names = {f"{kingdom} Kingdom {kind}" for kingdom in gates for kind in ("Power Moon", "Multi-Moon")}
+    return lambda item: item.name in names
+
+
 def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
-    from BaseClasses import CollectionState
+    import copy
+    from BaseClasses import CollectionState, ItemClassification
     state = CollectionState(multiworld)
+    counted = _counted_by_the_game(multiworld, player)
     for loc in snap.received:
-        state.collect(loc.item, True, loc)
+        item = loc.item
+        if counted and not item.advancement and counted(item):
+            item = copy.copy(item)
+            item.classification = ItemClassification.progression
+        state.collect(item, True, loc)
     state.sweep_for_advancements(locations=[loc for loc in multiworld.get_locations(player) if loc.address is None])
     return {loc.address for loc in multiworld.get_reachable_locations(state, player)
             if loc.address is not None and loc.address in snap.missing}

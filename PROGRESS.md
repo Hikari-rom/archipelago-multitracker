@@ -11,6 +11,7 @@
    Indices épinglés (page Indices), gardés par le serveur (M27, D31) ; « Ciel animé » seulement en Nuit ; messages
    « Logique indisponible » en clair (v0.2.18).
    Factorio en logique minorée (jamais en avance) et sablier « Logique minorée » avec tooltip (M28, D32, v0.2.19).
+   2026-11-05 : Super Mario Odyssey compte toutes les lunes reçues pour quitter un royaume (D33).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

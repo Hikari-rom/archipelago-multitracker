@@ -516,8 +516,27 @@ def _stardew_received(world: Any, items: list, start: list) -> None:
             item.events_to_collect.pop(event, None)
 
 
+def _smo_received(world: Any, items: list, start: list) -> None:
+    """Super Mario Odyssey ("Spicy Meatball Overdrive"): after create_items the world demotes every moon of a gated
+    kingdom beyond that kingdom's leave threshold (KINGDOM_MOON_GATES) from progression to useful, and the server
+    sends those copies as useful. In the game every moon of a kingdom counts toward leaving it, and the
+    KingdomMoons rule counts against the whole pool: count the demoted copies too, or a kingdom the player can
+    already leave stays out of logic (13 Sand moons and a Multi-Moon, of which only 4 + 1 progression). D33."""
+    try:
+        gates = importlib.import_module(f"{type(world).__module__}.hooks.World").KINGDOM_MOON_GATES
+    except (ImportError, AttributeError):
+        log.warning("Super Mario Odyssey: KINGDOM_MOON_GATES not found, received moons left as sent")
+        return
+    from BaseClasses import ItemClassification
+    names = {f"{kingdom} Kingdom {kind}" for kingdom in gates for kind in ("Power Moon", "Multi-Moon")}
+    for item in items:
+        if item.name in names and not item.advancement:
+            item.classification = ItemClassification.progression
+
+
 RECEIVED_HOOKS: dict[str, Callable[[Any, list, list], None]] = {
     "Stardew Valley": _stardew_received,
+    "Spicy Meatball Overdrive": _smo_received,
 }
 
 

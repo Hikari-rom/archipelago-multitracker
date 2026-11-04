@@ -381,3 +381,17 @@ d'Archipelago :
   (« Pokedex - … » jamais en logique). Le front affiche un sablier à côté du nombre de checks en logique, avec un
   tooltip (survol, focus, ou appui sur mobile) ; dans la liste Focus (lignes-boutons), un simple `title`.
 
+
+## D33 — Super Mario Odyssey : toutes les lunes reçues comptent pour quitter un royaume (2026-11-05, demandé par Romain)
+- **Le problème** : après `create_items`, le monde (`meatballs.apworld`, `_demote_surplus_kingdom_moons`) passe de
+  progression à useful toutes les lunes d'un royaume au-delà de son seuil de sortie (`KINGDOM_MOON_GATES` : Sand 16,
+  Lake 8…), et le serveur les envoie comme useful. L'app reprenant la classification exacte du serveur, elle ne
+  comptait que les copies restées progression. Sur la vraie room, Romain avait 13 Sand Kingdom Power Moon et une
+  Multi-Moon (16 dans le jeu, Lake ouvert) dont seulement 4 + 1 progression : aucun check de Lake en logique.
+- **Le jeu compte toutes les lunes** d'un royaume pour en sortir, et la règle `KingdomMoons` se calcule sur le pool
+  entier. Crochet `RECEIVED_HOOKS` (`_smo_received`, `adapters.py`) : les lunes reçues des royaumes à seuil
+  redeviennent progression. Rien n'est inventé : seulement des items déjà reçus.
+- **Validation** : la référence (`tests/logic_reference.py`) suit le jeu de la même façon (copie progression des
+  lunes rétrogradées) ; sans cela, toute différence serait un « over » attendu.
+- **Mesure** : `validate_logic.py "Spicy Meatball Overdrive" --runs 3` : 2 OK, 1 NC (génération non reproductible) ; bout en bout `m7b` OK.
+- **Effet sur la room** (2026-11-05) : 38 → 114 checks en logique (Lake 18, Wooded 44, Lost 14 en plus).
