@@ -558,6 +558,15 @@ def wwhd(c: GoalContext) -> Goal:
     return g
 
 
+def fall_guys(c: GoalContext) -> Goal:
+    """N Final Round Tickets, then win a final: the client sends "Win a Final Round" only with enough tickets."""
+    tickets = int(c.opt("final_round_tickets_required", "final_round_tickets_required", 25) or 0)
+    g = Goal(c, f"{plural(tickets, 'Final Round Ticket')}, puis gagner une finale")
+    g.counter("Final Round Tickets", c.count("Final Round Ticket"), tickets)
+    g.final("Gagner une finale (Win a Final Round)", "Win a Final Round")
+    return g
+
+
 DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Kingdom Hearts 2": kh2,
     "Super Mario 64": sm64,
@@ -582,6 +591,7 @@ DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Slay the Spire": slay_the_spire,
     "The Binding of Isaac Repentance": tboi,
     "The Wind Waker HD": wwhd,
+    "Fall Guys": fall_guys,
 }
 
 

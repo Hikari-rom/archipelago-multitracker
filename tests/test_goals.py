@@ -167,3 +167,23 @@ def test_mkdd_trophies_goal_from_the_locations_and_the_yaml():
     goal = describe(ctx)
     assert goal["summary"] == "Trophées, puis l'All Cup Tour en or (50cc)"
     assert [s["label"] for s in goal["steps"]] == ["All Cup Tour débloqué", "Gagner l'All Cup Tour"]
+
+
+def test_fall_guys_counts_final_round_tickets():
+    from multitracker.goals import describe
+    ctx = _ctx("Fall Guys", {"final_round_tickets_required": 30, "final_round_tickets_in_pool": 50},
+               ["Win a Final Round", "Qualify in Tip Toe"], [])
+    ctx.received = Counter({"Final Round Ticket": 12, "Beans": 3})
+    goal = describe(ctx)
+    assert goal["summary"] == "30 Final Round Tickets, puis gagner une finale"
+    assert goal["counters"] == [{"label": "Final Round Tickets", "current": 12, "target": 30}]
+    assert goal["steps"] == [{"label": "Gagner une finale (Win a Final Round)", "done": False}]
+    ctx.checked = {"Win a Final Round"}
+    assert describe(ctx)["steps"][-1]["done"] is True
+
+
+def test_fall_guys_ticket_count_from_the_yaml():
+    from multitracker.goals import describe
+    ctx = _ctx("Fall Guys", {}, ["Win a Final Round"], [])
+    ctx.yaml = {"final_round_tickets_required": 12}
+    assert describe(ctx)["counters"][0]["target"] == 12
