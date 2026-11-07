@@ -171,7 +171,7 @@ Campagne : une seed aux options aléatoires (`--first-run 201`) pour chacun des 
   victoire lui-même) : Deep Rock Galactic, A Dance of Fire and Ice, PEAK, Enter The Gungeon… Fall Guys est
   couvert par sa location de but (`GOAL_LOCATIONS`, « Win a Final Round »).
 - **Sans go mode à comparer** : The Wind Waker (seed tirée avec `randomize_charts`, logique refusée par
-  conception) ; Hollow Knight (seed 201 : 5 locations du slot absentes du monde recalculé, voir BACKLOG) ;
+  conception) ; Hollow Knight (seeds 201 et 203 : 5 locations du slot absentes du monde recalculé, voir BACKLOG ; seed 202 : go mode ok) ;
   Zuma Deluxe et Trombone Champ (la génération de test échoue, sans rapport avec l'app).
 - **Retards de logique déjà connus ou sans avance** : Stardew Valley (retard d'un point, voir sa ligne), TerraNil
   (seed 201 : « River Valley » en retard à la sphère 19, voir BACKLOG). Leur go mode est correct.

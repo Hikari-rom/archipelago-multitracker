@@ -332,7 +332,8 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [ ] Vérifier sur le vrai slot de natazox que les tickets et le go mode s'affichent (demande l'accord de Romain)
 - [x] Campagne go mode (100 jeux) : Terraria Beta (référence), ArchipelaCode (`go_mode: false`), Emerald (vol gratuit
   relu dans `slot_data`, Terra/Marine Cave fermées) ; détail dans `docs/COMPAT.md` § Go mode
-- [ ] Hollow Knight, seed 201 aux options aléatoires : 5 locations du slot absentes du monde recalculé (à trouver)
+- [ ] Hollow Knight, seeds 201 et 203 aux options aléatoires (202 OK) : 5 locations du slot absentes du monde
+  recalculé, logique annoncée sous-estimée (jamais en avance) ; options en cause à trouver
 - [ ] TerraNil, seed 201 : « River Valley » en retard à la sphère 19 (0 en logique contre 6), retard seulement
 - [ ] Powerwash Simulator : go mode en retard (tuple `goal_level_amount` dans l'apworld sous UT), adaptateur possible
 - [ ] Idées : notification ou ligne du fil au passage en go mode ; go mode des autres joueurs (Room complète, Indices)
