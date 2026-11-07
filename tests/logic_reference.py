@@ -90,7 +90,10 @@ def snapshots(multiworld, player: int) -> list[Snapshot]:
 
 def _counted_by_the_game(multiworld, player: int):
     """Items the world demotes after creating them although the game counts every copy: the reference follows the
-    game (D33). Super Mario Odyssey: the moons of a gated kingdom beyond its leave threshold."""
+    game (D33). Super Mario Odyssey: the moons of a gated kingdom beyond its leave threshold. Jak and Daxter: the
+    Power Cells beyond the progression ones (D35)."""
+    if multiworld.game[player] == "Jak and Daxter: The Precursor Legacy":
+        return lambda item: item.name == "Power Cell"
     if multiworld.game[player] != "Spicy Meatball Overdrive":
         return None
     import importlib

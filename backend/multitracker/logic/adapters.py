@@ -534,9 +534,21 @@ def _smo_received(world: Any, items: list, start: list) -> None:
             item.classification = ItemClassification.progression
 
 
+def _jak1_received(world: Any, items: list, start: list) -> None:
+    """Jak and Daxter: the world makes only the Power Cells it needs progression (total_prog_cells) and the rest
+    filler, and the server sends those copies as filler. The game counts every cell held to open Fire Canyon,
+    Mountain Pass and Lava Tube: count the filler copies too (real room: 25 cells, 3 of them filler, Fire Canyon
+    at 25 stayed out of logic). Same reason as D33."""
+    from BaseClasses import ItemClassification
+    for item in items:
+        if item.name == "Power Cell" and not item.advancement:
+            item.classification = ItemClassification.progression_skip_balancing
+
+
 RECEIVED_HOOKS: dict[str, Callable[[Any, list, list], None]] = {
     "Stardew Valley": _stardew_received,
     "Spicy Meatball Overdrive": _smo_received,
+    "Jak and Daxter: The Precursor Legacy": _jak1_received,
 }
 
 

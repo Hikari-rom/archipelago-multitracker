@@ -431,3 +431,18 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   Terra/Marine Cave, introuvables sans spoiler, restent fermées (Groudon et Kyogre jamais en logique : retard).
 - **Pas fait** : test sur le vrai slot de natazox (la connexion d'une seconde instance à la vraie room a été refusée
   par les permissions de la session) ; go mode pour les slots non suivis (tableau de la room, Indices).
+
+
+## D35 — Jak and Daxter : toutes les Power Cells reçues comptent (2026-11-07, demandé par Romain)
+- **Le problème** : le monde ne crée en progression que les Power Cells dont il a besoin (`total_prog_cells`) ; les
+  autres sont filler et le serveur les envoie comme filler. La logique d'AP ne compte que les items de progression.
+  Sur la vraie room, Romain avait 25 cellules, dont 3 filler, pour un Fire Canyon à 25 : la logique en voyait 22,
+  Fire Canyon restait hors logique alors que le jeu l'ouvrait.
+- **Le jeu compte toutes les cellules** pour ouvrir Fire Canyon, Mountain Pass et Lava Tube. Crochet
+  `RECEIVED_HOOKS` (`_jak1_received`, `adapters.py`) : les Power Cells reçues filler redeviennent progression
+  (`progression_skip_balancing`, comme les autres). Même raisonnement que D33, rien n'est inventé.
+- **Validation** : la référence (`tests/logic_reference.py`, `_counted_by_the_game`) compte aussi toutes les cellules ;
+  `validate_logic.py "Jak and Daxter: The Precursor Legacy" --runs 3` : 3 OK (go mode compris) ;
+  `tests/test_logic_jak.py` (fixture `jak_cells`, seuils de la room) : 22 + 3 filler = 25 de progression.
+- **Effet sur la room** (2026-11-07) : `romain_jak1` passe de 15 à 63 checks en logique (Misty Island seulement →
+  Fire Canyon, Rock Village, Precursor Basin, Lost Precursor City, Boggy Swamp).

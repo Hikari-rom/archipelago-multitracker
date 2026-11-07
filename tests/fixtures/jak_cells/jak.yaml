@@ -1,0 +1,9 @@
+name: Jak
+game: "Jak and Daxter: The Precursor Legacy"
+"Jak and Daxter: The Precursor Legacy":
+  enable_orbsanity: "off"
+  fire_canyon_cell_count: 25
+  mountain_pass_cell_count: 50
+  lava_tube_cell_count: 80
+  enable_ordered_cell_counts: true
+  filler_power_cells_replaced_with_traps: 5
