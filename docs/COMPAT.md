@@ -146,4 +146,32 @@ de chaque joueur de la room (yamls gardés hors du dépôt), puis bout en bout. 
 | Majora's Mask Recompiled | importé (`source: user`) | ✅ 8/8 + 2/2 yaml + e2e `m24k` | activée (yaml), v0.2.11 | adaptateur `_mm_recomp` : prix des boutiques tirés à la génération, relus dans `slot_data["shop_prices_ints"]` |
 | Wikipelago | Dreskn 1.0.3 | ✅ 6/6 + 2/2 yaml + e2e `m24k` | activée (yaml), v0.2.11 | adaptateur `_wikipelago` : round de départ de chaque branche tiré à la génération, relu dans `slot_data["crossroads"]` |
 | TUNIC | silent-destroyer 5.0.2, à la place du core (`replaces_core`, D28) | ✅ 5/5 + 4/4 yaml (2 joueurs, dont grass) + 3/3 sans yaml + e2e `m24l` (sans yaml) | activée, v0.2.14 | se reconstruit depuis le seul `slot_data` (UT) ; adaptateur `_tunic` : avec l'entrance rando, UT déconnecte les entrées tant que le client ne les a pas signalées, reconnectées depuis `slot_data` (`enforce_deferred_connections = "off"`) |
-| Pokemon Emerald | core 0.6.7 (checksum de la room grâce au tri des fichiers de régions, D28) | ✅ 4/4 + run Pokédex (voir notes) + 2/2 yaml (Pokédex) + e2e `m24l` (sauvages aléatoires, sans Dexsanity) | activée (yaml), v0.2.14 | adaptateur `_pokemon_emerald` : avec `wild_pokemon` aléatoire, l'espèce de chaque rencontre sauvage est tirée à la génération (absente du `slot_data`) : « Pokedex - X » et le sceau des Regi ne sont jamais en logique (retard, jamais d'avance, signalé par le sablier « Logique minorée », D32 ; vérifié sur toutes les sphères : seuls des « Pokedex - » en retard). Le Dexsanity impose des Pokémon sauvages aléatoires (`OptionError` sinon) : avec lui, le Pokédex n'est jamais en logique |
+| Pokemon Emerald | core 0.6.7 (checksum de la room grâce au tri des fichiers de régions, D28) | ✅ 4/4 + run Pokédex (voir notes) + 2/2 yaml (Pokédex) + e2e `m24l` (sauvages aléatoires, sans Dexsanity) | activée (yaml), v0.2.14 | adaptateur `_pokemon_emerald` : ville de vol gratuit (`free_fly_location`, tirée à la génération) relue dans `slot_data.free_fly_location_id` (corrigé le 2026-11-07 : avant, l'app la tirait à nouveau, d'où des checks en avance, ex. Mossdeep à la sphère 9 de la seed 201) ; entrées de la Terra Cave et de la Marine Cave tirées au hasard et absentes du `slot_data` : jamais ouvertes (Groudon et Kyogre ne comptent pas pour le but `legendary_hunt`, retard seulement). Avec `wild_pokemon` aléatoire, l'espèce de chaque rencontre sauvage est tirée à la génération (absente du `slot_data`) : « Pokedex - X » et le sceau des Regi ne sont jamais en logique (retard, jamais d'avance, signalé par le sablier « Logique minorée », D32 ; vérifié sur toutes les sphères : seuls des « Pokedex - » en retard). Le Dexsanity impose des Pokémon sauvages aléatoires (`OptionError` sinon) : avec lui, le Pokédex n'est jamais en logique |
+
+## Go mode (D34, campagne du 2026-11-07)
+
+`validate_logic.py` compare aussi le go mode à chaque sphère : la victoire doit être en logique pour l'app au même
+moment que pour le multiworld complet (« go mode ok »). Une avance est une erreur ; un retard est toléré (« late »).
+Campagne : une seed aux options aléatoires (`--first-run 201`) pour chacun des 100 jeux avec logique activée.
+
+- **go mode ok** : 88 jeux, à toutes les sphères.
+- **Corrigé pendant la campagne** :
+  - Terraria Beta : la victoire est un item posé sur la location du boss de but (avec une adresse, pas un
+    événement). Le multiworld complet ne la voit donc qu'une fois le boss battu. L'apworld remplace lui-même la
+    condition sous Universal Tracker par « les locations de but sont atteignables », et la référence fait
+    maintenant de même (`UT_GOAL_REACHABLE` dans `tests/logic_reference.py`) : 2/2 go mode ok (seeds 201, 202).
+  - Pokemon Emerald : ville de vol gratuit rejouée depuis le `slot_data` (voir la ligne du jeu) : 4/4 (201 à 204)
+    et `legendary_hunt` avec Groudon et Kyogre (voir D34).
+- **En retard (toléré)** : Powerwash Simulator (sous UT, l'apworld lit `goal_level_amount` avec une virgule en
+  trop, un tuple : la victoire n'y est jamais vue en logique, ou trop tard).
+- **Exclu (`go_mode: false`)** : ArchipelaCode (sa victoire compte `state.locations_checked`, les locations d'où
+  viennent les items collectés, et non les problèmes résolus par le joueur : sans sens pour l'app, qui collecte
+  les items reçus sans leur location).
+- **Inconnu (pas de go mode)** : jeux dont le monde ne déclare pas de condition de victoire (le client annonce la
+  victoire lui-même) : Deep Rock Galactic, A Dance of Fire and Ice, PEAK, Enter The Gungeon… Fall Guys est
+  couvert par sa location de but (`GOAL_LOCATIONS`, « Win a Final Round »).
+- **Sans go mode à comparer** : The Wind Waker (seed tirée avec `randomize_charts`, logique refusée par
+  conception) ; Hollow Knight (seed 201 : 5 locations du slot absentes du monde recalculé, voir BACKLOG) ;
+  Zuma Deluxe et Trombone Champ (la génération de test échoue, sans rapport avec l'app).
+- **Retards de logique déjà connus ou sans avance** : Stardew Valley (retard d'un point, voir sa ligne), TerraNil
+  (seed 201 : « River Valley » en retard à la sphère 19, voir BACKLOG). Leur go mode est correct.

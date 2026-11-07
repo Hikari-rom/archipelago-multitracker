@@ -422,5 +422,12 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   descripteur) et va dans le yaml dont le monde est régénéré (logique et go mode la suivent ; si le `slot_data`
   fixe déjà l'option, il garde le dernier mot pour la logique). Valeur hors des choix : refusée par l'API, ignorée
   à l'exécution. Quand le but reste inconnu, la carte garde son affichage et dit où le choisir si c'est possible.
+- **Campagne** (100 jeux, `docs/COMPAT.md` § Go mode) : aucune avance restante. Terraria Beta : la référence
+  suit maintenant la condition que l'apworld pose lui-même sous UT (locations de but atteignables), car sa victoire
+  est un item à adresse, vu par le multiworld complet seulement après le boss. ArchipelaCode : `go_mode: false`
+  (victoire = nombre de locations collectées dans l'état, sans rapport avec les problèmes résolus). La campagne a
+  aussi trouvé un vrai bug de logique dans Emerald, sans lien avec le go mode : la ville de vol gratuit était tirée
+  à nouveau au lieu d'être relue dans `slot_data.free_fly_location_id` (checks en avance) ; et les entrées de la
+  Terra/Marine Cave, introuvables sans spoiler, restent fermées (Groudon et Kyogre jamais en logique : retard).
 - **Pas fait** : test sur le vrai slot de natazox (la connexion d'une seconde instance à la vraie room a été refusée
   par les permissions de la session) ; go mode pour les slots non suivis (tableau de la room, Indices).

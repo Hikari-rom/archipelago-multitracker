@@ -492,6 +492,7 @@ apworlds:
     source: user
     logic: true
     needs_yaml: true  # adapter: problems from slot_data, language from the yaml
+    go_mode: false  # victory = len(state.locations_checked), not the problems solved: meaningless for the tracker (D34)
   bloonstd6:
     game: "Bloons TD6"
     source: user

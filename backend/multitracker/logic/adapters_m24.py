@@ -297,21 +297,51 @@ def _tunic(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
 
 @contextlib.contextmanager
 def _pokemon_emerald(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
-    """Pokemon Emerald: with wild Pokemon randomized, create_regions draws which species lives where; each wild slot
-    carries a CATCH_<species> event. Neither slot_data nor the server tell where a species is, so "Pokedex - X"
-    (needs CATCH_X) and the Regi seal (needs CATCH Wailord and Relicanth) cannot be known: never count them in logic
-    (late, never early). Every other rule is exact."""
-    original = world_cls.set_rules
+    """Pokemon Emerald draws three things at generation that its rules depend on.
+    - The free fly city (`free_fly_location`): slot_data gives it (`free_fly_location_id`), replayed exactly. Without
+      it (older slot_data), Littleroot Town, the game's own default and the start: never early.
+    - Terra Cave and Marine Cave entrances (Groudon, Kyogre: legendary hunt goal): neither slot_data nor the server
+      say where they are, so the tool never opens them (late, never early).
+    - With wild Pokemon randomized, create_regions draws which species lives where; each wild slot carries a
+      CATCH_<species> event. Neither slot_data nor the server tell where a species is, so "Pokedex - X" (needs
+      CATCH_X) and the Regi seal (needs CATCH Wailord and Relicanth) cannot be known: never in logic.
+    Every other rule is exact."""
+    module = importlib.import_module(world_cls.__module__)
+    locations_module = importlib.import_module(f"{world_cls.__module__}.locations")
+    original_rules, original_fly, original_caves = world_cls.set_rules, module.set_free_fly, \
+        module.set_legendary_cave_entrances
+    fly_id = slot_data.get("free_fly_location_id")
+
+    def set_free_fly(world: Any) -> None:
+        original_fly(world)
+        names = {v: k for k, v in locations_module.VISITED_EVENT_NAME_TO_ID.items()}
+        name = names.get(fly_id) if isinstance(fly_id, int) else None
+        if name is None:
+            name = "EVENT_VISITED_LITTLEROOT_TOWN"
+        world.free_fly_location_id = locations_module.VISITED_EVENT_NAME_TO_ID[name]
+        location = world.multiworld.get_location("FREE_FLY_LOCATION", world.player)
+        location.item = None
+        location.locked = False
+        location.place_locked_item(world.create_event(name))
+
+    def set_legendary_cave_entrances(world: Any) -> None:
+        original_caves(world)
+        for name in ("TERRA_CAVE_LOCATION", "MARINE_CAVE_LOCATION"):
+            world.multiworld.get_location(name, world.player).access_rule = lambda state: False
 
     def set_rules(self) -> None:
-        original(self)
+        original_rules(self)
+        for name in ("TERRA_CAVE_LOCATION", "MARINE_CAVE_LOCATION"):  # set_rules may have set a rule on them
+            self.multiworld.get_location(name, self.player).access_rule = lambda state: False
         if self.options.wild_pokemon.value == self.options.wild_pokemon.option_vanilla:
             return
         for location in self.multiworld.get_locations(self.player):
             if location.name.startswith("Pokedex - ") or location.name == "EVENT_UNDO_REGI_SEAL":
                 location.access_rule = lambda state: False
 
-    with patch_attr(world_cls, "set_rules", set_rules):
+    with patch_attr(world_cls, "set_rules", set_rules), \
+            patch_attr(module, "set_free_fly", set_free_fly), \
+            patch_attr(module, "set_legendary_cave_entrances", set_legendary_cave_entrances):
         yield
 
 
@@ -431,10 +461,18 @@ def _factorio_note(world: Any) -> str | None:
 
 
 def _pokemon_emerald_note(world: Any) -> str | None:
-    if world.options.wild_pokemon.value == world.options.wild_pokemon.option_vanilla:
+    options = world.options
+    notes = []
+    if options.wild_pokemon.value != options.wild_pokemon.option_vanilla:
+        notes.append("avec les Pokémon sauvages aléatoires, le serveur ne dit pas où vit chaque espèce. "
+                     "Les « Pokedex - … » ne sont jamais comptés en logique.")
+    if options.goal.value == options.goal.option_legendary_hunt \
+            and {"Groudon", "Kyogre"} & set(options.allowed_legendary_hunt_encounters.value):
+        notes.append("l'entrée de la Terra Cave et de la Marine Cave est tirée au hasard et le serveur ne la donne pas : "
+                     "Groudon et Kyogre ne comptent jamais pour le go mode.")
+    if not notes:
         return None
-    return ("Logique minorée : avec les Pokémon sauvages aléatoires, le serveur ne dit pas où vit chaque espèce. "
-            "Les « Pokedex - … » ne sont jamais comptés en logique.")
+    return "Logique minorée : " + " ".join(notes)
 
 
 def _factorio_received(world: Any, items: list, start: list) -> None:

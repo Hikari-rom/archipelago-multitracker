@@ -104,6 +104,12 @@ def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
     return reference_logic(multiworld, player, snap)[0]
 
 
+# Worlds whose victory needs an item locked at one of their own (real) goal locations: the full multiworld only
+# sees it once the location is checked, so its go mode is "the goal locations are reachable", which is exactly
+# the completion rule these worlds set under Universal Tracker (Terraria Beta: `set_rules`, `is_ut`).
+UT_GOAL_REACHABLE = {"Terraria Beta"}
+
+
 def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], bool | None]:
     """Locations in logic at this snapshot, and whether the victory is (go mode), on the full multiworld."""
     import copy
@@ -120,6 +126,9 @@ def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], 
     reachable = {loc.address for loc in multiworld.get_reachable_locations(state, player)
                  if loc.address is not None and loc.address in snap.missing}
     from multitracker.logic.ut_worker import GOAL_LOCATIONS, has_real_completion
+    world = multiworld.worlds[player]
+    if multiworld.game[player] in UT_GOAL_REACHABLE:  # the world's own go mode under UT, on the full multiworld
+        return reachable, all(state.can_reach_location(loc, player) for loc in world.goal_locations)
     condition = multiworld.completion_condition[player]
     if has_real_completion(condition):
         return reachable, bool(condition(state))
