@@ -34,9 +34,16 @@ class GoalContext:
     goal: bool  # the server says the slot reached its goal
     checked_ids: set[int] = field(default_factory=set)  # ids of the checked locations
     sources: set[str] = field(default_factory=set)
+    overrides: dict[str, Any] = field(default_factory=dict)  # victory chosen by hand {option: value} (D34)
+    override_names: dict[str, str] = field(default_factory=dict)  # option -> its display name
 
     def opt(self, sd_key: str | None, yaml_key: str | None = None, default: Any = None) -> Any:
-        """Option value: slot_data first (what the generator really used), then the yaml, then `default`."""
+        """Option value: the goal chosen by hand, then slot_data (what the generator really used), then the yaml,
+        then `default`."""
+        for key in (yaml_key, sd_key):
+            if key and key in self.overrides:
+                self.sources.add("manuel")
+                return self.overrides[key]
         if sd_key and sd_key in self.slot_data:
             self.sources.add("slot_data")
             return self.slot_data[sd_key]
@@ -595,11 +602,18 @@ DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
 }
 
 
+def generic(c: GoalContext) -> Goal:
+    """A game without describer whose victory was chosen by hand: say which one."""
+    parts = [f"{c.override_names.get(option, option)} : {value}" for option, value in c.overrides.items()]
+    c.sources.add("manuel")
+    return Goal(c, ", ".join(parts)).final("Objectif atteint")
+
+
 def describe(ctx: GoalContext) -> dict[str, Any] | None:
-    """The goal of the slot, or None when the game has no describer."""
+    """The goal of the slot, or None when the game has no describer (and no victory chosen by hand)."""
     fn = DESCRIBERS.get(ctx.game)
     if fn is None:
-        return None
+        return generic(ctx).to_json() if ctx.overrides else None
     return fn(ctx).to_json()
 
 

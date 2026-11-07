@@ -158,6 +158,18 @@ class UTLogicEngine(LogicEngine):
                 return None
         return res.get("checksums") if res.get("state") == "ok" else None
 
+    async def goal_options(self, games: list[str]) -> dict[str, list[dict[str, Any]]] | None:
+        async with self._lock:
+            if self._proc is None or not self._proc.is_alive():
+                await asyncio.to_thread(self._spawn)
+            try:
+                res = await asyncio.to_thread(self._roundtrip, {"op": "goal_options", "games": list(games)})
+            except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
+                log.warning("logic worker failed (%s), restarting it", exc)
+                await asyncio.to_thread(self._kill)
+                return None
+        return res.get("options") if res.get("state") == "ok" else None
+
     async def compute(self, request: LogicRequest) -> LogicResult:
         if not self.games.get(request.game, False):
             return LogicResult("unavailable", message=no_logic_reason(request.game, request.game in self.games))
@@ -166,7 +178,8 @@ class UTLogicEngine(LogicEngine):
                "yaml": str(request.yaml) if request.yaml else None,
                "items": request.items, "missing": sorted(request.missing),
                "checked": sorted(request.checked), "seed_name": request.seed_name,
-               "checksum": request.checksum, "explain": sorted(request.explain)}
+               "checksum": request.checksum, "explain": sorted(request.explain),
+               "goal": dict(request.goal)}
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)

@@ -21,6 +21,7 @@ class LogicRequest:
     seed_name: str | None = None
     checksum: str | None = None  # datapackage checksum of the game in the room (RoomInfo); "" = unknown, None = no check
     explain: set[int] = field(default_factory=set)  # locations (hinted ones) to say what blocks, when out of logic
+    goal: dict[str, Any] = field(default_factory=dict)  # victory chosen by hand: {option: value} (D34)
 
 
 @dataclass
@@ -56,6 +57,10 @@ class LogicEngine:
 
     async def forget(self, slot_name: str) -> None:
         """Free what the engine keeps for a slot (its regenerated world)."""
+
+    async def goal_options(self, games: list[str]) -> dict[str, list[dict[str, Any]]] | None:
+        """Options choosing the victory of each game (D34); None when unknown (no worker)."""
+        return None
 
     async def checksums(self, games: list[str]) -> dict[str, str | None] | None:
         """Local datapackage checksum of each game (None: world not loaded); None when unknown (no worker)."""

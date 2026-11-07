@@ -66,6 +66,7 @@ class SlotBody(BaseModel):
     game: str | None = None
     yaml: str | None = None
     owner: str | None = None
+    goal: dict[str, str] | None = None  # victory chosen by hand (D34); None = keep, {} = automatic
 
 
 class ApworldsImportBody(BaseModel):
@@ -80,6 +81,7 @@ class ConfigBody(BaseModel):
     scout_checked: bool | None = None  # None = keep the current setting
     room_dashboard: bool | None = None  # None = keep the current setting
     hints_foreign_logic: bool | None = None  # None = keep the current setting
+    goal_override: bool | None = None  # None = keep the current setting
     slots: list[SlotBody]
 
 
@@ -224,17 +226,28 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             info["imported"] = game in imported
         return games
 
+    async def games_with_goals(service: Service) -> dict[str, dict[str, Any]]:
+        games = await asyncio.to_thread(games_info)
+        options = await service.goal_options_for(sorted(set(games) | {s.game for s in service.config.slots if s.game}))
+        for game, opts in options.items():
+            games.setdefault(game, {"logic": False, "needs_yaml": False, "user": False, "imported": False})
+            games[game]["goal_options"] = opts
+        return games
+
     @app.get("/api/config")
     async def get_config(request: Request) -> dict[str, Any]:
-        cfg = get_service(request).config
+        service = get_service(request)
+        cfg = service.config
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
                 "wake_room": cfg.wake_room, "scout_checked": cfg.scout_checked,
                 "room_dashboard": cfg.room_dashboard, "hints_foreign_logic": cfg.hints_foreign_logic,
+                "goal_override": cfg.goal_override,
                 "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
-                           "yaml": _rel(s.yaml)} for s in cfg.slots],
-                "player_yamls": [y["path"] for y in yamls], "yamls": yamls, "games": await asyncio.to_thread(games_info)}
+                           "yaml": _rel(s.yaml), "goal": s.goal or {}} for s in cfg.slots],
+                "player_yamls": [y["path"] for y in yamls], "yamls": yamls,
+                "games": await games_with_goals(service)}
 
     @app.post("/api/discover")
     async def discover(body: DiscoverBody, request: Request) -> dict[str, Any]:
@@ -328,6 +341,19 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         if origin.rstrip("/") not in extra:  # e.g. a reverse proxy / vite dev server: MT_ALLOWED_ORIGINS
             raise HTTPException(403, "origine refusée (voir MT_ALLOWED_ORIGINS)")
 
+    async def check_goals(service: Service, slots: list[SlotConfig]) -> None:
+        """A goal chosen by hand must be one of the victory conditions of the slot's game."""
+        chosen = [s for s in slots if s.goal]
+        if not chosen:
+            return
+        options = await service.goal_options_for(sorted({s.game for s in chosen if s.game}))
+        for slot in chosen:
+            offered = {o["option"]: o["choices"] for o in options.get(slot.game or "", [])}
+            for option, value in slot.goal.items():
+                if value not in offered.get(option, ()):
+                    raise ConfigError(f"{slot.name} : « {option}: {value} » n'est pas une condition de victoire "
+                                      f"de {slot.game or 'ce jeu'}")
+
     @app.put("/api/config")
     async def put_config(body: ConfigBody, request: Request) -> dict[str, Any]:
         same_origin(request)
@@ -345,8 +371,12 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             names = [s.name.strip() for s in body.slots]
             if any(not n for n in names) or len(set(names)) != len(names):
                 raise ConfigError("noms de slots vides ou en double")
+            previous = {s.name: s for s in current.slots}
             slots = [SlotConfig(name=s.name.strip(), game=s.game or None, yaml=safe_yaml_path(s.yaml),
-                                owner=(s.owner or "").strip() or None) for s in body.slots]
+                                owner=(s.owner or "").strip() or None,
+                                goal=(previous[s.name.strip()].goal if s.goal is None and s.name.strip() in previous
+                                      else s.goal or None)) for s in body.slots]
+            await check_goals(service, slots)
         except ConfigError as exc:
             raise HTTPException(400, str(exc)) from exc
         new = RoomConfig(server=(body.server or "").strip(), slots=slots, path=current.path,
@@ -356,7 +386,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                          scout_checked=current.scout_checked if body.scout_checked is None else body.scout_checked,
                          room_dashboard=current.room_dashboard if body.room_dashboard is None else body.room_dashboard,
                          hints_foreign_logic=(current.hints_foreign_logic if body.hints_foreign_logic is None
-                                              else body.hints_foreign_logic))
+                                              else body.hints_foreign_logic),
+                         goal_override=current.goal_override if body.goal_override is None else body.goal_override)
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
 

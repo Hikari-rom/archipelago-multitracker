@@ -143,7 +143,8 @@ def _accepted_value(option_names: set[str] | Mapping[str, type], option: str,
 
 def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Path,
                         slot_data: dict[str, Any] | None = None,
-                        option_names: set[str] | Mapping[str, type] | None = None) -> tuple[Path, list[str]]:
+                        option_names: set[str] | Mapping[str, type] | None = None,
+                        goal: Mapping[str, Any] | None = None) -> tuple[Path, list[str]]:
     """Copy the player's yaml for this game into out_dir, with `name` forced to the slot name.
 
     A yaml file may hold several documents (one per game): keep the one for this game.
@@ -185,6 +186,11 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
                 still_random.append(option)
             else:
                 section[option] = real
+    if goal:
+        section = dict(section) if isinstance(section, dict) else {}
+        applied = apply_goal(section, goal, option_names)
+        still_random = [o for o in still_random if o not in applied]
+    if isinstance(section, dict):
         doc[game] = section
     out = out_dir / "player.yaml"
     out.write_text(yaml.safe_dump(doc, allow_unicode=True, sort_keys=False), encoding="utf-8")
@@ -203,7 +209,8 @@ class SlotLogic:
 
     def __init__(self, slot_name: str, game: str, team: int, slot: int, slot_data: dict[str, Any],
                  yaml_path: Path | None, location_ids: set[int] | None = None,
-                 room_checksum: str | None = None, start_items: list[int] | None = None) -> None:
+                 room_checksum: str | None = None, start_items: list[int] | None = None,
+                 goal: dict[str, Any] | None = None) -> None:
         setup_ap()
         import worlds
         from worlds.AutoWorld import AutoWorldRegister
@@ -241,7 +248,7 @@ class SlotLogic:
         start_names = [world_cls.item_id_to_name[code] for code in start_items or ()
                        if code in world_cls.item_id_to_name]
         with regeneration_patch(game, world_cls, slot_data, set(location_ids or ()), start_names):
-            self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path)
+            self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path, goal or {})
         if core.multiworld is None or core.player_id is None:
             refused = adapter_refusal(core.gen_error or "")
             if refused:
@@ -263,15 +270,15 @@ class SlotLogic:
                         slot_name, len(foreign), self.mode, ", ".join(names[:10]) + (" ..." if len(names) > 10 else ""))
 
     def _regenerate(self, core, world_cls, slot_name: str, game: str, slot_data: dict[str, Any],
-                    yaml_path: Path | None) -> None:
+                    yaml_path: Path | None, goal: dict[str, Any]) -> None:
+        options = dict(world_cls.options_dataclass.type_hints)
         if game in YAML_PLUS_SLOT_DATA and yaml_path is not None and Path(yaml_path).is_file() \
                 and getattr(world_cls, "ut_can_gen_without_yaml", False):
             # UT's slot_data-only path writes an empty yaml (all defaults) then applies slot_data on top:
             # give it the player's yaml instead, for the options slot_data lacks.
             def write_player_yaml(game_name: str, player_name: str, tempdir: str) -> None:
                 _, self.random_options = prepare_player_yaml(
-                    Path(yaml_path), player_name, game_name, Path(tempdir), slot_data,
-                    dict(world_cls.options_dataclass.type_hints))
+                    Path(yaml_path), player_name, game_name, Path(tempdir), slot_data, options, goal)
             core.write_empty_yaml = write_player_yaml
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "yaml+slot_data"
@@ -279,6 +286,15 @@ class SlotLogic:
         if game in YAML_REQUIRED:
             raise LogicUnavailable(YAML_NEEDED if yaml_path is None else yaml_missing(yaml_path))
         if getattr(world_cls, "ut_can_gen_without_yaml", False):
+            if goal:  # UT's empty yaml, with the goal chosen by hand (slot_data still wins where it has the option)
+                def write_goal_yaml(game_name: str, player_name: str, tempdir: str) -> None:
+                    import yaml
+                    section: dict[str, Any] = {}
+                    apply_goal(section, goal, options)
+                    Path(tempdir, "yamlless_yaml.yaml").write_text(
+                        yaml.safe_dump({"name": player_name, "game": game_name, game_name: section},
+                                       allow_unicode=True), encoding="utf-8")
+                core.write_empty_yaml = write_goal_yaml
             core.initalize_tracker_core(world_cls, slot_data)
             self.mode = "slot_data"
         elif yaml_path is not None:
@@ -286,8 +302,7 @@ class SlotLogic:
                 raise LogicUnavailable(yaml_missing(yaml_path))
             with tempfile.TemporaryDirectory(prefix="mt-yaml-") as tmp:
                 _, self.random_options = prepare_player_yaml(
-                    Path(yaml_path), slot_name, game, Path(tmp), slot_data,
-                    dict(world_cls.options_dataclass.type_hints))
+                    Path(yaml_path), slot_name, game, Path(tmp), slot_data, options, goal)
                 core.player_id = 1
                 core.run_generator(None, tmp)  # single-player regeneration from the yaml
                 if core.multiworld is not None:
@@ -483,6 +498,37 @@ class SlotLogic:
 GOAL_LOCATIONS = {"Fall Guys": "Win a Final Round"}
 
 
+# Options that choose the victory of a game ("conditions de victoire" of the Configuration page, D34).
+GOAL_OPTION_NAME = re.compile(r"goal|victory|completion|win_?con|ending", re.IGNORECASE)
+NOT_GOAL_OPTION_NAME = re.compile(r"location|method", re.IGNORECASE)  # how the goal's checks are handled
+
+
+def goal_options_of(world_cls) -> list[dict[str, Any]]:
+    """The Choice options of a world that choose its victory: [{"option", "display", "choices": [keys]}]."""
+    from Options import Choice
+    out = []
+    for name, cls in world_cls.options_dataclass.type_hints.items():
+        if not GOAL_OPTION_NAME.search(name) or NOT_GOAL_OPTION_NAME.search(name) \
+                or not isinstance(cls, type) or not issubclass(cls, Choice):
+            continue
+        choices = [key for key, _ in sorted(cls.options.items(), key=lambda kv: kv[1]) if not key.startswith("random")]
+        if len(choices) > 1:
+            out.append({"option": name, "display": str(getattr(cls, "display_name", name) or name),
+                        "choices": choices})
+    return out
+
+
+def apply_goal(section: dict[str, Any], goal: Mapping[str, Any] | None, option_names) -> list[str]:
+    """Put the goal chosen by hand (D34) in a yaml section; the values the option rejects are left out."""
+    applied = []
+    for option, value in (goal or {}).items():
+        accepted = _accepted_value(option_names or {}, option, value) if option in (option_names or {}) else None
+        if accepted is not None:
+            section[option] = accepted
+            applied.append(option)
+    return applied
+
+
 def has_real_completion(condition) -> bool:
     """False for the `lambda state: True` that MultiWorld sets for every player before the world sets its own."""
     code = getattr(condition, "__code__", None)
@@ -533,7 +579,7 @@ def request_key(req: dict[str, Any]) -> str:
         except OSError:
             yaml_digest = "missing"
     payload = json.dumps([req.get("seed_name"), req["game"], req["team"], req["slot"], req.get("slot_data"),
-                          yaml_digest, req.get("checksum"), start_items(req)],
+                          yaml_digest, req.get("checksum"), start_items(req), req.get("goal") or {}],
                          sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -553,6 +599,18 @@ class Worker:
             import worlds
             packages = worlds.network_data_package["games"]
             return {"state": "ok", "checksums": {g: packages.get(g, {}).get("checksum") for g in req.get("games", [])}}
+        if req.get("op") == "goal_options":  # victory conditions to choose from (Configuration, D34)
+            setup_ap()
+            from worlds.AutoWorld import AutoWorldRegister
+            options = {}
+            for game in req.get("games", []):
+                world_cls = AutoWorldRegister.world_types.get(game)
+                try:
+                    options[game] = goal_options_of(world_cls) if world_cls is not None else []
+                except Exception:  # noqa: BLE001 - one odd world must not hide the others
+                    log.warning("goal options of %s: %s", game, traceback.format_exc())
+                    options[game] = []
+            return {"state": "ok", "options": options}
         if req.get("op") == "forget":
             if self.slots.pop(req["slot_name"], None) is not None:
                 gc.collect()  # regenerated multiworlds are cyclic
@@ -566,7 +624,7 @@ class Worker:
                     name, req["game"], req["team"], req["slot"], req.get("slot_data") or {},
                     Path(req["yaml"]) if req.get("yaml") else None,
                     set(req.get("missing", [])) | set(req.get("checked", [])), req.get("checksum"),
-                    start_items(req))
+                    start_items(req), req.get("goal") or None)
             except LogicUnavailable as exc:
                 logic = LogicUnavailable(str(exc))  # no traceback: it would keep the half-built world alive
             except Exception as exc:

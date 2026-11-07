@@ -22,6 +22,7 @@ class SlotConfig:
     game: str | None = None
     yaml: Path | None = None  # player yaml, used by the logic engine when the world needs it
     owner: str | None = None  # player owning the slot (multi-player support)
+    goal: dict[str, str] | None = None  # victory chosen by hand {option: value}, used when goal_override is on (D34)
 
 
 @dataclass
@@ -36,6 +37,7 @@ class RoomConfig:
     room_dashboard: bool = False  # room-wide dashboard (roomfeed): extra listener + check log
     # Indices page: follow (read-only) the untracked slots that hold hinted items of tracked slots, for their logic
     hints_foreign_logic: bool = True
+    goal_override: bool = False  # the goals chosen by hand in the Configuration replace the automatic ones (D34)
 
     def slot(self, name: str) -> SlotConfig | None:
         return next((s for s in self.slots if s.name == name), None)
@@ -69,12 +71,16 @@ def load(path: Path | None = None) -> RoomConfig:
             yaml_path = Path(yaml_path)
             if not yaml_path.is_absolute():
                 yaml_path = ROOT / yaml_path
-        slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner")))
+        goal = entry.get("goal")
+        goal = {str(k): str(v) for k, v in goal.items()} if isinstance(goal, dict) and goal else None
+        slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner"),
+                                goal=goal))
     return RoomConfig(server=str(raw.get("server") or ""), password=str(raw.get("password") or ""), slots=slots,
                       path=path, room_url=raw.get("room_url") or None, wake_room=raw.get("wake_room") is True,
                       scout_checked=raw.get("scout_checked") is not False,
                       room_dashboard=raw.get("room_dashboard") is True,
-                      hints_foreign_logic=raw.get("hints_foreign_logic") is not False)
+                      hints_foreign_logic=raw.get("hints_foreign_logic") is not False,
+                      goal_override=raw.get("goal_override") is True)
 
 
 PLAYERS_DIR = ROOT / "config" / "players"
@@ -106,6 +112,7 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
     data["scout_checked"] = cfg.scout_checked
     data["room_dashboard"] = cfg.room_dashboard
     data["hints_foreign_logic"] = cfg.hints_foreign_logic
+    data["goal_override"] = cfg.goal_override
     data["slots"] = []
     for slot in cfg.slots:
         entry: dict = {"name": slot.name}
@@ -118,6 +125,8 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
                 entry["yaml"] = str(slot.yaml)
         if slot.owner:
             entry["owner"] = slot.owner
+        if slot.goal:
+            entry["goal"] = dict(slot.goal)
         data["slots"].append(entry)
     path.parent.mkdir(parents=True, exist_ok=True)
     content = ("# Écrit par l'app (page Configuration). Modifiable à la main.\n"

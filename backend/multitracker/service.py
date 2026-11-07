@@ -71,12 +71,49 @@ class Service:
         self._reload_lock = asyncio.Lock()
         self._sent_index_cache: tuple[tuple, dict] | None = None
         self._explained: dict[str, set[int]] = {}  # hinted locations the last logic request asked about
+        self.goal_options: dict[str, list[dict[str, Any]]] = {}  # game -> options choosing its victory (D34)
+        self._goal_options_task: asyncio.Task | None = None
         self.hints = HintsBoard(self)
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
         await self.logic_engine.start()
         self._start_trackers()
+        self._goal_options_task = asyncio.create_task(self._load_goal_options())
+
+    async def _load_goal_options(self) -> None:
+        """Victory conditions of the tracked games (summary "goal_choosable", goals chosen by hand)."""
+        try:
+            games = [g for g in {s.game for s in self.config.slots} | {t.state.game for t in self.trackers.values()} if g]
+            await self.goal_options_for(games)
+        except Exception:  # noqa: BLE001 - only a hint in the summary
+            log.exception("goal options could not be loaded")
+            return
+        self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
+
+    async def goal_options_for(self, games: list[str]) -> dict[str, list[dict[str, Any]]]:
+        """Options choosing the victory of each game, asked once to the logic worker and kept."""
+        missing = sorted({g for g in games if g and g not in self.goal_options})
+        if missing:
+            got = await self.logic_engine.goal_options(missing)
+            if got is not None:
+                self.goal_options.update({g: got.get(g) or [] for g in missing})
+        return {g: self.goal_options[g] for g in games if g in self.goal_options}
+
+    def goal_choice(self, name: str, config: RoomConfig | None = None) -> dict[str, str]:
+        """The victory chosen by hand for a slot, when the Configuration option is on (D34); values the game does
+        not offer (another apworld version) are left out."""
+        config = config or self.config
+        slot = next((s for s in config.slots if s.name == name), None)
+        if not config.goal_override or slot is None or not slot.goal:
+            return {}
+        tracker = self.trackers.get(name)
+        game = (tracker.state.game if tracker else None) or slot.game
+        known = self.goal_options.get(game) if game else None
+        if known is None:
+            return dict(slot.goal)
+        choices = {o["option"]: o["choices"] for o in known}
+        return {k: v for k, v in slot.goal.items() if v in choices.get(k, ())}
 
     def _start_trackers(self) -> None:
         self.current_server = self.config.server
@@ -147,6 +184,8 @@ class Service:
         self._publish_task = self._room_task = None
 
     async def stop(self) -> None:
+        if self._goal_options_task is not None:
+            self._goal_options_task.cancel()
         await self._stop_trackers()
         await self.logic_engine.stop()
 
@@ -170,10 +209,13 @@ class Service:
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
         self._publish_room()
         self.hints.reconcile_soon()  # tracked slots or the option changed
+        if any(s.game and s.game not in self.goal_options for s in config.slots):
+            self._goal_options_task = asyncio.create_task(self._load_goal_options())
 
     async def _update_slots(self, config: RoomConfig, before_start=None) -> None:
         """Same server and room: reconnect only the slots that changed (added, removed, or another game)."""
         old, new = self.slot_configs, {s.name: s for s in config.slots}
+        old_goals = {n: self.goal_choice(n) for n in old}
         gone = [n for n in old if n not in new or (new[n].game or "") != (old[n].game or "")]
         feed_changed = (config.room_dashboard != self.config.room_dashboard
                         or (config.room_dashboard and list(new) != list(old)))  # first slot and tracked set
@@ -189,9 +231,9 @@ class Service:
         for name, slot in new.items():
             if name not in self.trackers:
                 self._start_tracker(slot)
-            elif _same_yaml(slot.yaml, old[name].yaml):
+            elif _same_yaml(slot.yaml, old[name].yaml) and self.goal_choice(name) == old_goals.get(name):
                 continue
-            elif self.trackers[name].state.status == "connected":  # another yaml: same items, new logic
+            elif self.trackers[name].state.status == "connected":  # another yaml or goal: same items, new logic
                 self._session[name] = self._session.get(name, 0) + 1
                 self.logic[name] = LogicResult("pending")
                 self._schedule_logic(name)
@@ -215,6 +257,8 @@ class Service:
         """Restart the logic worker (it loads the worlds once, e.g. newly imported apworlds) and recompute every slot."""
         await self.logic_engine.stop()
         await self.logic_engine.start()
+        self.goal_options.clear()  # other apworlds, other options
+        self._goal_options_task = asyncio.create_task(self._load_goal_options())
         for name, tracker in self.trackers.items():
             self._session[name] = self._session.get(name, 0) + 1  # drop results computed by the old worker
             self.logic[name] = LogicResult("pending")
@@ -341,7 +385,7 @@ class Service:
                                    items=list(st.items), missing=set(st.missing), checked=set(st.checked),
                                    seed_name=st.seed_name,
                                    checksum=st.datapackage_checksums.get(st.game) or "",  # "": unknown (D12)
-                                   explain=hinted_locations(st) & st.missing)
+                                   explain=hinted_locations(st) & st.missing, goal=self.goal_choice(name))
             self._explained[name] = request.explain
             started = time.perf_counter()
             try:
@@ -537,6 +581,7 @@ class Service:
                       "in_my_world_in_logic": hinted_in_logic},
             "goal": st.goal_reached,
             "go_mode": self.go_mode(name),
+            "goal_choosable": bool(self.goal_options.get(st.game or cfg.game or "")),  # a victory can be chosen
             "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
             "sent": self._sent_counts(name),
             "logic": logic.to_json(),
@@ -557,7 +602,8 @@ class Service:
             received=Counter(self.datapackage.item_name(game, i.get("item")) for i in st.items),
             checked={names(game, loc) for loc in st.checked},
             locations={names(game, loc) for loc in st.checked | st.missing},
-            goal=st.goal_reached, checked_ids=set(st.checked))
+            goal=st.goal_reached, checked_ids=set(st.checked), overrides=self.goal_choice(name),
+            override_names={o["option"]: o["display"] for o in self.goal_options.get(game, [])})
         try:
             return describe_goal(ctx)
         except Exception:  # noqa: BLE001  a describer must never break the slot's summary

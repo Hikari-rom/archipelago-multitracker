@@ -28,6 +28,7 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
   },
   "goal": false,                        // but atteint
   "go_mode": false,                     // go mode (D34) : la victoire est en logique, but pas encore atteint
+  "goal_choosable": true,               // le jeu a des conditions de victoire à choisir (Configuration, D34)
   "logic": {
     "state": "ok",                      // ok | unavailable | pending | error
     "count": 14,                        // nombre de locations en logique (si state == ok)
@@ -42,7 +43,7 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
     "counters": [{"label": "Strawberry", "current": 12, "target": 40}],  // + "detail" optionnel
     "steps": [{"label": "Finir The Summit A (The Summit A - Level Clear)", "done": false}],  // done null : invisible pour un tracker
     "note": null,                       // explication optionnelle
-    "source": "slot_data"               // slot_data | yaml | slot_data + yaml
+    "source": "slot_data"               // slot_data | yaml | manuel, joints par « + » (manuel : but choisi, D34)
   },
   "updated_at": 1791593222.5,
   "last_check_at": 1791593100.0         // dernier check de ce slot vu par l'app (epoch), null avant le premier
@@ -145,15 +146,20 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
   "scout_checked": true,                    // contenu des checks faits demandé au serveur (Historique, D20)
  "room_dashboard": false,                  // tableau de bord de la room complète (désactivé par défaut)
  "hints_foreign_logic": true,              // page Indices : accessibilité chez les autres joueurs (D30)
+ "goal_override": false,                   // buts choisis à la main pris en compte (désactivé par défaut, D34)
  "has_backup": true,                       // config/room.yaml.bak existe (bouton « Restaurer »)
- "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}],
+ "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml",
+            "goal": {}}],                  // but choisi à la main {option: valeur}, {} = automatique
  "player_yamls": ["config/players/kh2.yaml", "config/players/romain/romain_kh2.yaml"],
  "yamls": [{"path": "config/players/romain/romain_kh2.yaml",
             "players": [{"name": "romain_kh2", "game": "Kingdom Hearts 2"}],   // un par document du yaml
             "error": null}],                                                    // ou "yaml illisible : …"
  "games": {"Kingdom Hearts 2": {"logic": true, "needs_yaml": true,          // depuis config/apworlds.yaml
                                 "user": false,       // apworld pas fourni par l'app, à importer (D27)
-                                "imported": false}}} // importé dans data/apworlds/
+                                "imported": false,   // importé dans data/apworlds/
+                                // conditions de victoire possibles (options Choice de l'apworld, D34)
+                                "goal_options": [{"option": "Goal", "display": "Goal",
+                                                  "choices": ["three_proofs", "lucky_emblem_hunt", "hitlist"]}]}}}
 ```
 Le mot de passe n'est jamais renvoyé. `yamls` couvre `config/players/` et ses sous-dossiers (500 fichiers au plus).
 
@@ -186,13 +192,16 @@ document avec `name` et `game`). Réponse `{"path": "...", "players": [...], "st
  "wake_room": false,                                 // omis = garder le réglage actuel
  "room_dashboard": false,                            // omis = garder le réglage actuel
  "hints_foreign_logic": true,                        // omis = garder le réglage actuel
- "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml"}]}
+ "goal_override": false,                             // omis = garder le réglage actuel
+ "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml",
+            "goal": {"Goal": "hitlist"}}]}           // omis = garder, {} = automatique
 ```
 Écrit `config/room.yaml` (l'ancienne version va dans `config/room.yaml.bak`) et recharge les connexions (un `snapshot`
 SSE suit). `yaml` doit être un fichier de `config/players/` (sinon 400). Seul ce qui change se reconnecte (D29) : autre
 serveur, room, mot de passe ou `scout_checked` → tous les slots ; sinon les slots retirés se déconnectent, les ajoutés
 se connectent (et ceux qui changent de jeu se reconnectent), les autres restent connectés ; un autre `yaml` relance
-seulement le calcul de la logique. Enregistrer sans rien changer ne déconnecte rien.
+seulement le calcul de la logique (de même qu'un autre but choisi). Un `goal` hors des `goal_options` du jeu est
+refusé (400). Enregistrer sans rien changer ne déconnecte rien.
 
 ### `POST /api/config/restore`
 Échange `config/room.yaml` et `config/room.yaml.bak` (un deuxième appel annule le premier) et recharge les connexions.
