@@ -15,6 +15,7 @@ from .goals import GoalContext, describe as describe_goal, yaml_options
 from .hints import HintsBoard, hinted_locations
 from .history import History
 from .logic import LogicEngine, LogicRequest, LogicResult, NullLogicEngine
+from .logic.engine import go_mode_disabled
 from .roomfeed.feed import RoomFeed
 from .store import Store
 
@@ -112,7 +113,16 @@ class Service:
             return None
         logic = self.logic.get(name)
         return bool(logic is not None and logic.state == "ok" and not logic.in_logic
-                    and not tracker.state.goal_reached and tracker.state.missing)
+                    and not tracker.state.goal_reached and tracker.state.missing and not self.go_mode(name))
+
+    def go_mode(self, name: str) -> bool:
+        """The victory of a tracked slot is in logic and not reached yet: it only has to go for it (D34)."""
+        tracker = self.trackers.get(name)
+        logic = self.logic.get(name)
+        if tracker is None or logic is None or logic.state != "ok" or logic.goal_in_logic is not True:
+            return False
+        game = tracker.state.game or self.slot_configs[name].game
+        return not tracker.state.goal_reached and game not in go_mode_disabled()
 
     async def _stop_roomfeed(self) -> None:
         if self.roomfeed is not None:
@@ -526,6 +536,7 @@ class Service:
                       "in_my_world": sum(1 for h in in_my_world if not h["found"]),
                       "in_my_world_in_logic": hinted_in_logic},
             "goal": st.goal_reached,
+            "go_mode": self.go_mode(name),
             "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
             "sent": self._sent_counts(name),
             "logic": logic.to_json(),

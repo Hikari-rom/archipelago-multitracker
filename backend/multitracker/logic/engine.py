@@ -44,6 +44,26 @@ def game_catalog(path: Path = APWORLDS_CONFIG) -> dict[str, dict[str, bool]]:
             for entry in (config.get("apworlds") or {}).values() if entry.get("game")}
 
 
+_go_mode_cache: tuple[float, set[str]] | None = None
+
+
+def go_mode_disabled(path: Path = APWORLDS_CONFIG) -> set[str]:
+    """Games with `go_mode: false` in config/apworlds.yaml (victory condition not reliable, D34). Cached by mtime."""
+    global _go_mode_cache
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return set()
+    if _go_mode_cache is None or _go_mode_cache[0] != mtime:
+        try:
+            config = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError):
+            return set()
+        _go_mode_cache = (mtime, {entry["game"] for entry in (config.get("apworlds") or {}).values()
+                                  if entry.get("game") and entry.get("go_mode") is False})
+    return _go_mode_cache[1]
+
+
 # Shown after « Logique indisponible : » (docs/COMPAT.md has the details, for us).
 NO_LOGIC_REASONS = {
     "Ocarina of Time": "impossible pour Ocarina of Time : les récompenses de donjon (pierres, médaillons) ne sont "

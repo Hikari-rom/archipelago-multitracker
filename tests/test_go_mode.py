@@ -53,3 +53,35 @@ def test_go_mode_matches_the_reference(tool, slot):
     assert not [s for s in snaps if s["goal_over"] or s["goal_under"]], [
         (s["sphere"], s["goal_tool"], s["goal_reference"]) for s in snaps]
     assert snaps[0]["goal_tool"] is False and snaps[-1]["goal_tool"] is True
+
+
+async def test_service_go_mode(tmp_path, monkeypatch):
+    from multitracker.config import RoomConfig, SlotConfig
+    from multitracker.logic import LogicResult
+    from multitracker import service as service_mod
+    from multitracker.service import Service
+    from multitracker.store import Store
+
+    monkeypatch.setattr(service_mod, "go_mode_disabled", lambda: {"GameB"})
+    service = Service(RoomConfig(server="127.0.0.1:1", slots=[SlotConfig("a", "GameA"), SlotConfig("b", "GameB")]),
+                      Store(tmp_path / "db.sqlite3"), reconnect_delays=(0.3, 1.0))
+    await service.start()
+    try:
+        state = service.trackers["a"].state
+        state.missing = {1, 2}
+        service.logic["a"] = LogicResult("ok", in_logic=[], goal_in_logic=True)
+        assert service.go_mode("a") is True
+        assert service._bk_of("a") is False  # nothing left in logic, but the victory is: not BK
+        assert service.summary("a")["go_mode"] is True
+        service.logic["a"] = LogicResult("ok", in_logic=[1], goal_in_logic=None)
+        assert service.go_mode("a") is False
+        service.logic["a"] = LogicResult("error", goal_in_logic=True)
+        assert service.go_mode("a") is False
+        service.logic["a"] = LogicResult("ok", goal_in_logic=True)
+        state.client_status = 30  # goal reached: gold, not go mode
+        assert service.go_mode("a") is False
+        service.trackers["b"].state.missing = {1}
+        service.logic["b"] = LogicResult("ok", goal_in_logic=True)
+        assert service.go_mode("b") is False  # go_mode: false in config/apworlds.yaml
+    finally:
+        await service.stop()
