@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_OWNERS, NO_OWNER, autoAssociate, buildPutBody, checkByName, diagnose, distinctGames, distinctOwners,
   filterByOwner, filterRows, mergeDiscovered, mergeRows, nameMatches, passwordPayload, probeMessage, roomFromLocation,
-  setAll, setChecked, showOwnerFilter, withDiscovered,
+  setAll, setChecked, showOwnerFilter, withDiscovered, withGoal,
 } from '../src/lib/config'
 import { summaryText } from '../src/lib/logic'
 import { mk } from './helpers'
@@ -79,6 +79,20 @@ describe('PUT payload', () => {
   it('server when no room url', () => {
     const b = buildPutBody({ roomUrl: '', server: ' h:38281 ', password: { value: 'p', clear: false }, rows: [] })
     expect(b).toEqual({ server: 'h:38281', password: 'p', slots: [] })
+  })
+  it('goals: sent only with the goal_override option, {} = automatic (D34)', () => {
+    const rows = mergeRows([{ ...configured[0], goal: { Goal: 'hitlist' } }], null)
+    expect(rows[0].goal).toEqual({ Goal: 'hitlist' })
+    const base = { roomUrl: '', server: 'h:1', password: { value: '', clear: false }, rows }
+    const off = buildPutBody(base)
+    expect('goal_override' in off).toBe(false)
+    expect('goal' in off.slots[0]).toBe(false) // kept by the server as it is
+    const on = buildPutBody({ ...base, goalOverride: true })
+    expect(on.goal_override).toBe(true)
+    expect(on.slots[0].goal).toEqual({ Goal: 'hitlist' })
+    expect(buildPutBody({ ...base, goalOverride: false }).goal_override).toBe(false)
+    expect(withGoal({ Goal: 'hitlist' }, 'Goal', '')).toEqual({})
+    expect(withGoal({}, 'goal', 'dark_world')).toEqual({ goal: 'dark_world' })
   })
   it('room_dashboard only when given', () => {
     const base = { roomUrl: '', server: 'h:1', password: { value: '', clear: false }, rows: [] }

@@ -33,7 +33,7 @@ const btn = 'inline-flex min-h-11 items-center rounded-lg border px-3 text-sm ho
           <p class="font-mono text-xs text-muted-foreground">en logique · {{ s.checks.done }} / {{ s.checks.total }}</p>
         </div>
       </div>
-      <GoalBlock :objective="tracker.details[s.name]?.objective" :goal="s.goal" compact class="mt-2" />
+      <GoalBlock :objective="tracker.details[s.name]?.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable" compact class="mt-2" />
       <div class="mt-2 flex items-center justify-between gap-2">
         <button v-if="cardState(s, ctx).activity" type="button" data-dismiss :class="btn" @click="dismissWithUndo(s.name, s.game)">✕ Plus actif</button>
         <span v-else />

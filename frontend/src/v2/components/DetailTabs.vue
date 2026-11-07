@@ -130,7 +130,7 @@ function onKey(e: KeyboardEvent): void {
         </ul>
       </template>
 
-      <GoalBlock v-else :objective="d.objective" :goal="d.goal" />
+      <GoalBlock v-else :objective="d.objective" :goal="d.goal" :go-mode="d.go_mode" :choosable="d.goal_choosable" />
     </div>
   </div>
 </template>

@@ -29,6 +29,7 @@ import {
   type SlotRow,
   type YamlEntry,
   withDiscovered,
+  withGoal,
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setActiveMode, setView, tracker } from '../stores/tracker'
@@ -46,6 +47,7 @@ const wakeRoom = ref(false)
 const scoutChecked = ref(true)
 const roomDashboard = ref(false)
 const hintsForeignLogic = ref(true)
+const goalOverride = ref(false)
 const rows = ref<SlotRow[]>([])
 const loading = ref(true)
 const loadError = ref('')
@@ -73,6 +75,10 @@ const restoring = ref(false)
 
 const yamls = computed<YamlEntry[]>(() => cfg.value?.yamls ?? [])
 const games = computed(() => cfg.value?.games ?? {})
+const goalOptions = (game: string) => games.value[game]?.goal_options ?? []
+function onGoal(r: SlotRow, option: string, e: Event): void {
+  r.goal = withGoal(r.goal ?? {}, option, (e.target as HTMLSelectElement).value)
+}
 const yamlPaths = computed(() => yamls.value.map((y) => y.path))
 const owners = computed(() => [...new Set(rows.value.map((r) => r.owner.trim()).filter(Boolean))].sort())
 const checkedRows = computed(() => rows.value.filter((r) => r.checked))
@@ -121,6 +127,7 @@ onMounted(async () => {
     scoutChecked.value = c.scout_checked !== false
     roomDashboard.value = !!c.room_dashboard
     hintsForeignLogic.value = c.hints_foreign_logic !== false
+    goalOverride.value = !!c.goal_override
     rows.value = autoAssociate(mergeRows(c.slots, null), yamls.value).rows
   } catch (e) {
     loadError.value = errText(e)
@@ -277,6 +284,7 @@ async function onSave(): Promise<void> {
         scoutChecked: scoutChecked.value,
         roomDashboard: roomDashboard.value,
         hintsForeignLogic: hintsForeignLogic.value,
+        goalOverride: goalOverride.value,
       }),
     )
     password.value = ''
@@ -462,6 +470,18 @@ const selectClass =
               </p>
             </div>
           </div>
+
+          <div class="flex items-start gap-2">
+            <Checkbox id="cfg-goal-override" v-model="goalOverride" class="mt-0.5" />
+            <div class="flex flex-col gap-0.5">
+              <Label for="cfg-goal-override" class="font-normal">Choisir le but à la main</Label>
+              <p class="text-muted-foreground text-xs">
+                L'app trouve le but de chaque slot toute seule. Activé : dans « Slots à suivre », un sélecteur « But »
+                apparaît sous les slots dont le jeu propose plusieurs conditions de victoire, pour imposer la tienne
+                (objectif, logique et go mode la suivent). Désactivé par défaut ; tes choix restent enregistrés.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -555,6 +575,20 @@ const selectClass =
                     :aria-label="`joueur de ${r.name}`"
                   />
                 </div>
+              </div>
+              <div v-if="r.checked && goalOverride && goalOptions(r.game).length" data-goal-choice class="flex flex-wrap items-center gap-2 pl-6.5">
+                <label v-for="o in goalOptions(r.game)" :key="o.option" class="flex min-w-0 items-center gap-2 text-xs">
+                  <span class="text-muted-foreground shrink-0">But · {{ o.display }}</span>
+                  <select
+                    :value="r.goal?.[o.option] ?? ''"
+                    :class="cn(selectClass, 'h-8 w-auto max-w-[16rem]')"
+                    :aria-label="`${o.display} de ${r.name}`"
+                    @change="onGoal(r, o.option, $event)"
+                  >
+                    <option value="">automatique</option>
+                    <option v-for="c in o.choices" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                </label>
               </div>
               <ul v-if="r.checked && diags[r.name].length" class="flex flex-col gap-0.5 pl-6.5">
                 <li

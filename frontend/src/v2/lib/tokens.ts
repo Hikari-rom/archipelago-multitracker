@@ -48,6 +48,16 @@ const nuit = {
   'gold-line': '#EEC658',
   'gold-tint': 'rgba(238,198,88,0.12)',
   'gold-glow': 'rgba(238,198,88,0.5)',
+  // go mode (D34): the rainbow of the theme's own accents, pastel at night
+  'go-1': '#FE8B83',
+  'go-2': '#EEC066',
+  'go-3': '#6BCF9D',
+  'go-4': '#7FD3E6',
+  'go-5': '#8FA8FF',
+  'go-6': '#C9A2F2',
+  'go-7': '#EEA2D4',
+  'go-tint': 'rgba(143,168,255,0.10)',
+  'card-opaque': '#172131',
   header: 'rgba(15,22,33,0.66)',
 }
 export type TokenName = keyof typeof nuit
@@ -96,6 +106,15 @@ const plan: Record<TokenName, string> = {
   'gold-line': '#C9A227',
   'gold-tint': 'rgba(214,170,40,0.12)',
   'gold-glow': 'rgba(214,170,40,0.55)',
+  'go-1': '#C2262B',
+  'go-2': '#8D5E00',
+  'go-3': '#1F7A52',
+  'go-4': '#0B6E80',
+  'go-5': '#1B4DFF',
+  'go-6': '#7339C9',
+  'go-7': '#A3307F',
+  'go-tint': 'rgba(27,77,255,0.06)',
+  'card-opaque': '#FFFFFF',
   header: 'rgba(234,238,243,0.86)',
 }
 

@@ -1,6 +1,6 @@
 // State of a game card in the v2: activity, logic, big number, connection.
-import { connectionMessage, isActive, isBK, isChosen, statusLabel, type ActivityOverrides } from '../../lib/logic'
-export { isBK }
+import { connectionMessage, isActive, isBK, isChosen, isGoMode, statusLabel, type ActivityOverrides } from '../../lib/logic'
+export { isBK, isGoMode }
 import type { SlotSummary } from '../../lib/types'
 import { computed, type ComputedRef } from 'vue'
 import { tracker } from '../../stores/tracker'
@@ -12,7 +12,7 @@ export type CardLogic =
   | { kind: 'unavailable'; message: string | null }
   | { kind: 'pending'; waiting: boolean }
 export type CardConnection = { kind: 'ok' } | { kind: 'connecting' } | { kind: 'sleeping'; since: string | null } | { kind: 'error'; message: string }
-export interface CardState { activity: CardActivity; logic: CardLogic; big: string; connection: CardConnection; goalReached: boolean; bk: boolean }
+export interface CardState { activity: CardActivity; logic: CardLogic; big: string; connection: CardConnection; goalReached: boolean; goMode: boolean; bk: boolean }
 
 
 const two = (n: number) => String(n).padStart(2, '0')
@@ -46,11 +46,13 @@ function connectionOf(s: SlotSummary, c: CardCtx): CardConnection {
 export function cardState(s: SlotSummary, c: CardCtx): CardState {
   const logic = logicOf(s)
   const big = logic.kind === 'ok' ? String(logic.count) : logic.kind === 'pending' ? '··' : '—'
-  return { activity: activityOf(s, c), logic, big, connection: connectionOf(s, c), goalReached: s.goal, bk: isBK(s) }
+  return { activity: activityOf(s, c), logic, big, connection: connectionOf(s, c), goalReached: s.goal, goMode: isGoMode(s), bk: isBK(s) }
 }
 
-/** Class that colours a whole card by its state: gold once the goal is reached, red while BK (theme.css). */
-export const stateClass = (s: CardState): string => (s.goalReached ? 'v2-gold' : s.bk ? 'v2-bk' : '')
+/** Class that colours a whole card by its state (theme.css): gold once the goal is reached, rainbow in go mode,
+ * red while BK. */
+export const stateClass = (s: CardState): string =>
+  s.goalReached ? 'v2-gold' : s.goMode ? 'v2-go' : s.bk ? 'v2-bk' : ''
 
 export function useCardCtx(): ComputedRef<CardCtx> {
   return computed(() => ({ nowMs: tracker.nowMs, activeMinutes: tracker.activeMinutes, activity: tracker.activity, roomSleeping: tracker.roomSleeping }))

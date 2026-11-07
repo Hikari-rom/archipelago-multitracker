@@ -11,15 +11,17 @@ const phone = useMediaQuery('(max-width: 699px)')
 const ctx = useCardCtx()
 const st = (s: SlotSummary) => cardState(s, ctx.value)
 const logicOf = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
-// BK rows are red and finished games gold, the shown game included: its outline marks it as the current one.
+// BK rows are red, go mode rainbow and finished games gold, the shown game included: its outline marks it as the
+// current one.
 function rowClass(s: SlotSummary): string {
   const now = s.name === props.current
-  const tint = st(s).goalReached ? 'bg-gold-tint' : st(s).bk ? 'bg-bk-tint' : now ? 'bg-logic/15' : ''
-  const ring = st(s).goalReached ? 'ring-gold-line' : st(s).bk ? 'ring-bk' : 'ring-logic/60'
+  const state = st(s)
+  const tint = state.goalReached ? 'bg-gold-tint' : state.goMode ? 'bg-go-tint' : state.bk ? 'bg-bk-tint' : now ? 'bg-logic/15' : ''
+  const ring = state.goalReached ? 'ring-gold-line' : state.goMode ? 'ring-logic/60' : state.bk ? 'ring-bk' : 'ring-logic/60'
   return now ? `${tint} ring-2 ring-inset ${ring}` : tint
 }
 const barClass = (s: SlotSummary): string =>
-  st(s).goalReached ? 'bg-gold-line' : st(s).bk ? 'bg-bk' : s.name === props.current ? 'bg-logic' : ''
+  st(s).goalReached ? 'bg-gold-line' : st(s).goMode ? 'v2-go-bar' : st(s).bk ? 'bg-bk' : s.name === props.current ? 'bg-logic' : ''
 </script>
 
 <template>
@@ -30,7 +32,7 @@ const barClass = (s: SlotSummary): string =>
         <button
           type="button" :data-focus-row="s.name" :aria-current="s.name === current ? 'true' : undefined"
           class="relative flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left hover:bg-accent"
-          :class="rowClass(s)" :data-state="st(s).goalReached ? 'goal' : st(s).bk ? 'bk' : undefined"
+          :class="rowClass(s)" :data-state="st(s).goalReached ? 'goal' : st(s).goMode ? 'go' : st(s).bk ? 'bk' : undefined"
           @click="pinActive(s.name)"
         >
           <span class="absolute inset-y-0 left-0 w-[3px]" :class="barClass(s)" aria-hidden="true" />

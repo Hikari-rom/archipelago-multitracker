@@ -29,6 +29,11 @@ describe('v2 tokens', () => {
       for (const k of ['foreground', 'muted-foreground', 'logic', 'done', 'hint', 'new', 'error', 'primary', 'bk', 'gold'] as const)
         expect(ratio(rgb(t[k]), card), k).toBeGreaterThanOrEqual(4.5)
     })
+    it(`${theme}: every colour of the go mode rainbow is readable on the card (rainbow text, D34)`, () => {
+      for (const k of ['go-1', 'go-2', 'go-3', 'go-4', 'go-5', 'go-6', 'go-7'] as const)
+        expect(ratio(rgb(t[k]), card), k).toBeGreaterThanOrEqual(4.5)
+      expect(t['card-opaque']).toBe(CARD_OPAQUE[theme])
+    })
     it(`${theme}: tinted badges reach AA`, () => {
       for (const [fg, bg] of [['good-foreground', 'good'], ['warn-foreground', 'warn'], ['info-foreground', 'info']] as const)
         expect(ratio(rgb(t[fg]), rgb(t[bg], card)), fg).toBeGreaterThanOrEqual(4.5)

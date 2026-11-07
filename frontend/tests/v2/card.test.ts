@@ -59,4 +59,14 @@ describe('cardState', () => {
     expect(stateClass(cardState(mk({ name: 'a', logic: zero }), ctx()))).toBe('v2-bk')
     expect(stateClass(cardState(mk({ name: 'a', logic: { ...zero, count: 3 } }), ctx()))).toBe('')
   })
+  it('go mode (D34): rainbow, above BK and below gold', () => {
+    const zero = { state: 'ok' as const, count: 0, message: null }
+    const go = cardState(mk({ name: 'a', logic: zero, go_mode: true }), ctx())
+    expect(go.goMode).toBe(true)
+    expect(go.bk).toBe(false) // nothing left in logic, but the victory is
+    expect(stateClass(go)).toBe('v2-go')
+    expect(stateClass(cardState(mk({ name: 'a', goal: true, go_mode: true }), ctx()))).toBe('v2-gold')
+    expect(cardState(mk({ name: 'a', goal: true, go_mode: true }), ctx()).goMode).toBe(false)
+    expect(stateClass(cardState(mk({ name: 'a', logic: { ...zero, count: 3 }, go_mode: true }), ctx()))).toBe('v2-go')
+  })
 })

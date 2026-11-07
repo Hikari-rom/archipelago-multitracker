@@ -33,7 +33,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
           <p class="font-mono text-xs text-muted-foreground">checks en logique · {{ summary.name }} · {{ summary.checks.done }} / {{ summary.checks.total }} faits · {{ summary.checks.remaining }} restants</p>
         </div>
       </div>
-      <GoalBlock :objective="tracker.details[summary.name]?.objective" :goal="summary.goal" compact />
+      <GoalBlock :objective="tracker.details[summary.name]?.objective" :goal="summary.goal" :go-mode="summary.go_mode" :choosable="summary.goal_choosable" compact />
     </div>
     <DetailTabs :key="summary.name" :name="summary.name" initial="logic" class="mt-5" />
   </article>

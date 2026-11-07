@@ -5,6 +5,14 @@ export interface ConfigSlot {
   game: string
   owner?: string | null
   yaml?: string | null
+  /** victory chosen by hand {option: value}, {} = automatic (D34) */
+  goal?: Record<string, string>
+}
+/** An option of the game's apworld that chooses its victory (D34). Values are the option's keys, never translated. */
+export interface GoalOption {
+  option: string
+  display: string
+  choices: string[]
 }
 export interface YamlPlayer {
   name: string
@@ -20,6 +28,7 @@ export interface GameInfo {
   needs_yaml: boolean
   user?: boolean // apworld not shipped with the app: each user imports it (D27)
   imported?: boolean
+  goal_options?: GoalOption[]
 }
 export interface ConfigResponse {
   room_url: string | null
@@ -29,6 +38,7 @@ export interface ConfigResponse {
   scout_checked?: boolean
   room_dashboard?: boolean
   hints_foreign_logic?: boolean
+  goal_override?: boolean
   has_backup?: boolean
   slots: ConfigSlot[]
   player_yamls: string[]
@@ -61,7 +71,8 @@ export interface PutConfigBody {
   scout_checked?: boolean
   room_dashboard?: boolean
   hints_foreign_logic?: boolean
-  slots: { name: string; game: string; owner: string | null; yaml: string | null }[]
+  goal_override?: boolean
+  slots: { name: string; game: string; owner: string | null; yaml: string | null; goal?: Record<string, string> }[]
 }
 
 export interface SlotRow {
@@ -70,6 +81,15 @@ export interface SlotRow {
   checked: boolean
   yaml: string // '' = aucun
   owner: string
+  goal?: Record<string, string> // {} or absent = automatic
+}
+
+/** The row's goal with `option` set to `value` ('' = back to automatic for that option). */
+export function withGoal(goal: Record<string, string>, option: string, value: string): Record<string, string> {
+  const out = { ...goal }
+  if (value) out[option] = value
+  else delete out[option]
+  return out
 }
 
 /** Merge discovered players with currently configured slots (configured ones are pre-checked and keep yaml/owner). */
@@ -84,11 +104,11 @@ export function mergeRows(
     if (seen.has(p.name)) continue
     seen.add(p.name)
     const c = cfg.get(p.name)
-    rows.push({ name: p.name, game: p.game || c?.game || '', checked: !!c, yaml: c?.yaml ?? '', owner: c?.owner ?? '' })
+    rows.push({ name: p.name, game: p.game || c?.game || '', checked: !!c, yaml: c?.yaml ?? '', owner: c?.owner ?? '', goal: { ...(c?.goal ?? {}) } })
   }
   for (const c of configured) {
     if (seen.has(c.name)) continue
-    rows.push({ name: c.name, game: c.game, checked: true, yaml: c.yaml ?? '', owner: c.owner ?? '' })
+    rows.push({ name: c.name, game: c.game, checked: true, yaml: c.yaml ?? '', owner: c.owner ?? '', goal: { ...(c.goal ?? {}) } })
   }
   return rows
 }
@@ -100,7 +120,7 @@ export function mergeDiscovered(rows: SlotRow[], players: { name: string; game: 
   for (const p of players) {
     if (have.has(p.name)) continue
     have.add(p.name)
-    out.push({ name: p.name, game: p.game, checked: false, yaml: '', owner: '' })
+    out.push({ name: p.name, game: p.game, checked: false, yaml: '', owner: '', goal: {} })
   }
   return out
 }
@@ -142,6 +162,8 @@ export function buildPutBody(opts: {
   scoutChecked?: boolean
   roomDashboard?: boolean
   hintsForeignLogic?: boolean
+  /** true: the goals of the rows are sent (and taken into account); otherwise the saved ones are kept as they are */
+  goalOverride?: boolean
 }): PutConfigBody {
   const body: PutConfigBody = {
     password: passwordPayload(opts.password),
@@ -149,9 +171,13 @@ export function buildPutBody(opts: {
     ...(opts.scoutChecked === undefined ? {} : { scout_checked: opts.scoutChecked }),
     ...(opts.roomDashboard === undefined ? {} : { room_dashboard: opts.roomDashboard }),
     ...(opts.hintsForeignLogic === undefined ? {} : { hints_foreign_logic: opts.hintsForeignLogic }),
+    ...(opts.goalOverride === undefined ? {} : { goal_override: opts.goalOverride }),
     slots: opts.rows
       .filter((r) => r.checked)
-      .map((r) => ({ name: r.name, game: r.game, owner: r.owner.trim() || null, yaml: r.yaml || null })),
+      .map((r) => ({
+        name: r.name, game: r.game, owner: r.owner.trim() || null, yaml: r.yaml || null,
+        ...(opts.goalOverride ? { goal: { ...(r.goal ?? {}) } } : {}),
+      })),
   }
   const url = opts.roomUrl.trim()
   const server = opts.server.trim()

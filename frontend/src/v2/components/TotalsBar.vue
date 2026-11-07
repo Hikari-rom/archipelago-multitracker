@@ -6,7 +6,7 @@ import { SORT_LABELS, totals, type SortMode } from '../../lib/dashboard'
 import type { SlotSummary } from '../../lib/types'
 import { tracker } from '../../stores/tracker'
 import type { V2Layout } from '../lib/prefs'
-import { isBK } from '../lib/card'
+import { isBK, isGoMode } from '../lib/card'
 import OwnerSelect from './OwnerSelect.vue'
 
 const props = defineProps<{
@@ -28,6 +28,7 @@ const emit = defineEmits<{
 const phone = useMediaQuery('(max-width: 699px)')
 const t = computed(() => totals(props.slots))
 const bk = computed(() => props.slots.filter(isBK).length)
+const go = computed(() => props.slots.filter(isGoMode).length)
 const sorts = Object.keys(SORT_LABELS) as SortMode[]
 const layouts: { key: V2Layout; label: string }[] = [
   { key: 'cards', label: 'Cartes' },
@@ -56,6 +57,7 @@ function onSort(e: Event) {
         <span><strong class="text-logic">{{ t.inLogic }}</strong> en logique</span>
         <span>{{ t.done }} / {{ t.total }} faits</span>
         <span v-if="t.newItems" class="text-new">★ {{ t.newItems }} nouveaux</span>
+        <span v-if="go" data-go-total><span class="v2-go-pill"><span class="v2-go-text">GO</span></span> {{ go }} jeu{{ go > 1 ? 'x' : '' }} en go mode</span>
         <span v-if="bk" data-bk-total><span class="rounded bg-bk px-1 text-bk-foreground">BK</span> {{ bk }} jeu{{ bk > 1 ? 'x' : '' }} sans check en logique</span>
         <span class="text-muted-foreground">{{ slots.length }} jeux</span>
       </div>

@@ -49,6 +49,13 @@ export const mockSlots: SlotSummary[] = [
   slot({ name: 'Romain_Zelda', game: 'A Link to the Past', checks: { done: 80, total: 216, remaining: 136 },
     status: 'disconnected', error: 'Connexion perdue, nouvelle tentative…',
     items: { received: 90, new: 0 }, logic: { state: 'ok', count: 0, message: null } }),
+  slot({ name: 'natazox_fall', owner: 'Natazox', game: 'Fall Guys', checks: { done: 127, total: 1079, remaining: 952 },
+    go_mode: true, items: { received: 60, new: 2 }, logic: { state: 'ok', count: 12, message: null, goal_in_logic: true },
+    objective: { summary: '30 Final Round Tickets, puis gagner une finale', source: 'slot_data',
+      counters: [{ label: 'Final Round Tickets', current: 30, target: 30 }],
+      steps: [{ label: 'Gagner une finale (Win a Final Round)', done: false }] } }),
+  slot({ name: 'Romain_Hk', game: 'Hollow Knight', checks: { done: 40, total: 300, remaining: 260 }, goal_choosable: true,
+    logic: { state: 'ok', count: 9, message: null } }),
   slot({ name: 'Romain_Dino', game: 'Dinosaur Planet', checks: { done: 77, total: 77, remaining: 0 },
     goal: true, items: { received: 40, new: 0 }, logic: { state: 'ok', count: 0, message: null } }),
 ]
@@ -144,11 +151,16 @@ export const mockConfig: ConfigResponse = {
   server: 'archipelago.gg:38281',
   has_password: true,
   slots: [
-    { name: 'Romain_KH2', game: 'Kingdom Hearts 2', owner: 'Romain', yaml: 'config/players/kh2.yaml' },
+    { name: 'Romain_KH2', game: 'Kingdom Hearts 2', owner: 'Romain', yaml: 'config/players/kh2.yaml', goal: { Goal: 'hitlist' } },
     { name: 'Romain_Celeste', game: 'Celeste (Open World)', owner: 'Romain', yaml: null },
   ],
   player_yamls: ['config/players/kh2.yaml', 'config/players/celeste.yaml'],
   room_dashboard: true,
+  goal_override: true,
+  games: {
+    'Kingdom Hearts 2': { logic: true, needs_yaml: true,
+      goal_options: [{ option: 'Goal', display: 'Goal', choices: ['three_proofs', 'lucky_emblem_hunt', 'hitlist', 'hitlist_and_lucky_emblem'] }] },
+  },
 }
 export const mockDiscover: DiscoverResponse = {
   room_url: mockConfig.room_url ?? '',

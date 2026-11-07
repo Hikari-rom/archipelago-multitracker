@@ -13,6 +13,7 @@
   --color-gold: var(--gold);
   --color-gold-line: var(--gold-line);
   --color-gold-tint: var(--gold-tint);
+  --color-go-tint: var(--go-tint);
   --color-header: var(--header);
 }
 
@@ -69,4 +70,88 @@ html[data-v2='plan'] body {
 }
 @media (prefers-reduced-motion: reduce) {
   .v2-gold { animation: none; }
+}
+
+/* Go mode (D34): the victory is in logic. Same three layers as the gold card (edge, inner fillet, breathing halo),
+   in a slowly drifting rainbow made of the theme's own accents. */
+:root {
+  --go-rainbow: linear-gradient(90deg, var(--go-1), var(--go-2), var(--go-3), var(--go-4), var(--go-5), var(--go-6),
+    var(--go-7), var(--go-1));
+}
+@layer components {
+  .v2-go {
+    position: relative;
+    border-width: 1.5px;
+    border-color: transparent;
+    background-image: linear-gradient(180deg, var(--go-tint), transparent 75%),
+      linear-gradient(var(--card-opaque), var(--card-opaque)), var(--go-rainbow);
+    background-origin: padding-box, padding-box, border-box;
+    background-clip: padding-box, padding-box, border-box;
+    background-size: 100% 100%, 100% 100%, 200% 100%;
+    animation: v2-go-drift 9s linear infinite, v2-go-glow 3.2s ease-in-out infinite;
+  }
+  .v2-go::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    padding: 1px;
+    border-radius: 10px;
+    background: var(--go-rainbow);
+    background-size: 200% 100%;
+    opacity: 0.38;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: v2-go-drift-one 9s linear infinite;
+  }
+  .v2-go-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    padding: 0.125rem 0.625rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    background: linear-gradient(var(--card-opaque), var(--card-opaque)) padding-box, var(--go-rainbow) border-box;
+    background-size: 100% 100%, 200% 100%;
+  }
+  .v2-go-text {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: var(--go-rainbow);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: v2-go-drift-one 9s linear infinite;
+  }
+  .v2-go-bar {
+    background: var(--go-rainbow);
+    background-size: 200% 100%;
+    animation: v2-go-drift-one 9s linear infinite;
+  }
+}
+@keyframes v2-go-drift {
+  from { background-position: 0 0, 0 0, 0% 0; }
+  to { background-position: 0 0, 0 0, 200% 0; }
+}
+@keyframes v2-go-drift-one {
+  from { background-position: 0% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes v2-go-glow {
+  0%, 100% {
+    box-shadow: -10px 0 26px -14px var(--go-1), 10px 0 26px -14px var(--go-5), 0 -10px 26px -14px var(--go-3),
+      0 10px 26px -14px var(--go-7);
+  }
+  50% {
+    box-shadow: -14px 0 40px -10px var(--go-5), 14px 0 40px -10px var(--go-1), 0 -14px 40px -10px var(--go-7),
+      0 14px 40px -10px var(--go-3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-go, .v2-go::before, .v2-go-text, .v2-go-bar { animation: none; }
+  .v2-go { box-shadow: -10px 0 26px -14px var(--go-1), 10px 0 26px -14px var(--go-5); }
 }

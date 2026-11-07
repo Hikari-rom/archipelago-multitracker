@@ -26,6 +26,7 @@ const pill = 'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 t
     <span v-else-if="state.logic.approx && state.logic.message" :class="pill" class="border-transparent bg-warn text-error">! {{ state.logic.message }}</span>
 
     <span v-if="state.bk" :class="pill" class="border-transparent bg-bk text-bk-foreground">BK · rien en logique, en attente d'items</span>
+    <span v-if="state.goMode" data-go-pill class="v2-go-pill"><span class="v2-go-text">GO MODE</span><span class="text-muted-foreground">la victoire est en logique</span></span>
     <span v-if="state.goalReached" :class="pill" class="border-gold-line text-gold">✓ But atteint</span>
   </div>
 </template>

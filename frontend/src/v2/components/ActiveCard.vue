@@ -41,7 +41,7 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
     <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
       <span v-for="r in regions.slice(0, 3)" :key="r.name" class="rounded-full border px-2.5 py-0.5 font-mono text-xs">{{ r.name }} {{ r.count }}</span>
       <span v-if="regions.length > 3" class="font-mono text-xs text-muted-foreground">+ {{ regions.length - 3 }} régions</span>
-      <GoalBlock :objective="tracker.details[summary.name]?.objective" :goal="summary.goal" compact class="ml-auto" />
+      <GoalBlock :objective="tracker.details[summary.name]?.objective" :goal="summary.goal" :go-mode="summary.go_mode" :choosable="summary.goal_choosable" compact class="ml-auto" />
     </div>
     <DetailTabs v-if="expanded" :name="summary.name" class="mt-4" />
   </article>

@@ -1,8 +1,12 @@
 import type { Hint, LogicLocation, SlotSummary } from './types'
 
-/** "BK" (stuck): logic computed, nothing in logic, game not finished. Waiting for items from the others. */
+/** "BK" (stuck): logic computed, nothing in logic, game not finished. Waiting for items from the others.
+ * A game in go mode is not stuck: its victory is in logic. */
 export const isBK = (s: SlotSummary): boolean =>
-  s.logic.state === 'ok' && s.logic.count === 0 && !s.goal && s.checks.remaining > 0
+  s.logic.state === 'ok' && s.logic.count === 0 && !s.goal && s.checks.remaining > 0 && !s.go_mode
+
+/** Go mode (D34): the game can be finished with what it has, it only has to go for it. */
+export const isGoMode = (s: SlotSummary): boolean => !!s.go_mode && !s.goal
 
 export type BadgeVariant = 'good' | 'neutral' | 'muted' | 'pending'
 export interface Badge {

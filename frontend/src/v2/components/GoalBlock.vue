@@ -3,7 +3,9 @@ import { computed } from 'vue'
 import { counterText, mainCounter } from '../../lib/goals'
 import type { Objective } from '../../lib/types'
 
-const props = defineProps<{ objective: Objective | null | undefined; goal: boolean; compact?: boolean }>()
+// goMode: rainbow bars (D34); choosable: the game offers victory conditions to pick in the Configuration
+const props = defineProps<{ objective: Objective | null | undefined; goal: boolean; compact?: boolean; goMode?: boolean; choosable?: boolean }>()
+const CHOOSE = 'à choisir dans la Configuration (« Choisir le but à la main »)'
 const main = computed(() => mainCounter(props.objective))
 const pct = (c: { current: number; target: number }) => (c.target > 0 ? Math.min(100, Math.round((c.current / c.target) * 100)) : 0)
 </script>
@@ -13,7 +15,7 @@ const pct = (c: { current: number; target: number }) => (c.target > 0 ? Math.min
     <template v-if="main">But · {{ main.label }} <span class="font-mono tabular-nums">{{ counterText(main) }}</span></template>
     <template v-else-if="goal"><span class="text-done">✓</span> But atteint</template>
     <template v-else-if="objective">But · {{ objective.summary }}</template>
-    <template v-else>But non décrit pour ce jeu</template>
+    <template v-else>But non décrit pour ce jeu<template v-if="choosable"> · {{ CHOOSE }}</template></template>
   </p>
   <div v-else-if="objective" class="space-y-3">
     <p class="text-sm">{{ objective.summary }}</p>
@@ -21,7 +23,7 @@ const pct = (c: { current: number; target: number }) => (c.target > 0 ? Math.min
     <ul v-if="objective.counters.length" class="space-y-2">
       <li v-for="c in objective.counters" :key="c.label">
         <div class="flex justify-between text-sm"><span>{{ c.label }}</span><span class="font-mono tabular-nums">{{ counterText(c) }}</span></div>
-        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true"><div class="h-full bg-done" :style="{ width: pct(c) + '%' }" /></div>
+        <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true"><div class="h-full" :class="goMode && !goal ? 'v2-go-bar' : 'bg-done'" :style="{ width: pct(c) + '%' }" /></div>
       </li>
     </ul>
     <ul v-if="objective.steps.length" class="space-y-1 text-sm">
@@ -33,5 +35,6 @@ const pct = (c: { current: number; target: number }) => (c.target > 0 ? Math.min
       </li>
     </ul>
   </div>
-  <p v-else class="text-sm text-muted-foreground">But non décrit pour ce jeu.</p>
+  <p v-else class="text-sm text-muted-foreground">But non décrit pour ce jeu.<template v-if="choosable"> Tu peux le choisir dans la
+    Configuration : coche « Choisir le but à la main », puis règle « But » sous ce slot.</template></p>
 </template>

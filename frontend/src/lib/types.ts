@@ -37,6 +37,10 @@ export interface SlotSummary {
   items: { received: number; new: number }
   hints: { mine_elsewhere: number; in_my_world: number; in_my_world_in_logic: number }
   goal: boolean
+  /** go mode (D34): the victory is in logic and not reached yet */
+  go_mode?: boolean
+  /** the game offers victory conditions to choose from in the Configuration (D34) */
+  goal_choosable?: boolean
   /** epoch seconds of the slot's last location check seen by the app (null = none since tracking) */
   last_check_at?: number | null
   logic: {
@@ -45,6 +49,8 @@ export interface SlotSummary {
     message: string | null
     /** the logic is knowingly late for this slot, never early: why (backend adapters.LOGIC_NOTES) */
     note?: string | null
+    /** victory reachable with the items received; null = the world does not say what its victory is */
+    goal_in_logic?: boolean | null
     computed_at?: number | null
     seconds?: number | null
   }

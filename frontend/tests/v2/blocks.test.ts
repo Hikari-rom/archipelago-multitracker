@@ -1,6 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it } from 'vitest'
 import BigNumber from '../../src/v2/components/BigNumber.vue'
+import GoalBlock from '../../src/v2/components/GoalBlock.vue'
+import TotalsBar from '../../src/v2/components/TotalsBar.vue'
 import DetailTabs from '../../src/v2/components/DetailTabs.vue'
 import GameTile from '../../src/v2/components/GameTile.vue'
 import StateChips from '../../src/v2/components/StateChips.vue'
@@ -18,6 +20,30 @@ afterEach(() => {
   tracker.details = {}
   undo.message = ''
   undo.prev = null
+})
+
+describe('go mode and goals chosen by hand (D34)', () => {
+  it('state chips show the go mode pill', () => {
+    const s = mk({ name: 'a', go_mode: true, logic: { state: 'ok', count: 0, message: null } })
+    const chips = mount(StateChips, { props: { state: cardState(s, ctx) } })
+    expect(chips.find('[data-go-pill]').text()).toContain('GO MODE')
+    expect(chips.text()).not.toContain('BK')
+  })
+  it('goal block: rainbow bars in go mode, Configuration hint when the goal can be chosen', () => {
+    const objective = { summary: '30 Final Round Tickets, puis gagner une finale', counters: [{ label: 'Final Round Tickets', current: 30, target: 30 }], steps: [], source: 'slot_data' }
+    expect(mount(GoalBlock, { props: { objective, goal: false, goMode: true } }).find('.v2-go-bar').exists()).toBe(true)
+    expect(mount(GoalBlock, { props: { objective, goal: false } }).find('.v2-go-bar').exists()).toBe(false)
+    const none = mount(GoalBlock, { props: { objective: null, goal: false, choosable: true } }).text()
+    expect(none).toContain('But non décrit pour ce jeu')
+    expect(none).toContain('Choisir le but à la main')
+    expect(mount(GoalBlock, { props: { objective: null, goal: false } }).text()).not.toContain('Configuration')
+    expect(mount(GoalBlock, { props: { objective: null, goal: false, compact: true, choosable: true } }).text()).toContain('Configuration')
+  })
+  it('totals bar counts the games in go mode', () => {
+    const slots = [mk({ name: 'a', go_mode: true }), mk({ name: 'b', go_mode: true, goal: true }), mk({ name: 'c' })]
+    const bar = mount(TotalsBar, { props: { slots, sort: 'auto', layout: 'cards', hideDone: false, owner: '', chips: [] } })
+    expect(bar.find('[data-go-total]').text()).toContain('1 jeu en go mode')
+  })
 })
 
 describe('card blocks', () => {

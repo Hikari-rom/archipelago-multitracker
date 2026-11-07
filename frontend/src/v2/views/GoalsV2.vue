@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { goalProgress, sortByGoal } from '../../lib/goals'
+import { isGoMode } from '../../lib/logic'
 import type { SlotSummary } from '../../lib/types'
 import GoalBlock from '../components/GoalBlock.vue'
 import OwnerSelect from '../components/OwnerSelect.vue'
@@ -30,17 +31,17 @@ const shown = computed(() => sortByGoal(props.slots).filter((s) => !(hideReached
       </div>
     </div>
     <div class="grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-3">
-      <article v-for="s in shown" :key="s.name" :data-goal="s.name" class="rounded-[14px] border bg-card p-5">
+      <article v-for="s in shown" :key="s.name" :data-goal="s.name" class="rounded-[14px] border bg-card p-5" :class="s.goal ? 'v2-gold' : isGoMode(s) ? 'v2-go' : ''">
         <header class="mb-3 flex items-start justify-between gap-3">
           <div class="min-w-0">
             <h3 class="line-clamp-2 font-semibold" :title="s.game">{{ s.game }}</h3>
             <p class="font-mono text-xs text-muted-foreground">{{ s.name }}<template v-if="s.owner"> · {{ s.owner }}</template></p>
           </div>
           <span v-if="s.goal" class="shrink-0 text-sm text-done">✓ But atteint</span>
+          <span v-else-if="isGoMode(s)" data-go-pill class="v2-go-pill shrink-0"><span class="v2-go-text">GO MODE</span></span>
           <span v-else class="shrink-0 font-mono text-sm tabular-nums">{{ Math.round(goalProgress(s) * 100) }} %</span>
         </header>
-        <GoalBlock v-if="s.objective" :objective="s.objective" :goal="s.goal" />
-        <p v-else class="text-sm text-muted-foreground">Pas encore de description du but pour ce jeu.</p>
+        <GoalBlock :objective="s.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable" />
       </article>
     </div>
   </section>
