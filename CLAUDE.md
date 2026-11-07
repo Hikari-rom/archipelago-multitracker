@@ -34,6 +34,10 @@ spoiler, les checks en logique. Le cahier des charges complet est `OVERNIGHT_BRI
   `backend/multitracker/roomfeed/` (une connexion d'écoute en lecture seule, `LISTENER_COMMANDS`), checks écrits
   dans `data/room_feed/<seed>/`, joueurs corrigés dans `config/room_players.yaml` (gitignoré).
 
+- 2026-11-07 : go mode (D34) : `goal_in_logic` du worker (condition de victoire du monde, ou `GOAL_LOCATIONS`),
+  vérifié à chaque sphère par `validate_logic.py` ; `go_mode: false` dans `config/apworlds.yaml` pour exclure un jeu.
+  But choisi à la main : `goal_override` + `slots[].goal` dans `config/room.yaml`.
+
 ## Règles du projet (non négociables)
 - **Zéro spoiler** : le code de l'app (`backend/`, `frontend/`) n'utilise que items reçus, checks, hints, yamls du
   joueur, `slot_data`, datapackage, et la liste des locations du slot. Spoiler/multidata/zip : uniquement

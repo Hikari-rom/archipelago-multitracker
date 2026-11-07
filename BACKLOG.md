@@ -321,3 +321,13 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
   avec Pokémon sauvages aléatoires)
 - [ ] Ajouter le slot Factorio de la room (Mathcroft-Factor) dans la page Configuration, avec son yaml
 - [ ] Mesurer le retard en vraie partie (la mesure par sphère ignore la preuve par les checks)
+
+## M29 — Go mode, but de Fall Guys, but choisi à la main (demandé par Romain le 2026-11-07, D34)
+- [x] Descripteur Fall Guys (Final Round Tickets, puis « Win a Final Round »), testé avec le yaml de natazox
+- [x] `goal_in_logic` dans le worker (condition de victoire du monde, ou location de but) ; `go_mode` dans l'API
+- [x] Référence et `validate_logic.py` vérifient le go mode à chaque sphère ; campagne sur tous les jeux avec logique
+- [x] Arc-en-ciel (cartes, Focus, Objectifs, bandeau), pastille « GO MODE », or > go > BK
+- [x] Réglage « Choisir le but à la main » (Configuration) et sélecteur de but par slot ; « But non décrit » dit où
+  le choisir
+- [ ] Vérifier sur le vrai slot de natazox que les tickets et le go mode s'affichent (demande l'accord de Romain)
+- [ ] Idées : notification ou ligne du fil au passage en go mode ; go mode des autres joueurs (Room complète, Indices)

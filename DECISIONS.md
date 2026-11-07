@@ -395,3 +395,32 @@ d'Archipelago :
   lunes rétrogradées) ; sans cela, toute différence serait un « over » attendu.
 - **Mesure** : `validate_logic.py "Spicy Meatball Overdrive" --runs 3` : 2 OK, 1 NC (génération non reproductible) ; bout en bout `m7b` OK.
 - **Effet sur la room** (2026-11-05) : 38 → 114 checks en logique (Lake 18, Wooded 44, Lost 14 en plus).
+
+
+## D34 — Go mode, but de Fall Guys, but choisi à la main (2026-11-07, demandé par Romain)
+Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`.
+- **Fall Guys** : un joueur de la room ne voyait pas ses Final Round Tickets. Aucun descripteur d'objectif : la carte
+  disait « But non décrit ». Descripteur `fall_guys` (`goals.py`) : `final_round_tickets_required` (slot_data, puis
+  yaml), puis « Win a Final Round » (le client ne l'envoie qu'avec assez de tickets).
+- **Go mode** = la victoire est en logique avec les items reçus (et le but pas encore atteint). Le worker évalue la
+  condition de victoire du monde (`multiworld.completion_condition`) sur l'état déjà balayé pour la logique. Le
+  `lambda state: True` posé par défaut par `MultiWorld` ne compte pas (`has_real_completion`) : pour les mondes dont
+  le client annonce lui-même la victoire, une location de but (`GOAL_LOCATIONS`, Fall Guys : « Win a Final Round ») ;
+  sinon `goal_in_logic` vaut `null` et il n'y a pas de go mode. Un jeu peut être exclu par `go_mode: false` dans
+  `config/apworlds.yaml`. Un jeu en go mode sans check en logique n'est pas BK.
+- **Validation** : la référence (`tests/logic_reference.py`) évalue la même chose sur le multiworld complet à chaque
+  sphère ; un go mode trop tôt est une erreur de `validate_logic.py` (« go mode » dans sa sortie), un go mode en
+  retard est signalé. `tests/test_go_mode.py` : multi5 (5 jeux) et Fall Guys avec le yaml de natazox (30 tickets
+  sur 50, qualifysanity 1000).
+- **Affichage** : arc-en-ciel avec les trois couches de l'or (bord, filet intérieur, halo qui respire), fait des
+  accents du thème (`go-1`…`go-7`, chacun lisible sur la carte) ; pastille « GO MODE », barres du but, compteur dans
+  le bandeau. Or > arc-en-ciel > rouge. Figé avec `prefers-reduced-motion`.
+- **But choisi à la main** : réglage `goal_override` (désactivé par défaut) ; par slot `goal: {option: valeur}`. Les
+  conditions possibles sont les options `Choice` de l'apworld dont le nom évoque le but (`goal`, `victory`,
+  `completion`, `win_con`, `ending`, sauf `location`/`method`), listées par le worker (`goal_options`). La valeur
+  passe avant `slot_data` et yaml dans les descripteurs (source « manuel » ; objectif générique pour un jeu sans
+  descripteur) et va dans le yaml dont le monde est régénéré (logique et go mode la suivent ; si le `slot_data`
+  fixe déjà l'option, il garde le dernier mot pour la logique). Valeur hors des choix : refusée par l'API, ignorée
+  à l'exécution. Quand le but reste inconnu, la carte garde son affichage et dit où le choisir si c'est possible.
+- **Pas fait** : test sur le vrai slot de natazox (la connexion d'une seconde instance à la vraie room a été refusée
+  par les permissions de la session) ; go mode pour les slots non suivis (tableau de la room, Indices).
