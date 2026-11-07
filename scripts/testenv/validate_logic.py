@@ -36,6 +36,16 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:40]
 
 
+def goal_summary(reports: list[dict]) -> str:
+    """Go mode at each snapshot: "known" (the tool knows the victory), "late" spheres, "early" spheres (errors)."""
+    snaps = [s for r in reports for s in r["snapshots"]]
+    if not snaps or all(s["goal_tool"] is None for s in snaps):
+        return "unknown"
+    late = [s["sphere"] for s in snaps if s["goal_under"]]
+    early = [s["sphere"] for s in snaps if s["goal_over"]]
+    return "ok" if not late and not early else f"late {late} early {early}"
+
+
 def run_once(game: str, companions: list[str], run: int, keep_default: bool, retries: int = 3,
              player_yaml: Path | None = None, tool_yaml: bool | Path = True, lower_bound: bool = False) -> dict:
     """One validation run; random options that make the generation itself fail are re-rolled."""
@@ -108,12 +118,14 @@ def _run_once(game: str, companions: list[str], run: int, keep_default: bool, at
                                            tool_yaml if isinstance(tool_yaml, Path) else
                                            players / f"{multiworld.player_name[player]}.yaml" if tool_yaml else None,
                                            max_snapshots=30, tool=tool))
-    bad = [s for r in reports for s in r["snapshots"] if s["over"] or (s["under"] and not lower_bound)]
+    bad = [s for r in reports for s in r["snapshots"]
+           if s["over"] or s["goal_over"] or (s["under"] and not lower_bound)]
     bad += [{"error": r["error"]} for r in reports if r.get("error")]
     return {"run": run, "generated": True, "ok": not bad and bool(reports),
             "mode": reports[0]["mode"] if reports else None,
             "snapshots": sum(len(r["snapshots"]) for r in reports), "bad": bad,
             "late": [(s["sphere"], s["tool"], s["reference"]) for r in reports for s in r["snapshots"] if s["under"]],
+            "goal": goal_summary(reports),
             "found": [sum(s[k] for r in reports for s in r["snapshots"]) for k in ("tool", "reference")],
             "options": (players / f"{next(iter(names))}.yaml").read_text()[:2000]}
 
@@ -155,7 +167,7 @@ def main() -> int:
         results.append(res)
         status = ("OK " if res.get("ok") else "GEN" if res.get("generated") is False
                   else "NC " if res.get("comparable") is False else "KO ")
-        print(f"{status} run {run}: {res.get('snapshots', '-')} snapshots, {res['seconds']}s "
+        print(f"{status} run {run}: {res.get('snapshots', '-')} snapshots, {res['seconds']}s go mode {res.get('goal')} "
               f"{res.get('error', '')} {json.dumps(res.get('bad', [])[:1], ensure_ascii=False)[:600]}"
               + (f" in logic, tool/reference over all snapshots: {res.get('found')}; late (sphere, tool, reference): "
                  f"{res.get('late')}" if args.lower_bound else ""), flush=True)

@@ -163,7 +163,7 @@ class UTLogicEngine(LogicEngine):
                            regions={int(k): v for k, v in (res.get("regions") or {}).items()},
                            blockers={int(k): v for k, v in (res.get("blockers") or {}).items()},
                            message=("; ".join(res["errors"]) if res.get("errors") else None),
-                           note=res.get("note"))
+                           note=res.get("note"), goal_in_logic=res.get("goal_in_logic"))
 
 
 def default_engine() -> LogicEngine:

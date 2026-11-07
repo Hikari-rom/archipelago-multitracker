@@ -356,7 +356,8 @@ class SlotLogic:
         reachable = sorted({loc.address for loc in reachable_locations})
         regions = {int(loc.address): plain_name(loc.parent_region.name) for loc in reachable_locations
                    if loc.parent_region is not None}
-        result = {"in_logic": reachable, "regions": regions, "errors": errors[:5]}
+        result = {"in_logic": reachable, "regions": regions, "errors": errors[:5],
+                  "goal_in_logic": self.goal_in_logic(state, missing)}
         if explain:
             done = set(reachable)
             targets = [loc for loc in mw.get_locations(pid)
@@ -365,6 +366,27 @@ class SlotLogic:
             if targets:
                 result["blockers"] = self.blockers(state, received, targets)
         return result
+
+    def goal_in_logic(self, state, missing: set[int]) -> bool | None:
+        """Go mode: the slot can reach its victory with what it has (None: the world does not say what it is).
+
+        The world's completion condition when it sets one; else the goal location of GOAL_LOCATIONS (worlds whose
+        client declares the victory itself, like Fall Guys).
+        """
+        mw, pid = self.core.multiworld, self.core.player_id
+        condition = mw.completion_condition.get(pid)
+        try:
+            if condition is not None and has_real_completion(condition):
+                return bool(condition(state))
+            name = GOAL_LOCATIONS.get(self.game)
+            if name and name in mw.regions.location_cache[pid]:
+                location = mw.get_location(name, pid)
+                if isinstance(location.address, int) and location.address not in missing:
+                    return True  # already checked
+                return bool(location.can_reach(state))
+        except Exception:  # noqa: BLE001 - a broken rule must not break the slot's logic
+            log.warning("goal condition failed for %s: %s", self.slot_name, traceback.format_exc())
+        return None
 
     def _pool(self):
         """Progression items of the slot's world (item pool and items placed by the world itself), by name."""
@@ -455,6 +477,16 @@ class SlotLogic:
                     low = mid + 1
             need[name] = high
         return {"kind": "set", "items": [[name, count] for name, count in sorted(need.items())]}
+
+
+# Worlds without a completion condition (the client sends the goal itself): the location that wins the game.
+GOAL_LOCATIONS = {"Fall Guys": "Win a Final Round"}
+
+
+def has_real_completion(condition) -> bool:
+    """False for the `lambda state: True` that MultiWorld sets for every player before the world sets its own."""
+    code = getattr(condition, "__code__", None)
+    return not (code is not None and code.co_name == "<lambda>" and code.co_filename.endswith("BaseClasses.py"))
 
 
 def plain_name(name: Any) -> str:

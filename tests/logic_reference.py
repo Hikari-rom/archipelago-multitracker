@@ -101,6 +101,11 @@ def _counted_by_the_game(multiworld, player: int):
 
 
 def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
+    return reference_logic(multiworld, player, snap)[0]
+
+
+def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], bool | None]:
+    """Locations in logic at this snapshot, and whether the victory is (go mode), on the full multiworld."""
     import copy
     from BaseClasses import CollectionState, ItemClassification
     state = CollectionState(multiworld)
@@ -112,8 +117,17 @@ def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
             item.classification = ItemClassification.progression
         state.collect(item, True, loc)
     state.sweep_for_advancements(locations=[loc for loc in multiworld.get_locations(player) if loc.address is None])
-    return {loc.address for loc in multiworld.get_reachable_locations(state, player)
-            if loc.address is not None and loc.address in snap.missing}
+    reachable = {loc.address for loc in multiworld.get_reachable_locations(state, player)
+                 if loc.address is not None and loc.address in snap.missing}
+    from multitracker.logic.ut_worker import GOAL_LOCATIONS, has_real_completion
+    condition = multiworld.completion_condition[player]
+    if has_real_completion(condition):
+        return reachable, bool(condition(state))
+    goal = GOAL_LOCATIONS.get(multiworld.game[player])
+    if goal is None:  # the world does not say what its victory is: nothing to compare
+        return reachable, None
+    location = multiworld.get_location(goal, player)
+    return reachable, location.address not in snap.missing or bool(location.can_reach(state))
 
 
 class ToolProcess:
@@ -173,7 +187,7 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
         loc_name = multiworld.worlds[player].location_id_to_name
         report = {"slot": name, "game": game, "mode": None, "snapshots": []}
         for snap in snaps:
-            ref = reference_in_logic(multiworld, player, snap)
+            ref, goal_ref = reference_logic(multiworld, player, snap)
             res = tool.request(as_sent_by_server({
                 "op": "update", "slot_name": name, "game": game, "team": 0, "slot": player,
                 "slot_data": slot_data, "yaml": str(yaml_path) if yaml_path else None,
@@ -195,8 +209,12 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
                 "sphere": snap.sphere, "items": len(snap.items), "reference": len(ref), "tool": len(got),
                 "under": sorted(loc_name[a] for a in ref - got),  # in logic but the tool misses it
                 "over": sorted(loc_name[a] for a in got - ref),   # the tool says in logic but it is not
+                # go mode: None when the tool does not know the victory of this world (no go mode shown)
+                "goal_reference": goal_ref, "goal_tool": res.get("goal_in_logic"),
+                "goal_over": res.get("goal_in_logic") is True and not goal_ref,
+                "goal_under": bool(goal_ref) and res.get("goal_in_logic") is not True,
             })
-        report["ok"] = all(not s["under"] and not s["over"] for s in report["snapshots"])
+        report["ok"] = all(not s["under"] and not s["over"] and not s["goal_over"] for s in report["snapshots"])
         return report
     finally:
         if own_tool:

@@ -34,12 +34,14 @@ class LogicResult:
     regions: dict[int, str] = field(default_factory=dict)  # location id -> region name (when known)
     # location id (of LogicRequest.explain, out of logic) -> {"kind": single|set|many|none, "items": ...}
     blockers: dict[int, dict[str, Any]] = field(default_factory=dict)
+    # go mode: the victory is reachable with the items received (None: the world does not say what its victory is)
+    goal_in_logic: bool | None = None
     computed_at: float = field(default_factory=time.time)
     seconds: float | None = None
 
     def to_json(self) -> dict[str, Any]:
         return {"state": self.state, "count": len(self.in_logic), "message": self.message, "note": self.note,
-                "computed_at": self.computed_at, "seconds": self.seconds}
+                "goal_in_logic": self.goal_in_logic, "computed_at": self.computed_at, "seconds": self.seconds}
 
 
 class LogicEngine:
