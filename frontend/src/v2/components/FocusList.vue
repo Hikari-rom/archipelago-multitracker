@@ -11,17 +11,17 @@ const phone = useMediaQuery('(max-width: 699px)')
 const ctx = useCardCtx()
 const st = (s: SlotSummary) => cardState(s, ctx.value)
 const logicOf = (s: SlotSummary) => (s.logic.state === 'ok' ? s.logic.count : 0)
-// BK rows are red, go mode rainbow and finished games gold, the shown game included: its outline marks it as the
-// current one.
+// BK rows are red, go mode rows carry a faint drifting rainbow veil and finished games are gold, the shown game
+// included: its outline marks it as the current one.
 function rowClass(s: SlotSummary): string {
   const now = s.name === props.current
   const state = st(s)
-  const tint = state.goalReached ? 'bg-gold-tint' : state.goMode ? 'bg-go-tint' : state.bk ? 'bg-bk-tint' : now ? 'bg-logic/15' : ''
+  const tint = state.goalReached ? 'bg-gold-tint' : state.goMode ? 'v2-go-row' : state.bk ? 'bg-bk-tint' : now ? 'bg-logic/15' : ''
   const ring = state.goalReached ? 'ring-gold-line' : state.goMode ? 'ring-logic/60' : state.bk ? 'ring-bk' : 'ring-logic/60'
   return now ? `${tint} ring-2 ring-inset ${ring}` : tint
 }
 const barClass = (s: SlotSummary): string =>
-  st(s).goalReached ? 'bg-gold-line' : st(s).goMode ? 'v2-go-bar' : st(s).bk ? 'bg-bk' : s.name === props.current ? 'bg-logic' : ''
+  st(s).goalReached ? 'bg-gold-line' : st(s).goMode ? 'v2-go-edge' : st(s).bk ? 'bg-bk' : s.name === props.current ? 'bg-logic' : ''
 </script>
 
 <template>

@@ -38,6 +38,16 @@ describe('Focus', () => {
     expect(row('won').classes()).toContain('bg-gold-tint')
     expect(row('x').attributes('data-state')).toBeUndefined()
   })
+  it('rows: go mode carries the drifting rainbow veil, the shown one keeps its outline', () => {
+    const zero = { state: 'ok' as const, count: 0, message: null }
+    const w = mount(FocusList, { props: { slots: [mk({ name: 'go', logic: zero, go_mode: true }), mk({ name: 'x', logic: { ...zero, count: 3 } })], current: 'go' } })
+    const row = (n: string) => w.find(`[data-focus-row="${n}"]`)
+    expect(row('go').attributes('data-state')).toBe('go')
+    expect(row('go').classes()).toContain('v2-go-row')
+    expect(row('go').classes()).toContain('ring-logic/60')
+    expect(row('go').find('.v2-go-edge').exists()).toBe(true)
+    expect(row('x').classes()).not.toContain('v2-go-row')
+  })
   it('rows: number, tags, remaining', () => {
     const s = [mk({ name: 'a', game: 'A', logic: { state: 'ok', count: 3, message: null }, items: { received: 2, new: 2 }, checks: { done: 1, total: 10, remaining: 9 } })]
     const t = mount(FocusList, { props: { slots: s, current: null } }).text()

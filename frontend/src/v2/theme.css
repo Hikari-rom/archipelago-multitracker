@@ -132,6 +132,30 @@ html[data-v2='plan'] body {
     background-size: 200% 100%;
     animation: v2-go-drift-one 9s linear infinite;
   }
+  /* Focus list row: the rainbow as a faint veil over the whole row, drifting along it; the text stays on an almost
+     plain ground. Plan's accents are dark, so they get a lower alpha for the same weight on white. */
+  .v2-go-row {
+    --go-veil: 14%;
+    background-image: linear-gradient(90deg, color-mix(in oklab, var(--go-1) var(--go-veil), transparent),
+      color-mix(in oklab, var(--go-2) var(--go-veil), transparent), color-mix(in oklab, var(--go-3) var(--go-veil), transparent),
+      color-mix(in oklab, var(--go-4) var(--go-veil), transparent), color-mix(in oklab, var(--go-5) var(--go-veil), transparent),
+      color-mix(in oklab, var(--go-6) var(--go-veil), transparent), color-mix(in oklab, var(--go-7) var(--go-veil), transparent),
+      color-mix(in oklab, var(--go-1) var(--go-veil), transparent));
+    background-size: 200% 100%;
+    animation: v2-go-drift-one 7s linear infinite;
+  }
+  html[data-v2='plan'] .v2-go-row { --go-veil: 10%; }
+  /* its 3px left edge: the same rainbow, drifting down the edge (a horizontal one shows no motion at that width) */
+  .v2-go-edge {
+    background: linear-gradient(180deg, var(--go-1), var(--go-2), var(--go-3), var(--go-4), var(--go-5), var(--go-6),
+      var(--go-7), var(--go-1));
+    background-size: 100% 200%;
+    animation: v2-go-drift-down 7s linear infinite;
+  }
+}
+@keyframes v2-go-drift-down {
+  from { background-position: 0 0%; }
+  to { background-position: 0 200%; }
 }
 @keyframes v2-go-drift {
   from { background-position: 0 0, 0 0, 0% 0; }
@@ -152,6 +176,6 @@ html[data-v2='plan'] body {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .v2-go, .v2-go::before, .v2-go-text, .v2-go-bar { animation: none; }
+  .v2-go, .v2-go::before, .v2-go-text, .v2-go-bar, .v2-go-row, .v2-go-edge { animation: none; }
   .v2-go { box-shadow: -10px 0 26px -14px var(--go-1), 10px 0 26px -14px var(--go-5); }
 }
