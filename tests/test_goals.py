@@ -129,6 +129,32 @@ def test_ori_wotw_wisps_are_counted_from_their_locations():
     assert all(s["done"] is not None for s in goal["steps"]), goal["steps"]
 
 
+WOTW_SHRIEK = "Capacités pour Shriek"
+
+
+def _wotw(slot_data, received):
+    from multitracker.goals import describe
+    c = _ctx("Ori and the Will of the Wisps", slot_data, [], [])
+    c.received = Counter(received)
+    return {x["label"]: x for x in describe(c)["counters"]}
+
+
+def test_ori_wotw_launch_comes_from_its_fragments():
+    abilities = {"Sword": 1, "Double Jump": 1, "Dash": 1, "Bash": 1, "Glide": 1, "Burrow": 1}
+    sd = {"goal_trees": True, "launch_frag": 5, "total_frag": 7}
+    assert _wotw(sd, {**abilities, "Launch Fragment": 4})[WOTW_SHRIEK]["current"] == 6
+    shriek = _wotw(sd, {**abilities, "Launch Fragment": 5})[WOTW_SHRIEK]
+    assert shriek["current"] == 7 and "5 Launch Fragments" in shriek["detail"]
+    # without the option, Launch is an item of its own
+    assert _wotw({"goal_trees": True, "launch_frag": 0}, {**abilities, "Launch": 1})[WOTW_SHRIEK]["current"] == 7
+
+
+def test_ori_wotw_relics_are_counted():
+    sd = {"goal_relics": True, "relic_locs": [[0, 1], [1, 2], [2, 3]]}
+    assert _wotw(sd, {"Relic": 2})["Reliques"] == {"label": "Reliques", "current": 2, "target": 3}
+    assert "Reliques" not in _wotw({"goal_trees": True}, {"Relic": 2})
+
+
 def test_sm64_bowser_stages_follow_their_key_checks():
     from multitracker.goals import describe
     keys = ["Bowser in the Dark World Key", "Bowser in the Fire Sea Key"]

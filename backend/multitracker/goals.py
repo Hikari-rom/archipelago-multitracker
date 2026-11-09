@@ -346,9 +346,22 @@ def ori_wotw(c: GoalContext) -> Goal:
     g = Goal(c, "Trouver " + " et ".join(labels.get(x, x) for x in goals) + ", puis vaincre Shriek")
     if "trees" in goals:
         g.counter("Arbres", sum(t in c.checked for t in ORI_WOTW_TREES), len(ORI_WOTW_TREES))
-    owned = sum(c.has(a) for a in ORI_WOTW_FINAL) + (1 if c.has("Sword") or c.has("Hammer") else 0)
+    # launch_fragments: Launch is not in the pool, an event gives it once enough Launch Fragments are received
+    frags = int(c.opt("launch_frag", None, 0) or 0)
+    if not frags and c.yaml.get("launch_fragments"):
+        frags = int(c.yaml.get("fragments_required") or 0)
+    launch = c.has("Launch") or (frags > 0 and c.has("Launch Fragment", frags))
+    owned = sum(c.has(a) for a in ORI_WOTW_FINAL if a != "Launch") + launch + (c.has("Sword") or c.has("Hammer"))
     g.counter("Capacités pour Shriek", owned, len(ORI_WOTW_FINAL) + 1,
-              "Sword ou Hammer, Double Jump, Dash, Bash, Grapple, Glide, Burrow, Launch")
+              "Sword ou Hammer, Double Jump, Dash, Bash, Grapple, Glide, Burrow, "
+              + (f"Launch ({frags} Launch Fragments, {c.count('Launch Fragment')} reçus)" if frags else "Launch"))
+    if "relics" in goals:
+        relic_locs = c.opt("relic_locs", None, None)
+        target = len(relic_locs) if relic_locs is not None else int(c.yaml.get("relic_count") or 0)
+        if target:
+            g.counter("Reliques", c.count("Relic"), target)
+        else:
+            g.step("Les reliques", None)
     if "wisps" in goals:
         if c.locations.issuperset(ORI_WOTW_WISPS):
             g.counter("Wisps", sum(w in c.checked for w in ORI_WOTW_WISPS), len(ORI_WOTW_WISPS))
