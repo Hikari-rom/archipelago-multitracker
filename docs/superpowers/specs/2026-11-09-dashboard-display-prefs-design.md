@@ -99,6 +99,7 @@ Seulement des `v-if` ; aucune mise en page ne change.
 - `ActiveCard.vue` : `slot`, `done` (le texte de la ligne sous le titre se recompose sans séparateurs orphelins),
   `newItems`, `regions`, `goal`.
 - `GameTile.vue` : `slot`, `remaining`, `newItems`, `hints`, `goal` (puce GO MODE).
+- `ActiveCarousel.vue` (cartes actives sur téléphone) : `done` (« en logique · x / y »), `goal`.
 - `FocusPanel.vue` : `slot`, `done`, `remaining`, `activity` (« dernier check »), `goal`.
 - `FocusList.vue` : `activity`, `progress`, `hints`, `newItems`, `remaining`.
 - `StateChips.vue` : `activity` ; `connection` pour les états ok, connexion en cours et en pause, la branche erreur
@@ -110,7 +111,9 @@ jointes par « · », pour ne laisser ni point isolé ni ligne vide.
 
 ## Configuration
 
-Dans `frontend/src/components/ConfigView.vue`, carte « Affichage (sur cet appareil) », un nouveau bloc en tête :
+Dans `frontend/src/components/ConfigView.vue`, carte « Affichage (sur cet appareil) », un nouveau bloc en tête. Le bloc
+est un composant à part, `frontend/src/v2/components/DisplayInfos.vue`, pour être testé sans monter toute la page
+(qui appelle l'API au montage) :
 
 ```
 Infos du tableau de bord
@@ -142,7 +145,7 @@ Front (`cd frontend && npm test`, vitest + happy-dom) :
   - `StateChips` en erreur de connexion : erreur et « Réessayer » affichés avec `connection` décoché ;
   - `RecentStrip` absent avec `recent` décoché, en statique comme en défilant ;
   - Complet : `TotalsBar` et `ActiveCard` rendent le même HTML qu'avant la fonctionnalité.
-- Configuration : « Essentiel » coche les bonnes cases ; décocher une case affiche « Personnalisé » ; recocher la
+- Configuration (`DisplayInfos.vue` monté seul) : « Essentiel » coche les bonnes cases ; décocher une case affiche « Personnalisé » ; recocher la
   revient au préréglage.
 
 Vérifications finales : `npm run build`, puis captures (`node scripts/screenshot.mjs`) en Essentiel, Standard et
