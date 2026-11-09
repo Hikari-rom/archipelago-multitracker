@@ -19,6 +19,7 @@
    Go mode de `natazox_slime` vérifié depuis le Pi (lecture seule) : `goal_in_logic` vrai (but `newbucks`, sans règle).
    2026-11-09 : infos du tableau de bord au choix, par appareil (Configuration › Affichage : Essentiel / Standard /
    Complet et une case par info ; Complet par défaut) (M30, D36, v0.2.21).
+   Objectif d'Ori WotW : le Launch compte une fois les Launch Fragments demandés reçus, compteur des reliques (v0.2.22).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
