@@ -11,6 +11,10 @@ const browser = await chromium.launch(executablePath ? { executablePath } : {})
 const shots = [
   ['dashboard-cards', '/', { 'amt-v2-layout': 'cards' }],
   ['dashboard-focus', '/', { 'amt-v2-layout': 'focus' }],
+  ['dashboard-cards-essentiel', '/', { 'amt-v2-layout': 'cards', 'amt-v2-display': '{"preset":"essentiel","shown":[]}' }],
+  ['dashboard-cards-standard', '/', { 'amt-v2-layout': 'cards', 'amt-v2-display': '{"preset":"standard","shown":[]}' }],
+  ['dashboard-focus-essentiel', '/', { 'amt-v2-layout': 'focus', 'amt-v2-display': '{"preset":"essentiel","shown":[]}' }],
+  ['config', '/#config', {}],
   ['history', '/#history', {}],
   ['goals', '/#goals', {}],
 ]

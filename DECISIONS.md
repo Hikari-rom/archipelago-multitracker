@@ -446,3 +446,13 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   `tests/test_logic_jak.py` (fixture `jak_cells`, seuils de la room) : 22 + 3 filler = 25 de progression.
 - **Effet sur la room** (2026-11-07) : `romain_jak1` passe de 15 à 63 checks en logique (Misty Island seulement →
   Fire Canyon, Rock Village, Precursor Basin, Lost Precursor City, Boggy Swamp).
+
+## D36 — Infos du tableau de bord au choix, par appareil (2026-11-09, demandé par Romain)
+- **Le problème** : des amis de Romain, chacun sur sa propre instance, trouvent le tableau de bord v2 trop chargé.
+- **Réglage par appareil** (`localStorage`, `amt-v2-display`), dans Configuration › Affichage : densité Essentiel /
+  Standard / Complet, puis une case par info (11 infos), qui vaut partout (totaux, bandeau, cartes, tuiles, Focus).
+  Pas de réglage serveur : chaque ami a son instance, et les autres réglages d'affichage sont déjà par appareil.
+- **Complet par défaut** : l'affichage d'avant, au pixel près (instantanés `tests/v2/display-baseline.test.ts`).
+- **Jamais masqués** : gros chiffre, nom du jeu, alertes (erreur de connexion, BK, logique approximative ou
+  indisponible), couleurs d'état, boutons, onglets Détails.
+- Spec : `docs/superpowers/specs/2026-11-09-dashboard-display-prefs-design.md`.
