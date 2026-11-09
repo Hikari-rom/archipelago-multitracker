@@ -15,10 +15,10 @@
    2026-11-07 : go mode en arc-en-ciel (la victoire est en logique), but de Fall Guys (Final Round Tickets), but
    choisi à la main dans la Configuration, désactivé par défaut (M29, D34, v0.2.20). Go mode vérifié sur 100 jeux ;
    Pokemon Emerald relit sa ville de vol gratuit dans le `slot_data` (checks en avance avant).
-   Jak and Daxter compte toutes les Power Cells reçues, filler comprises (Fire Canyon était en retard, D35).
+   Jak and Daxter compte toutes les Power Cells reçues, filler comprises (Fire Canyon était en retard, D35, v0.2.21).
    Go mode de `natazox_slime` vérifié depuis le Pi (lecture seule) : `goal_in_logic` vrai (but `newbucks`, sans règle).
    2026-11-09 : infos du tableau de bord au choix, par appareil (Configuration › Affichage : Essentiel / Standard /
-   Complet et une case par info ; Complet par défaut) (M30, D36).
+   Complet et une case par info ; Complet par défaut) (M30, D36, v0.2.21).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
