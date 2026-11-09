@@ -4,7 +4,7 @@ import { useMediaQuery } from '@vueuse/core'
 import { FEED_SHORT, feedItems } from '../../lib/dashboard'
 import { formatWhen } from '../../lib/history'
 import type { SlotSummary } from '../../lib/types'
-import { tracker } from '../../stores/tracker'
+import { shows, tracker } from '../../stores/tracker'
 import { openHistory } from '../lib/nav'
 import NewsTicker from './NewsTicker.vue'
 
@@ -15,7 +15,9 @@ const props = defineProps<{ slots: SlotSummary[] }>()
 const phone = useMediaQuery('(max-width: 699px)')
 const ticker = computed(() => (tracker.ticker === 'off' ? null : tracker.ticker))
 const items = computed(() =>
-  feedItems(tracker.recent, new Set(props.slots.map((s) => s.name)), ticker.value ? TICKER_COUNT : phone.value ? 1 : FEED_SHORT))
+  shows('recent')
+    ? feedItems(tracker.recent, new Set(props.slots.map((s) => s.name)), ticker.value ? TICKER_COUNT : phone.value ? 1 : FEED_SHORT)
+    : [])
 </script>
 
 <template>

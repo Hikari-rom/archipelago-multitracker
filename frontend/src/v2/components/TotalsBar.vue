@@ -4,7 +4,7 @@ import { useMediaQuery } from '@vueuse/core'
 import { showOwnerFilter } from '../../lib/config'
 import { SORT_LABELS, totals, type SortMode } from '../../lib/dashboard'
 import type { SlotSummary } from '../../lib/types'
-import { tracker } from '../../stores/tracker'
+import { shows, tracker } from '../../stores/tracker'
 import type { V2Layout } from '../lib/prefs'
 import { isBK, isGoMode } from '../lib/card'
 import OwnerSelect from './OwnerSelect.vue'
@@ -55,9 +55,9 @@ function onSort(e: Event) {
     <template v-else>
       <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 font-mono text-sm">
         <span><strong class="text-logic">{{ t.inLogic }}</strong> en logique</span>
-        <span>{{ t.done }} / {{ t.total }} faits</span>
-        <span v-if="t.newItems" class="text-new">★ {{ t.newItems }} nouveaux</span>
-        <span v-if="go" data-go-total><span class="v2-go-pill"><span class="v2-go-text">GO</span></span> {{ go }} jeu{{ go > 1 ? 'x' : '' }} en go mode</span>
+        <span v-if="shows('done')">{{ t.done }} / {{ t.total }} faits</span>
+        <span v-if="t.newItems && shows('newItems')" class="text-new">★ {{ t.newItems }} nouveaux</span>
+        <span v-if="go && shows('goal')" data-go-total><span class="v2-go-pill"><span class="v2-go-text">GO</span></span> {{ go }} jeu{{ go > 1 ? 'x' : '' }} en go mode</span>
         <span v-if="bk" data-bk-total><span class="rounded bg-bk px-1 text-bk-foreground">BK</span> {{ bk }} jeu{{ bk > 1 ? 'x' : '' }} sans check en logique</span>
         <span class="text-muted-foreground">{{ slots.length }} jeux</span>
       </div>
