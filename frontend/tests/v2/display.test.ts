@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { setDisplay, shows, tracker } from '../../src/stores/tracker'
 import { applyPreset, INFO_KEYS, joinShown, normalizeShown, PRESETS, presetOf, toggleInfo } from '../../src/v2/lib/display'
 
 describe('display presets', () => {
@@ -45,5 +46,22 @@ describe('joinShown', () => {
     expect(joinShown(['checks en logique', 'romain_tww', '4 / 10 faits'])).toBe('checks en logique · romain_tww · 4 / 10 faits')
     expect(joinShown(['checks en logique', false, null, undefined, ''])).toBe('checks en logique')
     expect(joinShown([false, false])).toBe('')
+  })
+})
+
+describe('store', () => {
+  afterEach(() => {
+    setDisplay(applyPreset('complet'))
+    localStorage.clear()
+  })
+  it('starts on Complet', () => {
+    expect(tracker.display.preset).toBe('complet')
+    expect(INFO_KEYS.every(shows)).toBe(true)
+  })
+  it('setDisplay changes what shows() answers and saves it', () => {
+    setDisplay(applyPreset('essentiel'))
+    expect(shows('newItems')).toBe(true)
+    expect(shows('slot')).toBe(false)
+    expect(JSON.parse(localStorage.getItem('amt-v2-display')!)).toEqual(applyPreset('essentiel'))
   })
 })

@@ -7,7 +7,8 @@ import { splitFeatured } from '../lib/dashboard'
 import { initialState, reduce, type TrackerEvent } from '../lib/state'
 import type { ActivityOverrides } from '../lib/logic'
 import type { Pin, RecentItem, SlotDetail, SseState } from '../lib/types'
-import { loadHintsLayout, loadTicker } from '../v2/lib/prefs'
+import { loadDisplay, loadHintsLayout, loadTicker, saveDisplay } from '../v2/lib/prefs'
+import type { DisplayPrefs, InfoKey } from '../v2/lib/display'
 
 // declared before the store: its initializer reads it (a later const would throw there, silently caught)
 const ACTIVITY_KEY = 'amt-activity'
@@ -32,6 +33,7 @@ export const tracker = reactive({
   ticker: loadTicker(),
   /** layout of the Indices page (setting of this device) */
   hintsLayout: loadHintsLayout(),
+  display: loadDisplay(),
   /** pinned checks of the room, Indices page (shared by every device, D31) */
   pins: [] as Pin[],
   pinError: '' as string,
@@ -122,6 +124,15 @@ export function setInactive(name: string): void {
 export function restoreActivity(prev: ActivityOverrides): void {
   tracker.activity = cloneActivity(prev)
   saveActivity()
+}
+
+export function shows(key: InfoKey): boolean {
+  return tracker.display.shown.includes(key)
+}
+
+export function setDisplay(p: DisplayPrefs): void {
+  tracker.display = p
+  saveDisplay(p)
 }
 
 export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history' | 'room' | 'hints'
