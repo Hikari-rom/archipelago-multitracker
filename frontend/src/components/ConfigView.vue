@@ -32,7 +32,8 @@ import {
   withGoal,
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
-import { refreshMeta, setActiveMode, setView, tracker } from '../stores/tracker'
+import { refreshMeta, setActiveMode, setView, shows, tracker } from '../stores/tracker'
+import DisplayInfos from '../v2/components/DisplayInfos.vue'
 import { HINTS_LAYOUT_LABELS, saveHintsLayout, saveTicker, TICKER_LABELS, type HintsLayout, type TickerStyle } from '../v2/lib/prefs'
 
 const emit = defineEmits<{ saved: [] }>()
@@ -611,6 +612,7 @@ const selectClass =
           <CardTitle>Affichage <span class="text-muted-foreground text-sm font-normal">(sur cet appareil)</span></CardTitle>
         </CardHeader>
         <CardContent class="flex flex-col gap-3 px-5">
+          <DisplayInfos />
           <label class="flex flex-wrap items-center gap-2 text-sm">
             Jeux actifs (affichés en premier)
             <select
@@ -639,7 +641,7 @@ const selectClass =
           </label>
           <label class="flex flex-wrap items-center gap-2 text-sm">
             Bandeau « Derniers reçus » du tableau de bord
-            <select :value="tracker.ticker" data-ticker-style :class="cn(selectClass, 'w-auto')" @change="onTicker">
+            <select :value="tracker.ticker" data-ticker-style :disabled="!shows('recent')" :class="cn(selectClass, 'w-auto disabled:opacity-50')" @change="onTicker">
               <option v-for="t in tickerStyles" :key="t" :value="t">{{ TICKER_LABELS[t] }}</option>
             </select>
           </label>

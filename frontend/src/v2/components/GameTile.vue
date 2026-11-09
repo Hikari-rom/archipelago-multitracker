@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { SlotSummary } from '../../lib/types'
-import { isOpen, pinActive, toggleOpen } from '../../stores/tracker'
+import { isOpen, pinActive, shows, toggleOpen } from '../../stores/tracker'
 import { cardState, stateClass, useCardCtx } from '../lib/card'
+import { joinShown } from '../lib/display'
 import BigNumber from './BigNumber.vue'
 import DetailTabs from './DetailTabs.vue'
 import StateChips from './StateChips.vue'
@@ -15,6 +16,8 @@ const showChips = computed(() => {
   const s = state.value
   return s.connection.kind === 'error' || s.connection.kind === 'sleeping' || s.logic.kind === 'pending' || (s.logic.kind === 'ok' && s.logic.approx)
 })
+const meta = computed(() =>
+  joinShown([shows('slot') && props.summary.name, shows('remaining') && `${props.summary.checks.remaining} restants`]))
 const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent max-[699px]:min-h-11'
 </script>
 
@@ -27,12 +30,12 @@ const btn = 'inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hov
     <BigNumber :state="state" size="lg" />
     <div class="min-w-0">
       <h3 class="line-clamp-2 font-semibold" :title="summary.game">{{ summary.game }}</h3>
-      <p class="font-mono text-xs text-muted-foreground">{{ summary.name }} · {{ summary.checks.remaining }} restants</p>
+      <p v-if="meta" class="font-mono text-xs text-muted-foreground">{{ meta }}</p>
     </div>
     <div class="flex flex-wrap items-center gap-2 text-sm">
-      <span v-if="summary.items.new > 0" class="text-new">★{{ summary.items.new }}</span>
-      <span v-if="summary.hints.in_my_world_in_logic > 0" class="text-hint">◆{{ summary.hints.in_my_world_in_logic }}</span>
-      <span v-if="state.goMode && !showChips" data-go-pill class="v2-go-pill" title="La victoire est en logique : il n'y a plus qu'à y aller"><span class="v2-go-text">GO MODE</span></span>
+      <span v-if="summary.items.new > 0 && shows('newItems')" class="text-new">★{{ summary.items.new }}</span>
+      <span v-if="summary.hints.in_my_world_in_logic > 0 && shows('hints')" class="text-hint">◆{{ summary.hints.in_my_world_in_logic }}</span>
+      <span v-if="state.goMode && !showChips && shows('goal')" data-go-pill class="v2-go-pill" title="La victoire est en logique : il n'y a plus qu'à y aller"><span class="v2-go-text">GO MODE</span></span>
       <span v-if="state.logic.kind === 'unavailable'" data-unavailable class="min-w-0 basis-full break-words text-xs text-muted-foreground">Logique indisponible<template v-if="state.logic.message"> : {{ state.logic.message }}</template></span>
       <StateChips v-if="showChips" :state="state" />
     </div>

@@ -2,7 +2,7 @@
 import { useMediaQuery } from '@vueuse/core'
 import { barParts } from '../../lib/dashboard'
 import type { SlotSummary } from '../../lib/types'
-import { pinActive } from '../../stores/tracker'
+import { pinActive, shows } from '../../stores/tracker'
 import { cardState, useCardCtx } from '../lib/card'
 import BigNumber from './BigNumber.vue'
 
@@ -40,19 +40,19 @@ const barClass = (s: SlotSummary): string =>
           <span class="min-w-0 flex-1">
             <span class="flex items-baseline gap-2">
               <span class="truncate text-sm font-medium" :title="s.game">{{ s.game }}</span>
-              <span v-if="st(s).activity?.kind === 'chosen'" class="shrink-0 font-mono text-[11px] text-logic">◉ choisi</span>
-              <span v-else-if="st(s).activity?.kind === 'auto'" class="shrink-0 font-mono text-[11px] text-logic">◔ auto</span>
+              <span v-if="st(s).activity?.kind === 'chosen' && shows('activity')" class="shrink-0 font-mono text-[11px] text-logic">◉ choisi</span>
+              <span v-else-if="st(s).activity?.kind === 'auto' && shows('activity')" class="shrink-0 font-mono text-[11px] text-logic">◔ auto</span>
             </span>
-            <span class="mt-1 flex h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+            <span v-if="shows('progress')" class="mt-1 flex h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <span class="bg-done" :style="{ width: barParts(s.checks.done, logicOf(s), s.checks.total).done + '%' }" />
               <span class="bg-logic" :style="{ width: barParts(s.checks.done, logicOf(s), s.checks.total).logic + '%' }" />
             </span>
           </span>
           <span class="shrink-0 font-mono text-xs">
-            <span v-if="s.hints.in_my_world_in_logic" class="text-hint">◆{{ s.hints.in_my_world_in_logic }} </span>
-            <span v-if="s.items.new" class="text-new">★{{ s.items.new }}</span>
+            <span v-if="s.hints.in_my_world_in_logic && shows('hints')" class="text-hint">◆{{ s.hints.in_my_world_in_logic }} </span>
+            <span v-if="s.items.new && shows('newItems')" class="text-new">★{{ s.items.new }}</span>
           </span>
-          <span class="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">{{ s.checks.remaining }} rest.</span>
+          <span v-if="shows('remaining')" class="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">{{ s.checks.remaining }} rest.</span>
         </button>
       </li>
     </ul>

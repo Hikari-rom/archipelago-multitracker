@@ -337,3 +337,8 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [ ] TerraNil, seed 201 : « River Valley » en retard à la sphère 19 (0 en logique contre 6), retard seulement
 - [ ] Powerwash Simulator : go mode en retard (tuple `goal_level_amount` dans l'apworld sous UT), adaptateur possible
 - [ ] Idées : notification ou ligne du fil au passage en go mode ; go mode des autres joueurs (Room complète, Indices)
+
+## M30 — Infos du tableau de bord au choix (demandé par Romain le 2026-11-09, D36)
+- [x] Densité Essentiel / Standard / Complet et une case par info dans Configuration › Affichage (sur cet appareil)
+- [x] Totaux, bandeau, cartes actives, carrousel téléphone, tuiles, panneau et liste Focus suivent le réglage ;
+  alertes toujours affichées ; Complet par défaut, identique à avant

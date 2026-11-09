@@ -1,0 +1,171 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dashboard with every info shown (Complet) > active card 1`] = `
+"<article data-active-card="romain_tww" class="rounded-[14px] border bg-card p-5 v2-go">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-1.5"><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs border-transparent bg-logic/15 text-logic">◔ Actif · auto · il y a 5 min</span><span class="text-xs text-muted-foreground">Expire dans 25 min</span><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-done">● Connecté</span>
+      <!--v-if-->
+      <!--v-if--><span data-go-pill="" class="v2-go-pill"><span class="v2-go-text">GO MODE</span><span class="text-muted-foreground">la victoire est en logique</span></span>
+      <!--v-if-->
+    </div>
+    <div class="flex items-center gap-2"><button type="button" data-dismiss="" class="inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent max-[699px]:min-h-11">✕ Plus actif</button><button type="button" class="inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent max-[699px]:min-h-11" aria-expanded="false">Détails ▾</button></div>
+  </div>
+  <div class="mt-4 flex items-center gap-5"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[56px] text-logic"><!--v-if-->3</span>
+    <!--v-if--></span>
+    <!--v-if--></span>
+    <div class="min-w-0">
+      <h3 class="line-clamp-2 text-2xl font-semibold" title="The Wind Waker">The Wind Waker</h3>
+      <p class="font-mono text-xs text-muted-foreground">checks en logique · romain_tww · 4 / 10 faits</p>
+      <p class="mt-1 text-sm"><span class="text-new">★ 2 nouveaux</span> · <button type="button" class="text-logic hover:underline">Marquer comme vu</button></p>
+    </div>
+  </div>
+  <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2"><span class="rounded-full border px-2.5 py-0.5 font-mono text-xs">Great Sea 1</span><span class="rounded-full border px-2.5 py-0.5 font-mono text-xs">Windfall 1</span>
+    <!--v-if-->
+    <p class="text-sm text-muted-foreground ml-auto">But non décrit pour ce jeu
+      <!--v-if-->
+    </p>
+  </div>
+  <!--v-if-->
+</article>"
+`;
+
+exports[`dashboard with every info shown (Complet) > focus list 1`] = `
+"<div class="rounded-[14px] border bg-card">
+  <p class="border-b px-4 py-2 font-mono text-xs text-muted-foreground">2 jeux · clic = afficher et rendre actif</p>
+  <ul class="overflow-y-auto min-[700px]:max-h-[calc(100vh-220px)]">
+    <li class="border-b last:border-b-0"><button type="button" data-focus-row="romain_tww" aria-current="true" class="relative flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left hover:bg-accent v2-go-row ring-2 ring-inset ring-logic/60" data-state="go"><span class="absolute inset-y-0 left-0 w-[3px] v2-go-edge" aria-hidden="true"></span><span class="w-12 shrink-0 text-right"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[22px] text-logic"><!--v-if-->3</span>
+        <!--v-if--></span>
+        <!--v-if--></span></span><span class="min-w-0 flex-1"><span class="flex items-baseline gap-2"><span class="truncate text-sm font-medium" title="The Wind Waker">The Wind Waker</span><span class="shrink-0 font-mono text-[11px] text-logic">◔ auto</span></span><span class="mt-1 flex h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true"><span class="bg-done" style="width: 40%;"></span><span class="bg-logic" style="width: 30%;"></span></span></span><span class="shrink-0 font-mono text-xs"><span class="text-hint">◆1</span><span class="text-new">★2</span></span><span class="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">6 rest.</span>
+      </button></li>
+    <li class="border-b last:border-b-0"><button type="button" data-focus-row="romain_celeste" class="relative flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left hover:bg-accent"><span class="absolute inset-y-0 left-0 w-[3px]" aria-hidden="true"></span><span class="w-12 shrink-0 text-right"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[22px] text-logic"><!--v-if-->3</span>
+        <!--v-if--></span>
+        <!--v-if--></span></span><span class="min-w-0 flex-1"><span class="flex items-baseline gap-2"><span class="truncate text-sm font-medium" title="Celeste">Celeste</span><span class="shrink-0 font-mono text-[11px] text-logic">◔ auto</span></span><span class="mt-1 flex h-1 overflow-hidden rounded-full bg-muted" aria-hidden="true"><span class="bg-done" style="width: 40%;"></span><span class="bg-logic" style="width: 30%;"></span></span></span><span class="shrink-0 font-mono text-xs"><span class="text-hint">◆1</span><span class="text-new">★2</span></span><span class="w-16 shrink-0 text-right font-mono text-xs text-muted-foreground">6 rest.</span>
+      </button></li>
+  </ul>
+</div>"
+`;
+
+exports[`dashboard with every info shown (Complet) > focus panel 1`] = `
+"<article data-focus-panel="romain_tww" class="rounded-[14px] border bg-card p-6 v2-go">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="flex flex-wrap items-center gap-1.5"><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs border-transparent bg-logic/15 text-logic">◔ Actif · auto · il y a 5 min</span><span class="text-xs text-muted-foreground">Expire dans 25 min</span><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-done">● Connecté</span>
+      <!--v-if-->
+      <!--v-if--><span data-go-pill="" class="v2-go-pill"><span class="v2-go-text">GO MODE</span><span class="text-muted-foreground">la victoire est en logique</span></span>
+      <!--v-if-->
+    </div>
+    <div class="flex flex-wrap items-center gap-3"><span class="font-mono text-xs text-muted-foreground">dernier check il y a 5 min</span><button type="button" data-dismiss="" class="inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent">✕ Plus actif</button></div>
+  </div>
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-5">
+    <div class="flex min-w-0 items-center gap-5"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[56px] text-logic"><!--v-if-->3</span>
+      <!--v-if--></span>
+      <!--v-if--></span>
+      <div class="min-w-0">
+        <h3 class="line-clamp-2 text-2xl font-semibold" title="The Wind Waker">The Wind Waker</h3>
+        <p class="font-mono text-xs text-muted-foreground">checks en logique · romain_tww · 4 / 10 faits · 6 restants</p>
+      </div>
+    </div>
+    <p class="text-sm text-muted-foreground">But non décrit pour ce jeu
+      <!--v-if-->
+    </p>
+  </div>
+  <div class="mt-5">
+    <div role="tablist" aria-label="Détails du jeu" class="flex gap-1 overflow-x-auto border-b [scrollbar-width:none] [&amp;::-webkit-scrollbar]:hidden min-[700px]:flex-wrap min-[700px]:overflow-visible"><button type="button" role="tab" data-tab="logic" id="dt-romain_tww-logic" aria-controls="dt-romain_tww-panel" aria-selected="true" tabindex="0" class="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm min-[700px]:min-h-9 border-logic font-semibold">En logique 2</button><button type="button" role="tab" data-tab="new" id="dt-romain_tww-new" aria-controls="dt-romain_tww-panel" aria-selected="false" tabindex="-1" class="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm min-[700px]:min-h-9 border-transparent text-muted-foreground hover:text-foreground">★ Nouveaux 0</button><button type="button" role="tab" data-tab="received" id="dt-romain_tww-received" aria-controls="dt-romain_tww-panel" aria-selected="false" tabindex="-1" class="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm min-[700px]:min-h-9 border-transparent text-muted-foreground hover:text-foreground">Reçus 0</button><button type="button" role="tab" data-tab="hints" id="dt-romain_tww-hints" aria-controls="dt-romain_tww-panel" aria-selected="false" tabindex="-1" class="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm min-[700px]:min-h-9 border-transparent text-muted-foreground hover:text-foreground">Hints 0</button><button type="button" role="tab" data-tab="goal" id="dt-romain_tww-goal" aria-controls="dt-romain_tww-panel" aria-selected="false" tabindex="-1" class="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm min-[700px]:min-h-9 border-transparent text-muted-foreground hover:text-foreground">But</button></div>
+    <div id="dt-romain_tww-panel" role="tabpanel" aria-labelledby="dt-romain_tww-logic" class="pt-3">
+      <div class="grid gap-3 min-[900px]:grid-cols-[minmax(0,240px)_1fr]">
+        <ul class="space-y-1">
+          <li><button type="button" class="flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-accent min-[700px]:min-h-8 bg-logic/15"><span class="min-w-0 flex-1 truncate">Great Sea</span>
+              <!--v-if--><span class="font-mono tabular-nums">1</span>
+            </button></li>
+          <li><button type="button" class="flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-accent min-[700px]:min-h-8"><span class="min-w-0 flex-1 truncate">Windfall</span>
+              <!--v-if--><span class="font-mono tabular-nums">1</span>
+            </button></li>
+        </ul>
+        <div>
+          <h4 class="mb-2 text-sm font-semibold">Great Sea · 1 en logique · hintées en premier</h4>
+          <ul class="space-y-1.5">
+            <li data-location="" class="text-sm">
+              <!--v-if-->Great Sea chest
+              <!--v-if-->
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>"
+`;
+
+exports[`dashboard with every info shown (Complet) > phone carousel 1`] = `
+"<div data-carousel="" class="flex snap-x snap-mandatory overflow-x-auto rounded-[14px] border bg-card">
+  <article data-carousel-card="romain_tww" class="min-w-full snap-start rounded-[14px] p-4 v2-go">
+    <div class="flex items-start justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-1.5"><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs border-transparent bg-logic/15 text-logic">◔ Actif · auto · il y a 5 min</span><span class="text-xs text-muted-foreground">Expire dans 25 min</span><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-done">● Connecté</span>
+        <!--v-if-->
+        <!--v-if--><span data-go-pill="" class="v2-go-pill"><span class="v2-go-text">GO MODE</span><span class="text-muted-foreground">la victoire est en logique</span></span>
+        <!--v-if-->
+      </div>
+      <!--v-if-->
+    </div>
+    <div class="mt-3 flex items-center gap-3"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[34px] text-logic"><!--v-if-->3</span>
+      <!--v-if--></span>
+      <!--v-if--></span>
+      <div class="min-w-0 flex-1">
+        <h3 class="line-clamp-2 text-base font-semibold" title="The Wind Waker">The Wind Waker</h3>
+        <p class="font-mono text-xs text-muted-foreground">en logique · 4 / 10</p>
+      </div>
+    </div>
+    <p class="text-sm text-muted-foreground mt-2">But non décrit pour ce jeu
+      <!--v-if-->
+    </p>
+    <div class="mt-2 flex items-center justify-between gap-2"><button type="button" data-dismiss="" class="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-accent">✕ Plus actif</button><button type="button" data-details="" class="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-accent">Détails ↑</button></div>
+  </article>
+</div>"
+`;
+
+exports[`dashboard with every info shown (Complet) > recent strip 1`] = `
+"<div class="mt-3 rounded-[14px] border bg-card px-5 py-3">
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm"><span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Derniers reçus</span><span class="whitespace-nowrap"><span class="text-new">★</span> Hookshot → The Wind Waker · <span class="text-muted-foreground">il y a 1 min</span></span><button type="button" class="ml-auto text-sm text-logic hover:underline">Tout voir →</button></div>
+</div>"
+`;
+
+exports[`dashboard with every info shown (Complet) > state chips 1`] = `
+"<div class="flex flex-wrap items-center gap-1.5"><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs border-transparent bg-logic/15 text-logic">◔ Actif · auto · il y a 5 min</span><span class="text-xs text-muted-foreground">Expire dans 25 min</span><span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-done">● Connecté</span>
+  <!--v-if-->
+  <!--v-if--><span data-go-pill="" class="v2-go-pill"><span class="v2-go-text">GO MODE</span><span class="text-muted-foreground">la victoire est en logique</span></span>
+  <!--v-if-->
+</div>"
+`;
+
+exports[`dashboard with every info shown (Complet) > tile 1`] = `
+"<article data-tile="romain_tww" class="flex flex-col gap-2 rounded-[14px] border bg-card p-4 transition motion-reduce:transition-none hover:border-logic/50 focus-within:ring-2 focus-within:ring-logic v2-go"><span class="inline-flex flex-col items-center gap-1 align-middle"><span class="inline-flex items-start gap-0.5"><span class="font-mono font-semibold leading-none tabular-nums text-[34px] text-logic"><!--v-if-->3</span>
+  <!--v-if--></span>
+  <!--v-if--></span>
+  <div class="min-w-0">
+    <h3 class="line-clamp-2 font-semibold" title="The Wind Waker">The Wind Waker</h3>
+    <p class="font-mono text-xs text-muted-foreground">romain_tww · 6 restants</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 text-sm"><span class="text-new">★2</span><span class="text-hint">◆1</span><span data-go-pill="" class="v2-go-pill" title="La victoire est en logique : il n'y a plus qu'à y aller"><span class="v2-go-text">GO MODE</span></span>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+  <div class="mt-auto flex items-center gap-2"><button type="button" data-activate="" class="inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent max-[699px]:min-h-11">◎ Activer</button><button type="button" class="inline-flex min-h-8 items-center rounded-lg border px-3 text-sm hover:bg-accent max-[699px]:min-h-11" aria-expanded="false">Détails</button></div>
+  <!--v-if-->
+</article>"
+`;
+
+exports[`dashboard with every info shown (Complet) > totals bar 1`] = `
+"<div class="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[14px] border bg-card px-5 py-3">
+  <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 font-mono text-sm"><span><strong class="text-logic">3</strong> en logique</span><span>4 / 10 faits</span><span class="text-new">★ 2 nouveaux</span><span data-go-total=""><span class="v2-go-pill"><span class="v2-go-text">GO</span></span> 1 jeu en go mode</span>
+    <!--v-if--><span class="text-muted-foreground">1 jeux</span>
+  </div>
+  <div class="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div class="flex items-center gap-2 text-sm text-muted-foreground"> Tri <div class="inline-flex rounded-lg border p-0.5" role="group" aria-label="Tri"><button type="button" aria-pressed="true" class="min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11 bg-accent font-semibold text-foreground">Conseillé</button><button type="button" aria-pressed="false" class="min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11 text-muted-foreground hover:text-foreground">En logique</button><button type="button" aria-pressed="false" class="min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11 text-muted-foreground hover:text-foreground">% en logique</button></div>
+    </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+    <div class="flex items-center gap-2 text-sm text-muted-foreground">Affichage<div class="inline-flex rounded-lg border p-0.5" role="group" aria-label="Affichage"><button type="button" data-layout="cards" aria-pressed="true" class="min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11 bg-accent font-semibold text-foreground">Cartes</button><button type="button" data-layout="focus" aria-pressed="false" class="min-h-8 rounded-md px-3 text-sm max-[699px]:min-h-11 text-muted-foreground hover:text-foreground">Focus</button></div>
+    </div><span class="flex items-center gap-2 text-sm"><input id="v2-hide-done" type="checkbox" class="size-4"><label for="v2-hide-done">Masquer terminés</label></span>
+    <!--v-if-->
+  </div>
+</div>"
+`;

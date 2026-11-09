@@ -1,5 +1,6 @@
 // Preferences of the v2 interface, on this device. Separate keys: the v1 keeps its own.
 import type { SortMode } from '../../lib/dashboard'
+import { applyPreset, DENSITIES, normalizeShown, presetOf, type Density, type DisplayPrefs } from './display'
 
 function read(key: string): string | null {
   try {
@@ -82,3 +83,18 @@ export function loadHintsSort(): HintsSort {
   return { key: 'access', dir: 1 }
 }
 export const saveHintsSort = (v: HintsSort) => write('amt-v2-hints-sort', JSON.stringify(v))
+
+export function loadDisplay(): DisplayPrefs {
+  try {
+    const v = JSON.parse(read('amt-v2-display') ?? 'null')
+    if (v && DENSITIES.includes(v.preset)) return applyPreset(v.preset as Density)
+    if (v && v.preset === 'custom' && Array.isArray(v.shown)) {
+      const shown = normalizeShown(v.shown)
+      return { preset: presetOf(shown), shown }
+    }
+  } catch {
+    return applyPreset('complet')
+  }
+  return applyPreset('complet')
+}
+export const saveDisplay = (v: DisplayPrefs) => write('amt-v2-display', JSON.stringify(v))

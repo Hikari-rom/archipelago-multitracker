@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { SlotSummary } from '../../lib/types'
-import { tracker } from '../../stores/tracker'
+import { shows, tracker } from '../../stores/tracker'
 import { cardState, stateClass, useCardCtx } from '../lib/card'
+import { joinShown } from '../lib/display'
 import { dismissWithUndo } from '../lib/undo'
 import BigNumber from './BigNumber.vue'
 import GoalBlock from './GoalBlock.vue'
@@ -30,10 +31,10 @@ const btn = 'inline-flex min-h-11 items-center rounded-lg border px-3 text-sm ho
         <BigNumber :state="cardState(s, ctx)" size="lg" />
         <div class="min-w-0 flex-1">
           <h3 class="line-clamp-2 text-base font-semibold" :title="s.game">{{ s.game }}</h3>
-          <p class="font-mono text-xs text-muted-foreground">en logique · {{ s.checks.done }} / {{ s.checks.total }}</p>
+          <p class="font-mono text-xs text-muted-foreground">{{ joinShown(['en logique', shows('done') && `${s.checks.done} / ${s.checks.total}`]) }}</p>
         </div>
       </div>
-      <GoalBlock :objective="tracker.details[s.name]?.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable" compact class="mt-2" />
+      <GoalBlock v-if="shows('goal')" :objective="tracker.details[s.name]?.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable" compact class="mt-2" />
       <div class="mt-2 flex items-center justify-between gap-2">
         <button v-if="cardState(s, ctx).activity" type="button" data-dismiss :class="btn" @click="dismissWithUndo(s.name, s.game)">✕ Plus actif</button>
         <span v-else />
