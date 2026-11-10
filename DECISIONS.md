@@ -229,6 +229,10 @@ téléphones. Le serveur ne change pas (il renvoie `index.html` pour toute adres
 ## D25 — Mises à jour depuis l'app (2026-10-24, demandé par Romain)
 Page Configuration, bloc « Mises à jour » (« Vérifier maintenant », « Mettre à jour ») et bandeau dans les deux
 interfaces ; vérification automatique une fois par jour (`backend/multitracker/updater.py`, `/api/update*`).
+- **Horloge** (2026-11-10) : le jour se compte à l'heure réelle, veille comprise (`checked_at`, relu toutes les
+  5 min) ; un `asyncio.sleep` de 24 h ne compte que le temps allumé, et un PC mis en veille la nuit ne vérifiait plus
+  qu'au bout de plusieurs jours. Le bandeau redemande l'état toutes les 5 min et au retour sur l'onglet : le lanceur
+  Windows ouvre la page avant la première vérification (une minute après le démarrage).
 - **Version portable (Windows)** : suit les releases GitHub. L'app télécharge le zip, vérifie son sha256 (`digest` de
   l'API GitHub), l'extrait dans `update\new\` et s'arrête avec le code 75. `Multitracker.exe` (`update.go`) remplace
   alors chaque dossier du zip (l'ancien va dans `update\old\`), seulement les fichiers du zip dans `config\`, jamais

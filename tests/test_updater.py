@@ -197,6 +197,28 @@ async def test_portable_apply_when_up_to_date_or_failing(tmp_path):
     assert st["state"] == "error" and "empreinte" in st["message"] and not u.running()
 
 
+async def test_the_daily_check_counts_the_hours_the_computer_slept(tmp_path, monkeypatch):
+    monkeypatch.setattr(up, "FIRST_CHECK_DELAY", 0)
+    monkeypatch.setattr(up, "CHECK_TICK", 0.01)
+    u = up.Updater(portable_root(tmp_path), release_url=(tmp_path / "none.json").as_uri())
+    checks = []
+
+    def check_sync():
+        checks.append(time.time())
+        u.checked_at = time.time()
+
+    monkeypatch.setattr(u, "check_sync", check_sync)
+    task = asyncio.create_task(u.loop())
+    try:
+        await asyncio.sleep(0.2)
+        assert len(checks) == 1
+        u.checked_at -= up.CHECK_EVERY
+        await asyncio.sleep(0.2)
+        assert len(checks) == 2
+    finally:
+        task.cancel()
+
+
 def test_status_after_restart(tmp_path):
     root = portable_root(tmp_path, "v0.2.0")
     up.write_status(root, mode="portable", state="restarting", step="x", message="", **{"from": "v0.1.0", "to": "v0.2.0"})

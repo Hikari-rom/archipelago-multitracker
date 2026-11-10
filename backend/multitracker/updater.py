@@ -38,6 +38,7 @@ PORTABLE_DIR = "ArchipelagoMultitracker"  # top folder of the zip
 EXIT_UPDATE = 75  # the app exits with it once the new version is staged: Multitracker.exe swaps the folders
 FIRST_CHECK_DELAY = 60.0
 CHECK_EVERY = 24 * 3600.0
+CHECK_TICK = 300.0
 STALE_RUNNING = 3600.0  # a "running" status older than this was interrupted
 USER_AGENT = "archipelago-multitracker-updater"
 
@@ -366,14 +367,17 @@ class Updater:
             await asyncio.to_thread(self.check_sync)
         return self.info()
 
+    def check_due(self) -> bool:
+        return self.checked_at is None or time.time() - self.checked_at >= CHECK_EVERY
+
     async def loop(self) -> None:
         await asyncio.sleep(FIRST_CHECK_DELAY)
         while True:
-            if self.mode != "none" and not self.running():
+            if self.mode != "none" and not self.running() and self.check_due():
                 await self.check()
                 if self.available():
                     log.info("update available: %s", self.latest and self.latest.get("version"))
-            await asyncio.sleep(CHECK_EVERY)
+            await asyncio.sleep(CHECK_TICK)
 
     async def apply(self) -> None:
         """Start the update; GET /api/update follows it."""

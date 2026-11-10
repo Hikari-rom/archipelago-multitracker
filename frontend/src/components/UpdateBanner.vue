@@ -4,8 +4,8 @@ import { getUpdate } from '../lib/api'
 import { latestLabel, loadDismissed, saveDismissed, UPDATE_ANCHOR, type UpdateInfo } from '../lib/update'
 import { setView, tracker } from '../stores/tracker'
 
-// The server checks once a day; the page asks it again every few hours (a tab left open for days).
-const REFRESH_MS = 3 * 3600 * 1000
+// The server checks a minute after it starts, then once a day: the page asks it often, and on waking up.
+const REFRESH_MS = 5 * 60 * 1000
 
 const info = ref<UpdateInfo | null>(null)
 const dismissed = ref(loadDismissed())
@@ -38,6 +38,10 @@ async function onOpen(): Promise<void> {
   }
 }
 
+function onVisible(): void {
+  if (document.visibilityState === 'visible') void load()
+}
+
 function onDismiss(): void {
   dismissed.value = version.value
   saveDismissed(version.value)
@@ -46,8 +50,12 @@ function onDismiss(): void {
 onMounted(() => {
   void load()
   timer = setInterval(load, REFRESH_MS)
+  document.addEventListener('visibilitychange', onVisible)
 })
-onUnmounted(() => clearInterval(timer))
+onUnmounted(() => {
+  clearInterval(timer)
+  document.removeEventListener('visibilitychange', onVisible)
+})
 </script>
 
 <template>

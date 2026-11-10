@@ -155,6 +155,27 @@ describe('UpdateBanner', () => {
     expect(next.find('[data-update-banner]').exists()).toBe(true)
   })
 
+  it('appears soon after the server finds the version, even on a page opened before its first check', async () => {
+    vi.useFakeTimers()
+    stubFetch(() => base({ available: false, latest: null, checked_at: null }))
+    const w = mount(UpdateBanner)
+    await flushPromises()
+    expect(w.find('[data-update-banner]').exists()).toBe(false)
+    stubFetch(() => base())
+    await vi.advanceTimersByTimeAsync(5 * 60 * 1000)
+    expect(w.find('[data-update-banner]').exists()).toBe(true)
+  })
+
+  it('asks the server again when the page comes back into view', async () => {
+    stubFetch(() => base({ available: false }))
+    const w = mount(UpdateBanner)
+    await flushPromises()
+    stubFetch(() => base())
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flushPromises()
+    expect(w.find('[data-update-banner]').exists()).toBe(true)
+  })
+
   it('stays hidden when up to date, on the Configuration page, or without server', async () => {
     stubFetch(() => base({ available: false }))
     let w = mount(UpdateBanner)
