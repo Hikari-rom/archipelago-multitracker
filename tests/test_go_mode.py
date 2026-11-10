@@ -40,6 +40,27 @@ def test_fall_guys_go_mode_with_the_tickets_of_natazox(tool):
     assert snaps[0]["goal_tool"] is False and snaps[-1]["goal_tool"] is True
 
 
+def test_haste_go_mode_before_the_goal_boss(tool):
+    """Haste locks its victory item (A New Future) on a real check, the goal shard's boss: go mode must light up
+    as soon as that boss is in logic, not only once it is beaten (natazox's yaml: shard goal 10)."""
+    import logic_reference as lr
+    zip_path = generated_seed("m37_haste", 3, spoiler=1)
+    multidata = lr.load_multidata(zip_path)
+    multiworld = lr.regenerate("m37_haste", 3)
+    lr.check_same_fill(multiworld, multidata)
+    path = FIXTURES / "m37_haste" / "natazox_haste.yaml"
+    report = lr.compare_slot(multiworld, multidata, 1, path, tool=tool)
+    assert not report.get("error"), report.get("error")
+    snaps = report["snapshots"]
+    assert not [s for s in snaps if s["under"] or s["over"]], snaps[:2]
+    assert not [s for s in snaps if s["goal_over"] or s["goal_under"]], [
+        (s["sphere"], s["goal_tool"], s["goal_reference"]) for s in snaps]
+    assert snaps[0]["goal_tool"] is False and snaps[-1]["goal_tool"] is True
+    boss = multiworld.get_location("Shard 10 Boss", 1).address
+    before_boss = [s for s, snap in zip(snaps, lr.snapshots(multiworld, 1)) if boss in snap.missing]
+    assert any(s["goal_tool"] for s in before_boss), [(s["sphere"], s["goal_tool"]) for s in before_boss]
+
+
 @pytest.mark.parametrize("slot", ["Celeste", "KH2", "Jak", "TWWHD", "SM64"])
 def test_go_mode_matches_the_reference(tool, slot):
     import logic_reference as lr

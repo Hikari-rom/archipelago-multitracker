@@ -128,18 +128,17 @@ def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], 
     state.sweep_for_advancements(locations=[loc for loc in multiworld.get_locations(player) if loc.address is None])
     reachable = {loc.address for loc in multiworld.get_reachable_locations(state, player)
                  if loc.address is not None and loc.address in snap.missing}
-    from multitracker.logic.ut_worker import GOAL_LOCATIONS, has_real_completion
+    from multitracker.logic.ut_worker import has_real_completion, victory_location
     world = multiworld.worlds[player]
     if multiworld.game[player] in UT_GOAL_REACHABLE:  # the world's own go mode under UT, on the full multiworld
         return reachable, all(state.can_reach_location(loc, player) for loc in world.goal_locations)
+    location = victory_location(multiworld, player)
+    if location is not None:
+        return reachable, location.address not in snap.missing or bool(location.can_reach(state))
     condition = multiworld.completion_condition[player]
     if has_real_completion(condition):
         return reachable, bool(condition(state))
-    goal = GOAL_LOCATIONS.get(multiworld.game[player])
-    if goal is None:  # the world does not say what its victory is: nothing to compare
-        return reachable, None
-    location = multiworld.get_location(goal, player)
-    return reachable, location.address not in snap.missing or bool(location.can_reach(state))
+    return reachable, None  # the world does not say what its victory is: nothing to compare
 
 
 class ToolProcess:

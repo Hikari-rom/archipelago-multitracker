@@ -385,20 +385,19 @@ class SlotLogic:
     def goal_in_logic(self, state, missing: set[int]) -> bool | None:
         """Go mode: the slot can reach its victory with what it has (None: the world does not say what it is).
 
-        The world's completion condition when it sets one; else the goal location of GOAL_LOCATIONS (worlds whose
-        client declares the victory itself, like Fall Guys).
+        The location that wins the game when the completion condition cannot say it (`victory_location`:
+        GOAL_LOCATIONS, VICTORY_ITEMS), else the world's completion condition.
         """
         mw, pid = self.core.multiworld, self.core.player_id
         condition = mw.completion_condition.get(pid)
         try:
-            if condition is not None and has_real_completion(condition):
-                return bool(condition(state))
-            name = GOAL_LOCATIONS.get(self.game)
-            if name and name in mw.regions.location_cache[pid]:
-                location = mw.get_location(name, pid)
+            location = victory_location(mw, pid)
+            if location is not None:
                 if isinstance(location.address, int) and location.address not in missing:
                     return True  # already checked
                 return bool(location.can_reach(state))
+            if condition is not None and has_real_completion(condition):
+                return bool(condition(state))
         except Exception:  # noqa: BLE001 - a broken rule must not break the slot's logic
             log.warning("goal condition failed for %s: %s", self.slot_name, traceback.format_exc())
         return None
@@ -496,6 +495,22 @@ class SlotLogic:
 
 # Worlds without a completion condition (the client sends the goal itself): the location that wins the game.
 GOAL_LOCATIONS = {"Fall Guys": "Win a Final Round"}
+# Worlds whose victory item is locked on a real check (not an event): the sweep never collects it, so the completion
+# condition stays false until that check is done. Go mode is that check being in logic. Haste: the goal shard's boss.
+VICTORY_ITEMS = {"Haste": "A New Future"}
+
+
+def victory_location(multiworld, player: int):
+    """The location that wins the game for go mode, when it is not the completion condition (None otherwise)."""
+    game = multiworld.game[player]
+    name = GOAL_LOCATIONS.get(game)
+    if name:
+        return multiworld.get_location(name, player) if name in multiworld.regions.location_cache[player] else None
+    item = VICTORY_ITEMS.get(game)
+    if item:
+        return next((loc for loc in multiworld.get_locations(player)
+                     if loc.item is not None and loc.item.player == player and loc.item.name == item), None)
+    return None
 
 
 # Options that choose the victory of a game ("conditions de victoire" of the Configuration page, D34).
