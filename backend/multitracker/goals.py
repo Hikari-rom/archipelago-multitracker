@@ -650,6 +650,10 @@ DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Fall Guys": fall_guys,
 }
 
+from .goals_room import ROOM_DESCRIBERS  # noqa: E402  the other games of the room, written with the helpers above
+
+DESCRIBERS.update(ROOM_DESCRIBERS)
+
 
 def generic(c: GoalContext) -> Goal:
     """A game without describer whose victory was chosen by hand: say which one."""
