@@ -493,3 +493,16 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
 - Tests : `tests/test_goals_room.py` (chaque jeu sans données, puis sur la dernière seed de validation quand elle
   existe, et des cas écrits à la main pour les jeux sans seed). Pas de descripteur pour Musipelago (aucun apworld
   chargé) ni pour le slot « Archipelago » (pas un jeu).
+
+## D39 — L'app s'arrête même avec une page ouverte (2026-11-11, signalé par des amis de Romain)
+- Constat : sous Windows, une mise à jour depuis l'app restait longtemps sur « Redémarrage de l'app… ». Le flux
+  d'événements de la page (`/api/events`) ne se fermait jamais : à l'arrêt, uvicorn attendait la fin des connexions
+  (« Waiting for connections to close ») sans limite, et Multitracker.exe n'installe la nouvelle version qu'une fois
+  l'ancienne sortie. Reproduit sur le Pi (l'app ne s'arrêtait pas en 60 s, et sortait dès la fermeture du flux) ; sur
+  le Pi, `app.sh stop` la tuait au bout de 10 s (`kill -9`, sans l'arrêt propre de l'app).
+- Correctif : les flux (`/api/events`, `/api/logs/stream`) regardent chaque seconde si le serveur s'arrête
+  (`app.state.server.should_exit`, `api.stopping`) et se terminent ; uvicorn a en plus un délai de grâce de 3 s
+  (`timeout_graceful_shutdown`) pour toute autre requête. Arrêt mesuré : 0,3 s avec deux flux ouverts.
+- C'est l'ancienne version qui s'arrête : la mise à jour vers la version qui corrige reste lente une dernière fois
+  (recharger la page après le clic débloque l'arrêt). Test : `tests/test_shutdown.py`.
+

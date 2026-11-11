@@ -31,6 +31,14 @@ LOG_FILE = ROOT / "data" / "logs" / "app.log"  # written by scripts/app.sh
 SSE_KEEPALIVE = 20.0
 LOG_POLL = 0.5
 LOG_STREAM_MAX = 1800.0  # a log stream ends after 30 min (EventSource reconnects): no stream outlives a stop
+SSE_TICK = 1.0  # an event stream looks this often whether the server is stopping
+
+
+def stopping(request: Request) -> bool:
+    """The server is exiting (`app.state.server`, set by __main__): an event stream must end now, or uvicorn waits
+    for it (and cuts it after its grace delay, with an error in the log)."""
+    server = getattr(request.app.state, "server", None)
+    return bool(server is not None and server.should_exit)
 
 
 class SeenBody(BaseModel):
@@ -527,14 +535,18 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 snapshot = {"type": "snapshot", "slots": [service.summary(n) for n in service.trackers]}
                 yield f"event: snapshot\ndata: {json.dumps(snapshot)}\n\n"
                 yield f"event: room\ndata: {json.dumps(service.room_event())}\n\n"
+                idle = time.monotonic()
                 while True:
-                    if await request.is_disconnected():
+                    if await request.is_disconnected() or stopping(request):
                         break
                     try:
-                        event = await asyncio.wait_for(queue.get(), SSE_KEEPALIVE)
+                        event = await asyncio.wait_for(queue.get(), SSE_TICK)
                     except asyncio.TimeoutError:
-                        yield ": keepalive\n\n"
+                        if time.monotonic() - idle > SSE_KEEPALIVE:
+                            idle = time.monotonic()
+                            yield ": keepalive\n\n"
                         continue
+                    idle = time.monotonic()
                     if event["type"] == "_close":
                         break
                     yield f"event: {event['type']}\ndata: {json.dumps(event)}\n\n"
@@ -560,7 +572,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             follower = None if log_file is None else Follower(log_file, offset, inode)
             started = idle = time.monotonic()
             while time.monotonic() - started < LOG_STREAM_MAX:
-                if await request.is_disconnected():
+                if await request.is_disconnected() or stopping(request):
                     break
                 await asyncio.sleep(LOG_POLL)
                 if follower is None:

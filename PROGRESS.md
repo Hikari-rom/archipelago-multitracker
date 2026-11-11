@@ -33,6 +33,8 @@
    data storage), comme le mod qui décide du but ; une victoire cochée mais absente du profil est signalée (D37).
    Objectifs des 77 autres jeux de la room (`goals_room.py`, du plus joué au moins joué) : plus de « But non décrit »
    pour les slots des amis, sauf Musipelago (pas d'apworld chargé) et le slot « Archipelago » (pas un jeu) (D38, v0.2.25).
+   L'app s'arrête même avec une page ouverte (le flux `/api/events` bloquait l'arrêt d'uvicorn : mises à jour Windows
+   coincées sur « Redémarrage de l'app… ») : arrêt en 0,3 s au lieu de jamais (D39).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

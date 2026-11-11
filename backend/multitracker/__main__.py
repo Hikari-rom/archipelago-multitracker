@@ -9,6 +9,8 @@ from pathlib import Path
 
 import uvicorn
 
+SHUTDOWN_GRACE = 3  # seconds given to open requests on exit; the event streams are then cut (the page reconnects)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="multitracker")
@@ -37,8 +39,12 @@ def main() -> None:
 
     from .updater import Updater
     updater = Updater()
-    server = uvicorn.Server(uvicorn.Config(create_app(factory, updater=updater), host=args.host, port=args.port,
-                                           log_level="info", proxy_headers=False))
+    # An open page keeps its event stream (/api/events, /api/logs/stream) for good: without a limit, uvicorn waits
+    # for it forever on exit, and Multitracker.exe installs an update only once this process has exited.
+    app = create_app(factory, updater=updater)
+    server = uvicorn.Server(uvicorn.Config(app, host=args.host, port=args.port, log_level="info", proxy_headers=False,
+                                           timeout_graceful_shutdown=SHUTDOWN_GRACE))
+    app.state.server = server  # the event streams end as soon as it should exit (api.stopping)
     exit_code = 0
 
     def request_exit(code: int) -> None:  # the portable build exits with EXIT_UPDATE for Multitracker.exe
