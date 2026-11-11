@@ -114,6 +114,26 @@ describe('UpdatePanel', () => {
     expect(reload).toHaveBeenCalled()
   })
 
+  it('reloads even when the browser clock is ahead of the server', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
+    vi.setSystemTime(new Date(5_120_000)) // the browser is 2 min ahead of the Pi
+    const now = 5000
+    let calls = 0
+    stubFetch((url, init) => {
+      if (url === '/api/update/apply') return base({ now, running: true, status: { state: 'running', step: 'Démarrage', at: now } })
+      if (init?.method) return base({ now })
+      calls++
+      if (calls === 1) return base({ now })
+      return base({ now: now + 20, current: { version: 'v0.2.0' }, available: false, status: { state: 'done', at: now + 15 } })
+    })
+    const w = mount(UpdatePanel)
+    await flushPromises()
+    await w.find('[data-apply]').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(1500)
+    expect(reload).toHaveBeenCalled()
+  })
+
   it('shows a failed update and keeps the buttons', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'Date'] })
     vi.setSystemTime(new Date(5_000_000))

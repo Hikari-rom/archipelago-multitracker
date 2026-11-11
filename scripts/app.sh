@@ -18,6 +18,11 @@ is_ours() {  # our app: this repo's venv python running "-m multitracker" (guard
   [[ "$cmd" == "$ROOT/.venv/bin/python -m multitracker"* ]]
 }
 
+alive() {  # the process exists and is not a zombie
+  local state; state="$(ps -o stat= -p "$1" 2>/dev/null)" || return 1
+  [ -n "$state" ] && [[ "$state" != Z* ]]
+}
+
 port_busy() {
   ss -ltnH "sport = :$PORT" 2>/dev/null | grep -q .
 }
@@ -43,9 +48,12 @@ start() {
   if [ -f "$LOG" ] && [ "$(stat -c %s "$LOG")" -gt 5242880 ]; then mv -f "$LOG" "$LOG.1"; fi
   PYTHONPATH="$ROOT/backend" PYTHONUNBUFFERED=1 nohup "$ROOT/.venv/bin/python" -m multitracker \
     --host "$HOST" --port "$PORT" >> "$LOG" 2>&1 < /dev/null 9>&- &
-  echo $! > "$PID_FILE"
+  local new=$!
+  echo "$new" > "$PID_FILE"
   for _ in $(seq 1 60); do
-    is_ours "$(cat "$PID_FILE")" || { rm -f "$PID_FILE"; echo "✗ l'app s'est arrêtée, voir $LOG"; tail -20 "$LOG"; exit 1; }
+    # Right after the fork the child is still this shell or nohup (python not exec'd yet, other cmdline): only a
+    # process that is gone (or a zombie) has stopped. Reading is_ours here declared a starting app dead (2026-11-10).
+    alive "$new" || { rm -f "$PID_FILE"; echo "✗ l'app s'est arrêtée, voir $LOG"; tail -20 "$LOG"; exit 1; }
     if curl -fsS "http://127.0.0.1:$PORT/api/health" > /dev/null 2>&1; then
       echo "lancé (pid $(cat "$PID_FILE")) sur http://$HOST:$PORT"; return 0
     fi

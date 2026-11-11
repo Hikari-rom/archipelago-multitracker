@@ -346,7 +346,8 @@ class Updater:
         self._adopt_done_update()
         return {"mode": self.mode, "current": self.current(), "latest": self.latest, "available": self.available(),
                 "blocked": self.blocked, "checked_at": self.checked_at, "check_error": self.check_error,
-                "running": self.running(), "status": self.status()}
+                "running": self.running(), "status": self.status(),
+                "now": time.time()}  # the page compares the status times with the server's clock, not its own
 
     def check_sync(self) -> None:
         self._adopt_done_update()

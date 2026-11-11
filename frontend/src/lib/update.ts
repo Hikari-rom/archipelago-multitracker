@@ -40,6 +40,8 @@ export interface UpdateInfo {
   check_error: string | null
   running: boolean
   status: UpdateStatus | null
+  /** server clock (epoch seconds): the status times are compared with it, never with the browser's clock */
+  now?: number
 }
 
 export function latestLabel(info: UpdateInfo): string {

@@ -13,7 +13,9 @@ const info = ref<UpdateInfo | null>(null)
 const loadError = ref('')
 const checking = ref(false)
 const actionError = ref('')
-const startedAt = ref(0) // epoch seconds of the click on « Mettre à jour », 0 = not updating
+const startedAt = ref(0) // server epoch seconds of the click on « Mettre à jour », 0 = not updating
+let startedLocal = 0 // the same moment on the browser's clock (ms), for giving up
+let clockOffset = 0 // server clock - browser clock (s): the status times are the server's
 const phase = ref<Phase | null>(null)
 let timer: ReturnType<typeof setTimeout> | undefined
 
@@ -34,9 +36,14 @@ function when(ts: number | null | undefined): string {
   return new Date(ts * 1000).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })
 }
 
+function received(next: UpdateInfo): UpdateInfo {
+  if (typeof next.now === 'number') clockOffset = next.now - Date.now() / 1000
+  return next
+}
+
 async function load(): Promise<void> {
   try {
-    info.value = await api.getUpdate()
+    info.value = received(await api.getUpdate())
     loadError.value = ''
   } catch (e) {
     loadError.value = errText(e)
@@ -47,7 +54,7 @@ async function onCheck(): Promise<void> {
   checking.value = true
   actionError.value = ''
   try {
-    info.value = await api.checkUpdate()
+    info.value = received(await api.checkUpdate())
   } catch (e) {
     actionError.value = errText(e)
   } finally {
@@ -58,7 +65,7 @@ async function onCheck(): Promise<void> {
 async function poll(): Promise<void> {
   let next: UpdateInfo | null = null
   try {
-    next = await api.getUpdate()
+    next = received(await api.getUpdate())
     info.value = next
   } catch {
     /* the app is restarting */
@@ -73,7 +80,7 @@ async function poll(): Promise<void> {
     actionError.value = `Mise à jour échouée : ${phase.value.text}`
     return
   }
-  if (Date.now() - startedAt.value * 1000 > GIVE_UP_MS) {
+  if (Date.now() - startedLocal > GIVE_UP_MS) {
     startedAt.value = 0
     actionError.value = 'Pas de nouvelles de la mise à jour depuis 15 min : voir la page Journal.'
     return
@@ -83,10 +90,11 @@ async function poll(): Promise<void> {
 
 async function onApply(): Promise<void> {
   actionError.value = ''
-  startedAt.value = Date.now() / 1000
+  startedLocal = Date.now()
+  startedAt.value = startedLocal / 1000 + clockOffset
   phase.value = { kind: 'waiting', text: 'Démarrage…' }
   try {
-    info.value = await api.applyUpdate()
+    info.value = received(await api.applyUpdate())
   } catch (e) {
     startedAt.value = 0
     phase.value = null
