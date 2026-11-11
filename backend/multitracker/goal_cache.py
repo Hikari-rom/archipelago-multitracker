@@ -21,15 +21,30 @@ CACHE_FILE = ROOT / "data" / "cache" / "goal_options.json"
 VERSION = 1
 
 
+def _apworlds(folder: Path) -> list[Path]:
+    try:
+        return sorted(p for p in folder.iterdir() if p.suffix == ".apworld")
+    except OSError:
+        return []
+
+
 def fingerprint(ap_dir: Path = AP_DIR, catalog: Path = CATALOG, user_dir: Path = ROOT / "data" / "apworlds") -> str:
+    """Same worlds, same code reading them. Not the file dates of what a release ships: the Windows update extracts
+    every file again (new dates), which made the first start after each update wait for the worker."""
     h = hashlib.sha1(str(VERSION).encode())
-    paths = [catalog, ap_dir / "Utils.py", Path(__file__).parent / "logic" / "ut_worker.py"]
-    for folder in (ap_dir / "custom_worlds", user_dir):
+    small = [catalog, catalog.with_name("apworlds.lock.yaml"), ap_dir / "Utils.py",
+             Path(__file__).parent / "logic" / "ut_worker.py"]
+    for path in small:  # read whole: a few kB
         try:
-            paths += sorted(p for p in folder.iterdir() if p.suffix == ".apworld")
+            h.update(path.name.encode() + b"\0" + path.read_bytes() + b"\n")
         except OSError:
-            pass
-    for path in paths:
+            continue
+    for path in _apworlds(ap_dir / "custom_worlds"):  # shipped with the app: their versions are in the lock file
+        try:
+            h.update(f"{path.name}\0{path.stat().st_size}\n".encode())
+        except OSError:
+            continue
+    for path in _apworlds(user_dir):  # imported by the user (data/, kept by updates)
         try:
             st = path.stat()
         except OSError:

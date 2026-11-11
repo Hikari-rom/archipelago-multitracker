@@ -35,6 +35,8 @@
    pour les slots des amis, sauf Musipelago (pas d'apworld chargé) et le slot « Archipelago » (pas un jeu) (D38, v0.2.25).
    L'app s'arrête même avec une page ouverte (le flux `/api/events` bloquait l'arrêt d'uvicorn : mises à jour Windows
    coincées sur « Redémarrage de l'app… ») : arrêt en 0,3 s au lieu de jamais (D39).
+   Enregistrer la configuration avec un but choisi à la main n'attend plus le worker de logique (19 s et plus, surtout
+   après une mise à jour qui perdait le cache des conditions de victoire) : 0,01 s (D40).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

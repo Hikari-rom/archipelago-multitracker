@@ -365,13 +365,18 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             raise HTTPException(403, "origine refusée (voir MT_ALLOWED_ORIGINS)")
 
     async def check_goals(service: Service, slots: list[SlotConfig]) -> None:
-        """A goal chosen by hand must be one of the victory conditions of the slot's game."""
+        """A goal chosen by hand must be one of the victory conditions of the slot's game, when they are known.
+        Never waits for the logic worker: after a start or an update it may load the worlds for minutes (or be busy
+        with a slow slot), and saving must answer at once. A game whose conditions are not known yet is accepted:
+        goal_choice() leaves out, when using it, any value the game does not offer."""
         chosen = [s for s in slots if s.goal]
         if not chosen:
             return
-        options = await service.goal_options_for(sorted({s.game for s in chosen if s.game}))
+        options = service.known_goal_options(sorted({s.game for s in chosen if s.game}))
         for slot in chosen:
-            offered = {o["option"]: o["choices"] for o in options.get(slot.game or "", [])}
+            if (slot.game or "") not in options:
+                continue
+            offered = {o["option"]: o["choices"] for o in options[slot.game or ""]}
             for option, value in slot.goal.items():
                 if value not in offered.get(option, ()):
                     raise ConfigError(f"{slot.name} : « {option}: {value} » n'est pas une condition de victoire "

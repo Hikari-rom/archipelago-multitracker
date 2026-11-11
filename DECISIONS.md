@@ -506,3 +506,15 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
 - C'est l'ancienne version qui s'arrête : la mise à jour vers la version qui corrige reste lente une dernière fois
   (recharger la page après le clic débloque l'arrêt). Test : `tests/test_shutdown.py`.
 
+## D40 — Enregistrer la configuration n'attend jamais le worker de logique (2026-11-11, signalé par des amis de Romain)
+- Constat : avec un but choisi à la main, `PUT /api/config` (et `PUT /api/slots/<slot>/goal`) vérifiait le but
+  contre les conditions de victoire du jeu, demandées au worker de logique quand elles n'étaient pas en cache :
+  il fallait attendre qu'il charge tous les mondes (19 s mesurées sur le Pi, instance de test, 22 slots), ou qu'il
+  finisse un calcul lent (jusqu'à 5 min par slot). Le cache (D34) était perdu à chaque mise à jour Windows :
+  l'empreinte utilisait la date des fichiers, que l'extraction renouvelle.
+- Correctif : le but est vérifié contre les conditions déjà connues (mémoire ou disque), sans attendre ; un jeu
+  dont elles ne sont pas encore connues est accepté (à l'usage, `goal_choice` et le worker écartent une valeur
+  que le jeu n'offre pas). Empreinte du cache : contenu de `apworlds.yaml`, `apworlds.lock.yaml`, `Utils.py` et
+  `ut_worker.py`, nom et taille des apworlds livrés, date seulement pour ceux importés par l'utilisateur.
+  Enregistrement mesuré ensuite : 0,01 s, cache vide, juste après le démarrage.
+

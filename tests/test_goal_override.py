@@ -273,3 +273,52 @@ async def test_goal_chosen_from_the_slot(tmp_path):
             r = await client.put("/api/slots/A/goal", json={"goal": {"Goal": ""}})  # back to automatic
             assert r.status_code == 200 and config_mod.load(path).slots[0].goal is None
             assert (await client.put("/api/slots/Z/goal", json={"goal": {}})).status_code == 404
+
+
+async def test_saving_never_waits_for_the_logic_worker(tmp_path):
+    """A goal chosen by hand is checked against the victory conditions already known: saving the Configuration (or
+    one slot's goal) right after a start or an update, while the worker still loads the worlds, answers at once."""
+    import asyncio
+    from multitracker import config as config_mod
+    from multitracker.api import create_app
+    from multitracker.config import RoomConfig, SlotConfig
+    from multitracker.service import Service
+    from multitracker.store import Store
+    path = tmp_path / "room.yaml"
+    cfg = RoomConfig(server="127.0.0.1:1", path=path, goal_override=True,
+                     slots=[SlotConfig("A", "Kingdom Hearts 2", goal={"Goal": "hitlist"})])
+    config_mod.save(cfg)
+    engine = SlowGoalEngine()  # never answers during the test
+    app = create_app(lambda: Service(cfg, Store(tmp_path / "db.sqlite3"), logic=engine, reconnect_delays=(0.3, 1.0),
+                                     goal_cache=tmp_path / "goal_options.json"), frontend_dist=None)
+    slot = {"name": "A", "game": "Kingdom Hearts 2"}
+    async with app.router.lifespan_context(app):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
+            r = await asyncio.wait_for(client.put("/api/config", json={"server": "127.0.0.1:1", "slots": [slot]}), 5)
+            assert r.status_code == 200, r.text
+            r = await asyncio.wait_for(client.put("/api/slots/A/goal", json={"goal": {"Goal": "three_proofs"}}), 5)
+            assert r.status_code == 200, r.text
+            assert config_mod.load(path).slots[0].goal == {"Goal": "three_proofs"}
+            engine.release.set()
+
+
+def test_goal_cache_survives_an_update_that_only_rewrites_the_files(tmp_path):
+    """The Windows update extracts every file again (new dates): same worlds and same code keep the cache."""
+    import os
+    from multitracker import goal_cache
+    ap, user = tmp_path / "ap", tmp_path / "user"
+    (ap / "custom_worlds").mkdir(parents=True)
+    (ap / "Utils.py").write_text("__version__ = '0.6.7'")
+    (ap / "custom_worlds" / "kh2.apworld").write_bytes(b"world")
+    catalog = tmp_path / "apworlds.yaml"
+    catalog.write_text("apworlds: {}")
+    key = lambda: goal_cache.fingerprint(ap, catalog, user)  # noqa: E731
+    before = key()
+    for path in (ap / "Utils.py", ap / "custom_worlds" / "kh2.apworld", catalog):
+        os.utime(path, (1_000_000, 1_000_000))
+    assert key() == before
+    (ap / "custom_worlds" / "kh2.apworld").write_bytes(b"world 2")  # another version of a world
+    assert key() != before
+    (ap / "custom_worlds" / "kh2.apworld").write_bytes(b"world")
+    (ap / "Utils.py").write_text("__version__ = '0.6.8'")
+    assert key() != before
