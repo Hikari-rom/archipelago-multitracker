@@ -90,6 +90,11 @@ class UTLogicEngine(LogicEngine):
         self._proc = None
         self._conn = None
         self._lock = asyncio.Lock()
+        # slot -> timeouts in a row: a slot that never finishes in time kills the worker, which drops every other
+        # slot's regenerated world (20-30 s of imports, then all recomputed); after MAX_TIMEOUTS it is not sent again
+        self._timeouts: dict[str, int] = {}
+
+    MAX_TIMEOUTS = 2
 
     async def start(self) -> None:
         async with self._lock:
@@ -181,6 +186,9 @@ class UTLogicEngine(LogicEngine):
                "checked": sorted(request.checked), "seed_name": request.seed_name,
                "checksum": request.checksum, "explain": sorted(request.explain),
                "goal": dict(request.goal)}
+        if self._timeouts.get(request.slot_name, 0) >= self.MAX_TIMEOUTS:
+            return LogicResult("error", message=f"Le calcul de logique dépasse {self.timeout / 60:.0f} min pour ce "
+                                                "slot : abandonné jusqu'au prochain redémarrage de l'app")
         async with self._lock:
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)
@@ -189,8 +197,11 @@ class UTLogicEngine(LogicEngine):
                 res = await asyncio.to_thread(self._roundtrip, req)
             except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
                 log.warning("logic worker failed on %s (%s) (%s), restarting it", request.slot_name, request.game, exc)
+                if isinstance(exc, TimeoutError):
+                    self._timeouts[request.slot_name] = self._timeouts.get(request.slot_name, 0) + 1
                 await asyncio.to_thread(self._kill)
                 return LogicResult("error", message=f"Le calcul de logique a échoué ({type(exc).__name__})")
+        self._timeouts.pop(request.slot_name, None)
         took = time.monotonic() - started
         if took > 60:
             log.info("logic of %s (%s) took %.0f s", request.slot_name, request.game, took)

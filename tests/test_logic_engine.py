@@ -141,3 +141,32 @@ async def test_local_checksums_survive_a_restart():
         assert await engine.checksums(["Super Mario 64"]) == {"Super Mario 64": first["Super Mario 64"]}
     finally:
         await engine.stop()
+
+
+async def test_a_slot_that_keeps_timing_out_is_not_sent_again(monkeypatch):
+    """Each timeout kills the worker (every slot's world is lost): after two in a row, the slot gets an error at
+    once (kuro_bacap, AEMinecraft, followed for the hints: over 5 min, every few minutes, 2026-11-11)."""
+    from multitracker.logic import LogicRequest
+    from multitracker.logic.engine import UTLogicEngine
+    engine = UTLogicEngine({"AEMinecraft": True, "Super Mario 64": True}, timeout=1)
+    sent = []
+
+    def roundtrip(req):
+        sent.append(req["slot_name"])
+        if req["slot_name"] == "slow":
+            raise TimeoutError("logic worker did not answer within 1s")
+        return {"state": "ok", "in_logic": []}
+
+    monkeypatch.setattr(engine, "_spawn", lambda: setattr(engine, "_proc", type("P", (), {"is_alive": lambda self: True})()))
+    monkeypatch.setattr(engine, "_kill", lambda: setattr(engine, "_proc", None))
+    monkeypatch.setattr(engine, "_roundtrip", roundtrip)
+
+    def req(name, game):
+        return LogicRequest(slot_name=name, game=game, team=0, slot=1, slot_data={}, yaml=None, items=[],
+                            missing=set(), checked=set())
+    for _ in range(3):
+        res = await engine.compute(req("slow", "AEMinecraft"))
+        assert res.state == "error"
+    assert sent == ["slow", "slow"]
+    assert "abandonné" in res.message
+    assert (await engine.compute(req("fast", "Super Mario 64"))).state == "ok"
