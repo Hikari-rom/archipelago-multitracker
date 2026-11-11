@@ -27,7 +27,8 @@
    de victoire en cache disque `data/cache/goal_options.json`, seulement les jeux suivis) ; but choisi aussi depuis
    l'onglet « But » et la page Objectifs (case « Choisir le but à la main » cochée) ; le redémarrage après une
    mise à jour ne se déclare plus en échec (course dans `app.sh start`, horloge du navigateur) ; une release
-   s'affiche « v0.2.24 (sha) » (v0.2.24).
+   s'affiche « v0.2.24 (sha) » ; un slot dont la logique dépasse 5 min deux fois de suite n'est plus envoyé au worker
+   (`kuro_bacap`, AEMinecraft suivi pour les indices, le faisait redémarrer toutes les 5 min) (v0.2.24).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).
