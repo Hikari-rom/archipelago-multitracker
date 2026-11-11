@@ -1,4 +1,4 @@
-import type { ConfigResponse, DiscoverResponse, ProbeResponse, PutConfigBody, UploadResponse } from './config'
+import type { ConfigResponse, DiscoverResponse, GoalOption, ProbeResponse, PutConfigBody, UploadResponse } from './config'
 import type { UpdateInfo } from './update'
 import type { ApworldsInfo } from './apworlds'
 import type {
@@ -68,6 +68,11 @@ export const getSlots = () => fetch('/api/slots').then((r) => json<SlotsResponse
 export const getSlot = (name: string) =>
   mock ? mock.getSlot(name) : fetch(`/api/slots/${encodeURIComponent(name)}`).then((r) => json<SlotDetail>(r))
 
+export const putSlotGoal = (name: string, goal: Record<string, string>) =>
+  fetch(`/api/slots/${encodeURIComponent(name)}/goal`, jsonInit('PUT', { goal })).then((r) =>
+    json<{ ok: boolean; goal: Record<string, string> }>(r),
+  )
+
 export const markSeen = (name: string) =>
   mock ? mock.markSeen(name) : fetch(`/api/slots/${encodeURIComponent(name)}/seen`, {
     method: 'POST',
@@ -115,6 +120,11 @@ export const testConnection = (b: { room_url?: string; server?: string; password
 
 export const uploadYaml = (filename: string, content: string, overwrite = false) =>
   fetch('/api/yamls', jsonInit('POST', { filename, content, overwrite })).then((r) => json<UploadResponse>(r))
+
+export const getGoalOptions = (games: string[]) =>
+  fetch(`/api/goal-options?${games.map((g) => `game=${encodeURIComponent(g)}`).join('&')}`).then((r) =>
+    json<{ games: Record<string, GoalOption[]> }>(r),
+  )
 
 export const restoreConfig = () => fetch('/api/config/restore', jsonInit('POST', {})).then((r) => json<unknown>(r))
 

@@ -41,6 +41,9 @@ export interface SlotSummary {
   go_mode?: boolean
   /** the game offers victory conditions to choose from in the Configuration (D34) */
   goal_choosable?: boolean
+  /** only while « Choisir le but à la main » is on (Configuration): the victory conditions and the slot's choice */
+  goal_options?: { option: string; display: string; choices: string[] }[]
+  goal_chosen?: Record<string, string>
   /** epoch seconds of the slot's last location check seen by the app (null = none since tracking) */
   last_check_at?: number | null
   logic: {

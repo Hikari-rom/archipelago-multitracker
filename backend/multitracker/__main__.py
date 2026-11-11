@@ -32,7 +32,8 @@ def main() -> None:
         if not args.no_logic:
             from .logic.engine import default_engine
             logic = default_engine()
-        return Service(cfg, store, logic)
+        from .goal_cache import CACHE_FILE
+        return Service(cfg, store, logic, goal_cache=CACHE_FILE)
 
     from .updater import Updater
     updater = Updater()

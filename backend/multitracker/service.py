@@ -40,8 +40,9 @@ def _same_yaml(a, b) -> bool:
 class Service:
     def __init__(self, config: RoomConfig, store: Store, logic: LogicEngine | None = None,
                  logic_debounce: float = 1.0, publish_debounce: float = 0.3,
-                 reconnect_delays: tuple[float, float] = (2.0, 60.0)) -> None:
+                 reconnect_delays: tuple[float, float] = (2.0, 60.0), goal_cache: Path | None = None) -> None:
         self.config = config
+        self.goal_cache = goal_cache  # disk cache of the victory conditions (goal_cache.py), None = memory only
         self.store = store
         self.datapackage = DataPackageCache(store)
         self.history = History(store)
@@ -73,10 +74,12 @@ class Service:
         self._explained: dict[str, set[int]] = {}  # hinted locations the last logic request asked about
         self.goal_options: dict[str, list[dict[str, Any]]] = {}  # game -> options choosing its victory (D34)
         self._goal_options_task: asyncio.Task | None = None
+        self._goal_lock = asyncio.Lock()
         self.hints = HintsBoard(self)
 
     # -- lifecycle -----------------------------------------------------------------------
     async def start(self) -> None:
+        self._read_goal_cache()
         await self.logic_engine.start()
         self._start_trackers()
         self._goal_options_task = asyncio.create_task(self._load_goal_options())
@@ -92,13 +95,30 @@ class Service:
         self._broadcast({"type": "snapshot", "slots": [self.summary(n) for n in self.trackers]})
 
     async def goal_options_for(self, games: list[str]) -> dict[str, list[dict[str, Any]]]:
-        """Options choosing the victory of each game, asked once to the logic worker and kept."""
-        missing = sorted({g for g in games if g and g not in self.goal_options})
-        if missing:
-            got = await self.logic_engine.goal_options(missing)
-            if got is not None:
-                self.goal_options.update({g: got.get(g) or [] for g in missing})
+        """Options choosing the victory of each game, asked once to the logic worker and kept (on disk too)."""
+        async with self._goal_lock:  # the start-up load and a page asking for the same games: one worker request
+            missing = sorted({g for g in games if g and g not in self.goal_options})
+            if missing:
+                got = await self.logic_engine.goal_options(missing)
+                if got is not None:
+                    self.goal_options.update({g: got.get(g) or [] for g in missing})
+                    self._write_goal_cache()
+        return self.known_goal_options(games)
+
+    def known_goal_options(self, games) -> dict[str, list[dict[str, Any]]]:
+        """The victory conditions already known (memory or disk cache), without waiting for the logic worker."""
         return {g: self.goal_options[g] for g in games if g in self.goal_options}
+
+    def _read_goal_cache(self) -> None:
+        if self.goal_cache is not None:
+            from . import goal_cache
+            for game, options in goal_cache.load(self.goal_cache).items():
+                self.goal_options.setdefault(game, options)
+
+    def _write_goal_cache(self) -> None:
+        if self.goal_cache is not None:
+            from . import goal_cache
+            goal_cache.save(dict(self.goal_options), self.goal_cache)
 
     def goal_choice(self, name: str, config: RoomConfig | None = None) -> dict[str, str]:
         """The victory chosen by hand for a slot, when the Configuration option is on (D34); values the game does
@@ -258,6 +278,7 @@ class Service:
         await self.logic_engine.stop()
         await self.logic_engine.start()
         self.goal_options.clear()  # other apworlds, other options
+        self._read_goal_cache()  # still valid for the same apworld files (fingerprint)
         self._goal_options_task = asyncio.create_task(self._load_goal_options())
         for name, tracker in self.trackers.items():
             self._session[name] = self._session.get(name, 0) + 1  # drop results computed by the old worker
@@ -582,12 +603,21 @@ class Service:
             "goal": st.goal_reached,
             "go_mode": self.go_mode(name),
             "goal_choosable": bool(self.goal_options.get(st.game or cfg.game or "")),  # a victory can be chosen
+            **self._goal_choice_view(name, st.game or cfg.game),
             "last_check_at": self.history.last_check(st.seed_name, name) if st.seed_name else None,
             "sent": self._sent_counts(name),
             "logic": logic.to_json(),
             "objective": self.objective(name),
             "updated_at": st.updated_at,
         }
+
+    def _goal_choice_view(self, name: str, game: str | None) -> dict[str, Any]:
+        """While « Choisir le but à la main » is on: the victory conditions of the game and the slot's choice, for the
+        selectors of the tab « But » and the page Objectifs (D34)."""
+        options = self.goal_options.get(game or "")
+        if not self.config.goal_override or not options:
+            return {}
+        return {"goal_options": options, "goal_chosen": self.goal_choice(name)}
 
     def objective(self, name: str) -> dict[str, Any] | None:
         """Goal of the slot and how far it is (see goals.py), or None when its game has no description yet."""

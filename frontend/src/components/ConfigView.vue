@@ -30,6 +30,7 @@ import {
   type YamlEntry,
   withDiscovered,
   withGoal,
+  withGoalOptions,
 } from '../lib/config'
 import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
 import { refreshMeta, setActiveMode, setView, shows, tracker } from '../stores/tracker'
@@ -77,6 +78,24 @@ const restoring = ref(false)
 const yamls = computed<YamlEntry[]>(() => cfg.value?.yamls ?? [])
 const games = computed(() => cfg.value?.games ?? {})
 const goalOptions = (game: string) => games.value[game]?.goal_options ?? []
+// Victory conditions the server did not know when the page loaded (its logic worker may be busy): asked apart, so
+// that the page never waits for them.
+const goalLoading = ref(new Set<string>())
+const goalAsked = new Set<string>()
+async function fetchGoalOptions(list: string[]): Promise<void> {
+  const todo = [...new Set(list)].filter((g) => g && !goalAsked.has(g) && !games.value[g]?.goal_options)
+  if (!todo.length) return
+  todo.forEach((g) => goalAsked.add(g))
+  goalLoading.value = new Set([...goalLoading.value, ...todo])
+  try {
+    const res = await api.getGoalOptions(todo)
+    if (cfg.value) cfg.value = { ...cfg.value, games: withGoalOptions(cfg.value.games ?? {}, res.games) }
+  } catch {
+    todo.forEach((g) => goalAsked.delete(g)) // asked again on the next change
+  } finally {
+    goalLoading.value = new Set([...goalLoading.value].filter((g) => !todo.includes(g)))
+  }
+}
 function onGoal(r: SlotRow, option: string, e: Event): void {
   r.goal = withGoal(r.goal ?? {}, option, (e.target as HTMLSelectElement).value)
 }
@@ -116,6 +135,13 @@ function errText(e: unknown): string {
 async function loadConfig(): Promise<void> {
   cfg.value = await api.getConfig()
 }
+
+watch(
+  () => (goalOverride.value ? checkedRows.value.map((r) => r.game).join('\n') : ''),
+  (games) => {
+    if (games) void fetchGoalOptions(games.split('\n'))
+  },
+)
 
 onMounted(async () => {
   try {
@@ -577,6 +603,9 @@ const selectClass =
                   />
                 </div>
               </div>
+              <p v-if="r.checked && goalOverride && goalLoading.has(r.game)" class="text-muted-foreground pl-6.5 text-xs" data-goal-loading>
+                Lecture des conditions de victoire de {{ r.game }}…
+              </p>
               <div v-if="r.checked && goalOverride && goalOptions(r.game).length" data-goal-choice class="flex flex-wrap items-center gap-2 pl-6.5">
                 <label v-for="o in goalOptions(r.game)" :key="o.option" class="flex min-w-0 items-center gap-2 text-xs">
                   <span class="text-muted-foreground shrink-0">But · {{ o.display }}</span>

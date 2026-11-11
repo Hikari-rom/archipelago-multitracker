@@ -69,6 +69,10 @@ class SlotBody(BaseModel):
     goal: dict[str, str] | None = None  # victory chosen by hand (D34); None = keep, {} = automatic
 
 
+class GoalBody(BaseModel):
+    goal: dict[str, str] = {}  # {option: value}; an empty value (or {}) = automatic
+
+
 class ApworldsImportBody(BaseModel):
     path: str
 
@@ -103,6 +107,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
         app.state.service = service
         await service.start()
         checks = asyncio.create_task(updater.loop()) if updater else None
+        if updater:  # the real app (not the tests): read the players' yamls once, the Configuration page lists them
+            asyncio.get_running_loop().run_in_executor(None, player_yamls.list_yamls)
         try:
             yield
         finally:
@@ -226,19 +232,28 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             info["imported"] = game in imported
         return games
 
-    async def games_with_goals(service: Service) -> dict[str, dict[str, Any]]:
-        games = await asyncio.to_thread(games_info)
-        options = await service.goal_options_for(sorted(set(games) | {s.game for s in service.config.slots if s.game}))
-        for game, opts in options.items():
+    def games_with_goals(service: Service) -> tuple[dict[str, dict[str, Any]], list[str]]:
+        """The catalog with the victory conditions already known, and the tracked games whose conditions are not
+        (the page asks GET /api/goal-options for them: the logic worker may be busy for a while)."""
+        games = games_info()
+        tracked = sorted({s.game for s in service.config.slots if s.game})
+        for game, opts in service.known_goal_options(sorted(set(games) | set(tracked))).items():
             games.setdefault(game, {"logic": False, "needs_yaml": False, "user": False, "imported": False})
             games[game]["goal_options"] = opts
-        return games
+        return games, [g for g in tracked if "goal_options" not in games.get(g, {})]
+
+    @app.get("/api/goal-options")
+    async def goal_options(request: Request, game: list[str] = Query(default=[])) -> dict[str, Any]:
+        """Victory conditions of some games, from the logic worker when not known yet (a slot being added)."""
+        service = get_service(request)
+        return {"games": await service.goal_options_for(sorted({g for g in game if g})[:50])}
 
     @app.get("/api/config")
     async def get_config(request: Request) -> dict[str, Any]:
         service = get_service(request)
         cfg = service.config
         yamls = await asyncio.to_thread(player_yamls.list_yamls)
+        games, pending = await asyncio.to_thread(games_with_goals, service)
         return {"room_url": cfg.room_url, "server": cfg.server, "has_password": bool(cfg.password),
                 "wake_room": cfg.wake_room, "scout_checked": cfg.scout_checked,
                 "room_dashboard": cfg.room_dashboard, "hints_foreign_logic": cfg.hints_foreign_logic,
@@ -247,7 +262,7 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
                            "yaml": _rel(s.yaml), "goal": s.goal or {}} for s in cfg.slots],
                 "player_yamls": [y["path"] for y in yamls], "yamls": yamls,
-                "games": await games_with_goals(service)}
+                "games": games, "goal_options_pending": pending}
 
     @app.post("/api/discover")
     async def discover(body: DiscoverBody, request: Request) -> dict[str, Any]:
@@ -390,6 +405,32 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                          goal_override=current.goal_override if body.goal_override is None else body.goal_override)
         await service.reload(new, before_start=lambda: save_config(new))
         return {"ok": True, "slots": len(slots)}
+
+    @app.put("/api/slots/{name}/goal")
+    async def put_goal(name: str, body: GoalBody, request: Request) -> dict[str, Any]:
+        """The victory of one slot chosen by hand (tab « But », page Objectifs): saved in config/room.yaml like the
+        Configuration does, only while « Choisir le but à la main » is on there (D34)."""
+        import dataclasses
+        same_origin(request)
+        service = get_service(request)
+        require_slot(service, name)
+        current = service.config
+        if not current.goal_override:
+            raise HTTPException(409, "« Choisir le but à la main » est désactivé dans la Configuration")
+        slot = current.slot(name)
+        if slot is None:
+            raise HTTPException(404, f"slot inconnu : {name}")
+        goal = {k: v for k, v in body.goal.items() if v}
+        game = service.trackers[name].state.game or slot.game
+        chosen = dataclasses.replace(slot, game=slot.game or game, goal=goal or None)
+        try:
+            await check_goals(service, [chosen])
+        except ConfigError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        new = dataclasses.replace(current, slots=[dataclasses.replace(s, goal=goal or None) if s.name == name else s
+                                                  for s in current.slots])
+        await service.reload(new, before_start=lambda: save_config(new))
+        return {"ok": True, "goal": goal}
 
     # async on purpose: the trackers are mutated on the event loop
     @app.get("/api/hints")

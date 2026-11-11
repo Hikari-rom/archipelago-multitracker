@@ -7,6 +7,7 @@ import { loadDetail, markSeen, tracker } from '../../stores/tracker'
 import { CATEGORY_CLASS, category, itemOrigin } from '../lib/days'
 import { regionsOf } from '../lib/regions'
 import GoalBlock from './GoalBlock.vue'
+import GoalChooser from './GoalChooser.vue'
 
 export type DetailTab = 'logic' | 'new' | 'received' | 'hints' | 'goal'
 const props = defineProps<{ name: string; initial?: DetailTab }>()
@@ -130,7 +131,10 @@ function onKey(e: KeyboardEvent): void {
         </ul>
       </template>
 
-      <GoalBlock v-else :objective="d.objective" :goal="d.goal" :go-mode="d.go_mode" :choosable="d.goal_choosable" />
+      <template v-else>
+        <GoalBlock :objective="d.objective" :goal="d.goal" :go-mode="d.go_mode" :choosable="d.goal_choosable && !d.goal_options?.length" />
+        <GoalChooser :name="name" compact />
+      </template>
     </div>
   </div>
 </template>

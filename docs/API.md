@@ -159,9 +159,18 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
                                 "imported": false,   // importé dans data/apworlds/
                                 // conditions de victoire possibles (options Choice de l'apworld, D34)
                                 "goal_options": [{"option": "Goal", "display": "Goal",
-                                                  "choices": ["three_proofs", "lucky_emblem_hunt", "hitlist"]}]}}}
+                                                  "choices": ["three_proofs", "lucky_emblem_hunt", "hitlist"]}]}},
+ "goal_options_pending": ["Pokemon Platinum"]}  // jeux suivis dont les conditions de victoire ne sont pas encore connues
 ```
 Le mot de passe n'est jamais renvoyé. `yamls` couvre `config/players/` et ses sous-dossiers (500 fichiers au plus).
+Réponse immédiate : `goal_options` ne vient que de ce qui est déjà connu (mémoire, ou cache disque
+`data/cache/goal_options.json`, valable tant que les apworlds ne changent pas). Le worker de logique, qui importe
+tous les mondes (20 à 30 s sur le Pi) et passe d'abord la logique des slots, n'est jamais attendu ici.
+
+### `GET /api/goal-options?game=<jeu>&game=<jeu>`
+`{"games": {"Pokemon Platinum": [{"option", "display", "choices"}]}}` : conditions de victoire de ces jeux, demandées
+au worker de logique si elles ne sont pas connues (peut attendre qu'il soit libre). Pour `goal_options_pending` et
+pour un slot qu'on ajoute.
 
 ### `POST /api/discover` — `{"url": "https://archipelago.gg/room/AbC...", "wake": false}`
 Lit le statut public de la room (slots, jeux, port). Avec `"wake": true`, charge d'abord la page de la room, ce qui la
@@ -336,7 +345,8 @@ Renvoie la liste comme `GET`. 404 si le slot n'est pas dans la room, 409 avant l
 
 ### `GET /api/update`
 `{"mode": "portable"|"git"|"none", "current": {"version", "commit"?, "date"?, "running"?}, "latest": null|{...},
-"available", "blocked", "checked_at", "check_error", "running", "status"}`. `latest` : pour la version portable,
+"available", "blocked", "checked_at", "check_error", "running", "status", "now"}`. `now` : l'heure du serveur, à
+laquelle la page compare les `at` du statut (jamais à l'horloge du navigateur). `latest` : pour la version portable,
 `{"version": "v0.2.0", "url", "notes", "published_at", "asset"}` ; pour git, `{"version": "<sha de origin/main>",
 "behind", "commits": [{"commit", "date", "subject"}]}` (commits absents du code qui tourne). `current.running` (git) :
 le commit sur lequel l'app a démarré, quand le dépôt a bougé depuis. `blocked` : pourquoi la mise à jour ne peut pas

@@ -35,6 +35,6 @@ const pct = (c: { current: number; target: number }) => (c.target > 0 ? Math.min
       </li>
     </ul>
   </div>
-  <p v-else class="text-sm text-muted-foreground">But non décrit pour ce jeu.<template v-if="choosable"> Tu peux le choisir dans la
-    Configuration : coche « Choisir le but à la main », puis règle « But » sous ce slot.</template></p>
+  <p v-else class="text-sm text-muted-foreground">But non décrit pour ce jeu.<template v-if="choosable"> Tu peux le choisir : coche
+    « Choisir le but à la main » dans la Configuration, puis règle-le ici ou sous ce slot.</template></p>
 </template>

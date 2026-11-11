@@ -145,6 +145,9 @@ class FakeService:
     async def goal_options_for(self, games):
         return {}
 
+    def known_goal_options(self, games):
+        return {}
+
 
 def call(service, method, path, **kw):
     app = create_app(lambda: None, frontend_dist=None, log_file=None)

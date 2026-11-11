@@ -55,6 +55,8 @@ export const mockSlots: SlotSummary[] = [
       counters: [{ label: 'Final Round Tickets', current: 30, target: 30 }],
       steps: [{ label: 'Gagner une finale (Win a Final Round)', done: false }] } }),
   slot({ name: 'Romain_Hk', game: 'Hollow Knight', checks: { done: 40, total: 300, remaining: 260 }, goal_choosable: true,
+    goal_options: [{ option: 'Goal', display: 'Goal', choices: ['any', 'hollowknight', 'siblings', 'radiance', 'godhome'] }],
+    goal_chosen: { Goal: 'radiance' },
     logic: { state: 'ok', count: 9, message: null } }),
   slot({ name: 'Romain_Dino', game: 'Dinosaur Planet', checks: { done: 77, total: 77, remaining: 0 },
     goal: true, items: { received: 40, new: 0 }, logic: { state: 'ok', count: 0, message: null } }),

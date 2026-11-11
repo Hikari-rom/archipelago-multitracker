@@ -44,6 +44,8 @@ export interface ConfigResponse {
   player_yamls: string[]
   yamls?: YamlEntry[]
   games?: Record<string, GameInfo>
+  /** tracked games whose victory conditions the server does not know yet: GET /api/goal-options */
+  goal_options_pending?: string[]
 }
 export interface DiscoverResponse {
   room_url: string
@@ -377,4 +379,16 @@ export function saveOwnerChoice(v: string): void {
   } catch {
     /* ignore */
   }
+}
+
+/** The games with their victory conditions added (GET /api/goal-options), the others unchanged. */
+export function withGoalOptions(
+  games: Record<string, GameInfo>,
+  options: Record<string, GoalOption[]>,
+): Record<string, GameInfo> {
+  const out = { ...games }
+  for (const [game, opts] of Object.entries(options)) {
+    out[game] = { ...(out[game] ?? { logic: false, needs_yaml: false }), goal_options: opts }
+  }
+  return out
 }

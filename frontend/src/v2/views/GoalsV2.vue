@@ -4,6 +4,7 @@ import { goalProgress, sortByGoal } from '../../lib/goals'
 import { isGoMode } from '../../lib/logic'
 import type { SlotSummary } from '../../lib/types'
 import GoalBlock from '../components/GoalBlock.vue'
+import GoalChooser from '../components/GoalChooser.vue'
 import OwnerSelect from '../components/OwnerSelect.vue'
 import { loadHideReached, saveHideReached } from '../lib/prefs'
 
@@ -41,7 +42,8 @@ const shown = computed(() => sortByGoal(props.slots).filter((s) => !(hideReached
           <span v-else-if="isGoMode(s)" data-go-pill class="v2-go-pill shrink-0"><span class="v2-go-text">GO MODE</span></span>
           <span v-else class="shrink-0 font-mono text-sm tabular-nums">{{ Math.round(goalProgress(s) * 100) }} %</span>
         </header>
-        <GoalBlock :objective="s.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable" />
+        <GoalBlock :objective="s.objective" :goal="s.goal" :go-mode="s.go_mode" :choosable="s.goal_choosable && !s.goal_options?.length" />
+        <GoalChooser :name="s.name" compact />
       </article>
     </div>
   </section>

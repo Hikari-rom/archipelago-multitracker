@@ -55,13 +55,23 @@ def list_yamls(base: Path | None = None) -> list[dict[str, Any]]:
     for path in files[:MAX_YAML_FILES]:
         entry: dict[str, Any] = {"path": rel(path), "players": [], "error": None}
         try:
-            if path.stat().st_size > MAX_YAML_BYTES:
+            st = path.stat()
+            if st.st_size > MAX_YAML_BYTES:
                 raise ConfigError("fichier trop gros")
-            entry["players"] = describe(path.read_text(encoding="utf-8-sig"))
+            key = (str(path), st.st_size, st.st_mtime_ns)
+            players = _described.get(key)
+            if players is None:
+                players = describe(path.read_text(encoding="utf-8-sig"))
+                _described[key] = players
+            entry["players"] = [dict(p) for p in players]
         except (ConfigError, OSError, UnicodeDecodeError) as exc:
             entry["error"] = str(exc)
         out.append(entry)
     return out
+
+
+# Players of each yaml file by (path, size, mtime): the Configuration page lists 200 yamls on every display.
+_described: dict[tuple[str, int, int], list[dict[str, Any]]] = {}
 
 
 def safe_filename(name: str) -> str:
