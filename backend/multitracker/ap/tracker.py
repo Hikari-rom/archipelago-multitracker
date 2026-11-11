@@ -25,6 +25,12 @@ ALLOWED_COMMANDS = frozenset({"GetDataPackage", "Connect", "Sync", "Get", "SetNo
 SCOUT_BATCH = 500  # locations per LocationScouts packet
 
 CLIENT_GOAL = 30
+
+# Progress some game clients keep in the server's data storage and decide their goal from (read only, no spoiler):
+# game -> keys for (team, slot). Balatro: the mod's deck wins (`deck_usage` of its profile), see goals.balatro.
+GAME_STORAGE_KEYS: dict[str, Callable[[int, int], list[str]]] = {
+    "Balatro": lambda team, slot: [f"balatro_deck_wins{slot}_{team}"],
+}
 ITEMS_HANDLING_ALL = 0b111  # receive items from other worlds, own world and starting inventory
 
 # Errors that will not fix themselves by retrying quickly.
@@ -57,6 +63,7 @@ class SlotState:
     datapackage_checksums: dict[str, str] = field(default_factory=dict)
     connected_at: float | None = None
     synced: bool = False  # item list complete for this session
+    storage: dict[str, Any] = field(default_factory=dict)  # GAME_STORAGE_KEYS values of this slot's game
     contents: dict[int, tuple[int, int, int]] = field(default_factory=dict)  # checked location -> (item, receiver, flags)
     new_contents: list[tuple[int, int, int, int]] = field(default_factory=list)  # last LocationInfo batch
     new_checks: int = 0  # locations newly checked by the last RoomUpdate
@@ -239,7 +246,8 @@ class SlotTracker:
             st.connected_at = time.time()
             self._had_session = True
             st.status, st.error = "connected", None
-            keys = [self.hints_key, self.status_key]
+            st.storage = {}
+            keys = [self.hints_key, self.status_key, *self.game_keys]
             await self._send({"cmd": "Get", "keys": keys}, {"cmd": "SetNotify", "keys": keys})
             self._changed({"connected", "status", "checks", "items", "hints", "goal"})
         elif cmd == "ReceivedItems":
@@ -280,6 +288,10 @@ class SlotTracker:
             if self.status_key in values:
                 st.client_status = int(values[self.status_key] or 0)
                 kinds.add("goal")
+            for key in self.game_keys:
+                if key in values:
+                    st.storage[key] = values[key]
+                    kinds.add("storage")
             if cmd == "Retrieved" and not st.synced:
                 # Answered after the ReceivedItems that followed Connected: the item list is now complete.
                 st.synced = True
@@ -312,11 +324,16 @@ class SlotTracker:
     def status_key(self) -> str:
         return f"_read_client_status_{self.state.team}_{self.state.slot}"
 
+    @property
+    def game_keys(self) -> list[str]:
+        keys = GAME_STORAGE_KEYS.get(self.state.game)
+        return keys(self.state.team, self.state.slot) if keys and self.state.slot is not None else []
+
     def _reset_slot_data(self) -> None:
         st = self.state
         st.items, st.hints, st.checked, st.missing = [], [], set(), set()
         st.players, st.client_status, st.slot_data, st.synced = {}, 0, {}, False
-        st.contents, st.new_contents = {}, []
+        st.contents, st.new_contents, st.storage = {}, [], {}
         st.team = st.slot = None
         self._changed({"connected", "items", "checks", "hints", "goal"})
 

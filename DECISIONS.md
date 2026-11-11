@@ -466,3 +466,18 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
 - **Jamais masqués** : gros chiffre, nom du jeu, alertes (erreur de connexion, BK, logique approximative ou
   indisponible), couleurs d'état, boutons, onglets Détails.
 - Spec : `docs/superpowers/specs/2026-11-09-dashboard-display-prefs-design.md`.
+
+## D37 — Balatro : le but se compte comme le mod, depuis son profil (2026-11-11, signalé par Romain)
+- Constat (`balatrom`) : 7 checks « Ante 8 Green Stake » mais pas de but. Le mod (BurndiL/BalatroAP) ne regarde pas
+  les checks : à chaque partie gagnée, il compte les victoires de son profil (`deck_usage`), qu'il recopie dans la
+  data storage du serveur (`balatro_deck_wins<slot>_<team>`) et qu'il remplace par cette copie à la connexion.
+  La victoire Erratic Deck en Green Stake du 2026-11-06 (11 checks arrivés d'un coup, sans doute une partie hors
+  ligne) n'y est pas : le mod en compte 6.
+- Le tracker lit cette clé (`Get` + `SetNotify`, déjà dans la liste blanche ; `GAME_STORAGE_KEYS` dans
+  `ap/tracker.py`) et compte comme le mod (`goals.balatro_mod_wins`) : buts 0 (decks gagnés, tout stake),
+  3 (decks gagnés au stake demandé ou plus) et 5 (paires deck + stake). Les victoires y sont indexées par la
+  position dans la liste des stakes du mod (`included_stakes` du slot_data, puis les autres).
+- Une victoire cochée mais absente du profil est nommée dans la note de l'objectif. Sans copie sur le serveur : les
+  checks, comme avant.
+- Pas un spoiler : c'est la progression du joueur, écrite par son propre client.
+

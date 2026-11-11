@@ -36,6 +36,7 @@ class GoalContext:
     sources: set[str] = field(default_factory=set)
     overrides: dict[str, Any] = field(default_factory=dict)  # victory chosen by hand {option: value} (D34)
     override_names: dict[str, str] = field(default_factory=dict)  # option -> its display name
+    storage: dict[str, Any] = field(default_factory=dict)  # data storage the game's client keeps (GAME_STORAGE_KEYS)
 
     def opt(self, sd_key: str | None, yaml_key: str | None = None, default: Any = None) -> Any:
         """Option value: the goal chosen by hand, then slot_data (what the generator really used), then the yaml,
@@ -200,18 +201,53 @@ BALATRO_STAKES = ["White Stake", "Red Stake", "Green Stake", "Black Stake", "Blu
 BALATRO_WIN = re.compile(r"^(.+) Ante 8 (\w+ Stake)$")
 
 
+def balatro_mod_wins(c: GoalContext) -> list[tuple[str, str]] | None:
+    """(deck, stake) won according to the mod's own profile (`balatro_deck_wins<slot>_<team>`), or None when the
+    server has no copy. The mod decides the goal from these wins, not from the checks: a win missing from its
+    profile (e.g. played offline, then overwritten by the server copy on connect) never counts."""
+    usage = next((v for k, v in c.storage.items() if k.startswith("balatro_deck_wins")), None)
+    if not isinstance(usage, dict):
+        return None
+    # wins are keyed by the index in the mod's stake pool: the slot's included stakes first, then the others
+    pool = [int(n) for n in c.slot_data.get("included_stakes") or []]
+    pool += [n for n in range(1, 9) if n not in pool]
+    won = []
+    for key, deck in usage.items():
+        wins = (deck or {}).get("wins") if isinstance(deck, dict) else None
+        if isinstance(wins, list):
+            wins = {i + 1: v for i, v in enumerate(wins)}
+        for idx, count in (wins or {}).items():
+            try:
+                level = pool[int(idx) - 1]
+            except (ValueError, IndexError):
+                continue
+            if count and 1 <= level <= 8:
+                won.append((key.removeprefix("b_").replace("_", " ").title() + " Deck", BALATRO_STAKES[level - 1]))
+    c.sources.add("mod")
+    return won
+
+
 def balatro(c: GoalContext) -> Goal:
     goal = c.opt("goal", "goal", 0)
     goal = {"beat_decks": 0, "unlock_jokers": 1, "beat_ante": 2, "beat_decks_on_stake": 3,
             "win_with_jokers_on_stake": 4, "beat_unique_decks": 5}.get(goal, goal)
     stake_n = int(c.opt("required_stake", None, 1) or 1)
     stake = BALATRO_STAKES[stake_n - 1] if 1 <= stake_n <= 8 else "White Stake"
-    wins = [m.groups() for m in (BALATRO_WIN.match(n) for n in c.checked) if m]
+    checks = [m.groups() for m in (BALATRO_WIN.match(n) for n in c.checked) if m]
+    mod = balatro_mod_wins(c) if goal in (0, 3, 5) else None
+    wins = checks if mod is None else mod
     decks = int(c.opt("decks_win_goal", "decks_win_goal", 0) or 0)
     if goal in (0, 3):
-        ok = [d for d, s in wins if goal == 0 or BALATRO_STAKES.index(s) >= BALATRO_STAKES.index(stake)]
+        def counted(won):
+            return {d for d, s in won if goal == 0 or BALATRO_STAKES.index(s) >= BALATRO_STAKES.index(stake)}
         g = Goal(c, f"Gagner avec {plural(decks, 'deck')}" + (f" en {stake} ou plus" if goal == 3 else ""))
-        g.counter("Decks gagnants", len(set(ok)), decks)
+        g.counter("Decks gagnants", len(counted(wins)), decks)
+        lost = sorted(counted(checks) - counted(wins)) if mod is not None else []
+        if lost:
+            g.note = (f"Le mod compte les victoires enregistrées dans son profil, pas les checks : "
+                      f"{', '.join(lost)} {'a' if len(lost) == 1 else 'ont'} le check « Ante 8 » mais pas cette "
+                      f"victoire dans le profil (partie perdue par le mod, par exemple jouée hors ligne). "
+                      f"Il faut la regagner ; le mod vérifie le but à la fin d'une partie gagnée.")
     elif goal == 5:
         unique = int(c.opt("unique_deck_win_goal", "unique_deck_win_goal", 0) or 0)
         g = Goal(c, f"{unique} victoires différentes (deck + stake)")

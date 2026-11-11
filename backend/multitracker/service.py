@@ -633,7 +633,8 @@ class Service:
             checked={names(game, loc) for loc in st.checked},
             locations={names(game, loc) for loc in st.checked | st.missing},
             goal=st.goal_reached, checked_ids=set(st.checked), overrides=self.goal_choice(name),
-            override_names={o["option"]: o["display"] for o in self.goal_options.get(game, [])})
+            override_names={o["option"]: o["display"] for o in self.goal_options.get(game, [])},
+            storage=dict(st.storage))
         try:
             return describe_goal(ctx)
         except Exception:  # noqa: BLE001  a describer must never break the slot's summary

@@ -213,3 +213,58 @@ def test_fall_guys_ticket_count_from_the_yaml():
     ctx = _ctx("Fall Guys", {}, ["Win a Final Round"], [])
     ctx.yaml = {"final_round_tickets_required": 12}
     assert describe(ctx)["counters"][0]["target"] == 12
+
+
+# Real shape of the Balatro mod's `balatro_deck_wins<slot>_<team>` (wins keyed by the index in the mod's stake pool,
+# a Lua sequence arrives as a JSON list): included stakes White, Green, Red -> index 2 is Green, 3 is Red.
+BALATRO_SD = {"goal": 3, "decks_win_goal": 7, "required_stake": 3, "included_stakes": [1, 3, 2]}
+BALATRO_GREEN = ["Red", "Yellow", "Green", "Black", "Checkered", "Painted", "Erratic"]
+BALATRO_PROFILE = {f"b_{d.lower()}": {"count": 0, "losses": {}, "wins": [None, 1]} for d in BALATRO_GREEN[:6]}
+BALATRO_PROFILE |= {"b_erratic": {"count": 0, "losses": {}, "wins": [None, None, 1]},
+                    "b_blue": {"count": 0, "losses": {}, "wins": {}}}
+
+
+def _balatro(storage):
+    ctx = _ctx("Balatro", BALATRO_SD, [], [f"{d} Deck Ante 8 Green Stake" for d in BALATRO_GREEN]
+               + ["Erratic Deck Ante 8 Red Stake"])
+    ctx.storage = storage
+    from multitracker.goals import describe
+    return describe(ctx)
+
+
+def test_balatro_counts_the_wins_of_the_mod_profile_not_the_checks():
+    # the Erratic Deck win on Green Stake was checked, but the mod's profile only has its Red Stake win: no goal
+    goal = _balatro({"balatro_deck_wins122_0": BALATRO_PROFILE})
+    assert goal["counters"] == [{"label": "Decks gagnants", "current": 6, "target": 7}]
+    assert "Erratic Deck" in goal["note"] and "profil" in goal["note"]
+
+
+def test_balatro_profile_wins_as_a_mapping_and_falls_back_on_the_checks():
+    profile = {k: {"wins": {str(i + 1): v for i, v in enumerate(d["wins"]) if v}} for k, d in BALATRO_PROFILE.items()}
+    profile["b_erratic"]["wins"]["2"] = 1  # won again on Green Stake
+    goal = _balatro({"balatro_deck_wins122_0": profile})
+    assert goal["counters"][0]["current"] == 7 and not goal.get("note")
+    for storage in ({}, {"balatro_deck_wins122_0": None}):  # no copy on the server yet: the checks
+        assert _balatro(storage)["counters"][0]["current"] == 7
+
+
+def test_tracker_reads_the_balatro_mod_wins_from_data_storage():
+    import asyncio
+    from multitracker.ap.tracker import SlotTracker
+    sent, changes = [], []
+    t = SlotTracker("127.0.0.1:38291", "", "balatrom", "Balatro", None, on_change=lambda _t, k: changes.append(k))
+
+    async def send(*msgs):
+        sent.extend(msgs)
+    t._send = send
+
+    async def run():
+        await t._handle({"cmd": "Connected", "team": 0, "slot": 122, "slot_info": {"122": {"game": "Balatro"}},
+                         "players": [], "slot_data": BALATRO_SD})
+        await t._handle({"cmd": "Retrieved", "keys": {"balatro_deck_wins122_0": BALATRO_PROFILE}})
+        await t._handle({"cmd": "SetReply", "key": "balatro_deck_wins122_0", "value": {}})
+    asyncio.run(run())
+    get = next(m for m in sent if m["cmd"] == "Get")
+    assert "balatro_deck_wins122_0" in get["keys"]
+    assert next(m for m in sent if m["cmd"] == "SetNotify")["keys"] == get["keys"]
+    assert "storage" in changes[1] and t.state.storage == {"balatro_deck_wins122_0": {}}

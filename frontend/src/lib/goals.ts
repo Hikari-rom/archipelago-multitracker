@@ -36,4 +36,5 @@ export const SOURCE_LABELS: Record<string, string> = {
   slot_data: 'options lues dans le slot_data du serveur',
   yaml: 'options lues dans le yaml du joueur',
   'slot_data + yaml': 'options lues dans le slot_data du serveur et le yaml du joueur',
+  'mod + slot_data': 'options lues dans le slot_data, victoires lues dans le profil du mod',
 }
