@@ -219,6 +219,33 @@ def _git(root: Path, *args: str, timeout: float = 60.0) -> str:
     return out.stdout.strip()
 
 
+def git_releases(root: Path) -> dict[str, str]:
+    """Full commit sha -> release tag (v1.2.3) pointing at it."""
+    out: dict[str, str] = {}
+    try:
+        lines = _git(root, "for-each-ref", "refs/tags", "--format=%(objectname) %(*objectname) %(refname:short)")
+    except UpdateError:
+        return out
+    for line in lines.splitlines():
+        parts = line.split()
+        if len(parts) == 3:
+            obj, commit, tag = parts
+        elif len(parts) == 2:  # lightweight tag: the object is the commit
+            (obj, tag), commit = parts, parts[0]
+        else:
+            continue
+        if parse_version(tag) is not None and not re.search(r"-\d+-g", tag):
+            out.setdefault(commit, tag)
+    return out
+
+
+def release_of(releases: dict[str, str], commit: str | None) -> str | None:
+    """The release of a (possibly short) commit, None when it is not exactly a release."""
+    if not commit:
+        return None
+    return next((tag for sha, tag in releases.items() if sha.startswith(commit)), None)
+
+
 def git_version(root: Path) -> dict[str, Any]:
     return {"version": _git(root, "describe", "--tags", "--always"), "commit": _git(root, "rev-parse", "--short", "HEAD"),
             "date": int(_git(root, "log", "-1", "--format=%ct"))}
@@ -229,6 +256,10 @@ def git_check(root: Path, since: str | None = None, fetch: bool = True) -> tuple
     also gets commits made in it, without a restart). The second value says why the update cannot run."""
     if fetch:
         _git(root, "fetch", "--quiet", "origin", "main", timeout=120)
+        try:  # the release names shown by the page; a tag that differs from the remote's must not block the update
+            _git(root, "fetch", "--quiet", "--tags", "origin", timeout=120)
+        except UpdateError as exc:
+            log.info("tags not fetched: %s", exc)
     base = since or "HEAD"
     commits = []
     for line in _git(root, "log", "--format=%h%x09%ct%x09%s", "-n", "50", f"{base}..origin/main").splitlines():
@@ -289,8 +320,13 @@ class Updater:
                 cur = git_version(self.root)
             except UpdateError:
                 return {"version": None}
+            releases = git_releases(self.root)
+            if release := release_of(releases, cur["commit"]):
+                cur["release"] = release
             if self.started_commit and not self.started_commit.startswith(cur["commit"]):
                 cur["running"] = self.started_commit[:len(cur["commit"])]  # the checkout moved since the start
+                if release := release_of(releases, self.started_commit):
+                    cur["running_release"] = release
             return cur
         return {"version": None}
 
@@ -328,7 +364,26 @@ class Updater:
         st = read_status(self.root)
         if st and self.progress and st.get("state") == "running":
             st["progress"] = self.progress
+        if st and self.mode == "git" and (st.get("from") or st.get("to")):
+            releases = git_releases(self.root)
+            for key in ("from", "to"):
+                if release := release_of(releases, st.get(key)):
+                    st[f"{key}_release"] = release
         return st
+
+    def _latest(self) -> dict[str, Any] | None:
+        """git: the release of origin/main and of the new commits, when they are one (read now: tags move)."""
+        if self.mode != "git" or not self.latest:
+            return self.latest
+        releases = git_releases(self.root)
+        latest = dict(self.latest)
+        release = release_of(releases, latest.get("version"))
+        latest.pop("release", None)
+        if release:
+            latest["release"] = release
+        latest["commits"] = [{**c, **({"release": r} if (r := release_of(releases, c["commit"])) else {})}
+                             for c in latest.get("commits") or []]
+        return latest
 
     def available(self) -> bool:
         if not self.latest or self.blocked:
@@ -344,7 +399,7 @@ class Updater:
 
     def info(self) -> dict[str, Any]:
         self._adopt_done_update()
-        return {"mode": self.mode, "current": self.current(), "latest": self.latest, "available": self.available(),
+        return {"mode": self.mode, "current": self.current(), "latest": self._latest(), "available": self.available(),
                 "blocked": self.blocked, "checked_at": self.checked_at, "check_error": self.check_error,
                 "running": self.running(), "status": self.status(),
                 "now": time.time()}  # the page compares the status times with the server's clock, not its own

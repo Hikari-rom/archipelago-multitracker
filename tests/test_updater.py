@@ -403,3 +403,27 @@ def test_update_api(tmp_path):
     with TestClient(noupd) as client:
         assert client.get("/api/update").json()["mode"] == "none"
         assert client.post("/api/update/apply", json={}).status_code == 409
+
+
+def test_git_names_the_releases_of_the_commits(repos):
+    """A commit that is exactly a release is shown as « v0.2.23 (sha) »: the update gives its tag (fetched with
+    main), for the installed code, origin/main, the new commits and the last update."""
+    dev, pi = repos
+    released = git(pi, "rev-parse", "--short", "HEAD")
+    git(dev, "pull", "-q", "origin", "main")
+    git(dev, "-c", "user.name=t", "-c", "user.email=t@t", "tag", "-a", "v0.2.1", "-m", "v0.2.1", released)
+    commit(dev, "README.md", "v2", "second")
+    git(dev, "-c", "user.name=t", "-c", "user.email=t@t", "tag", "v0.2.2")  # lightweight
+    commit(dev, "README.md", "v3", "third")
+    git(dev, "push", "-q", "--tags", "origin", "main")
+    u = up.Updater(pi)
+    info = asyncio.run(u.check())
+    assert info["current"]["release"] == "v0.2.1" and info["current"]["commit"] == released
+    assert "release" not in info["latest"]  # origin/main is one commit after v0.2.2
+    assert [c.get("release") for c in info["latest"]["commits"]] == [None, "v0.2.2"]
+    up.write_status(pi, mode="git", state="done", step="Terminé", message="", **{"from": released, "to": "0000000"})
+    st = u.info()["status"]
+    assert st["from_release"] == "v0.2.1" and "to_release" not in st
+    git(pi, "merge", "-q", "--ff-only", "origin/main")
+    git(pi, "reset", "-q", "--hard", "HEAD~1")
+    assert up.Updater(pi).info()["current"]["release"] == "v0.2.2"

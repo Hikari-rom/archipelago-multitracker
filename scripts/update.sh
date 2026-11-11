@@ -42,6 +42,7 @@ echo "== $(date '+%F %T') mise à jour depuis $FROM"
 
 status running "Récupération de main"
 git fetch --quiet origin main || fail "Récupération de main" "git fetch a échoué (réseau ?)"
+git fetch --quiet --tags origin 2>/dev/null || true  # the release names shown by the app (v0.2.N)
 TO="$(git rev-parse --short origin/main)"
 branch="$(git rev-parse --abbrev-ref HEAD)"
 [ "$branch" = main ] || fail "Vérification" "le dépôt est sur la branche $branch, pas main"

@@ -8,6 +8,9 @@ export interface UpdateStatus {
   message?: string
   from?: string | null
   to?: string | null
+  /** git: the release of from / to, when that commit is exactly one */
+  from_release?: string
+  to_release?: string
   /** epoch seconds */
   at?: number
   progress?: { done: number; total: number }
@@ -17,12 +20,21 @@ export interface UpdateCommit {
   commit: string
   date: number
   subject: string
+  release?: string
 }
 
 export interface UpdateInfo {
   mode: 'portable' | 'git' | 'none'
   /** git: running = the commit this app started on, when the checkout moved since */
-  current: { version: string | null; commit?: string; date?: number; running?: string }
+  current: {
+    version: string | null
+    commit?: string
+    date?: number
+    running?: string
+    /** git: the release tag of the commit (v0.2.23), when it is exactly one */
+    release?: string
+    running_release?: string
+  }
   latest: null | {
     version: string
     /** portable: release page and notes */
@@ -31,6 +43,8 @@ export interface UpdateInfo {
     published_at?: string | null
     /** git: commits on origin/main not here yet */
     behind?: number
+    /** git: origin/main is exactly this release */
+    release?: string
     commits?: UpdateCommit[]
   }
   available: boolean
@@ -44,12 +58,26 @@ export interface UpdateInfo {
   now?: number
 }
 
+/** A commit with its release: « v0.2.23 (6835c3b) » when it is exactly a release, else the commit alone. */
+export function withRelease(commit: string | null | undefined, release?: string | null): string {
+  if (!commit) return release ?? ''
+  return release ? `${release} (${commit})` : commit
+}
+
+/** The installed version: the release and its commit on the Pi when it is one, else as git describes it. */
+export function currentLabel(info: UpdateInfo): string {
+  const c = info.current
+  if (info.mode === 'git' && c.release && c.commit) return withRelease(c.commit, c.release)
+  return c.version ?? 'inconnue'
+}
+
 export function latestLabel(info: UpdateInfo): string {
   const l = info.latest
   if (!l) return ''
   if (info.mode === 'git') {
     const n = l.behind ?? 0
-    return n === 1 ? '1 nouveau commit sur main' : `${n} nouveaux commits sur main`
+    const count = n === 1 ? '1 nouveau commit sur main' : `${n} nouveaux commits sur main`
+    return l.release ? `${withRelease(l.version, l.release)}, ${count}` : count
   }
   return `version ${l.version}`
 }

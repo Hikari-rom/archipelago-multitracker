@@ -4,7 +4,7 @@ import { Download, ExternalLink, RefreshCw } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import * as api from '../lib/api'
-import { latestLabel, phaseOf, UPDATE_ANCHOR, type Phase, type UpdateInfo } from '../lib/update'
+import { currentLabel, latestLabel, phaseOf, UPDATE_ANCHOR, withRelease, type Phase, type UpdateInfo } from '../lib/update'
 
 const POLL_MS = 1500
 const GIVE_UP_MS = 15 * 60 * 1000
@@ -129,9 +129,9 @@ onUnmounted(() => clearTimeout(timer))
         </p>
         <template v-else>
           <p>
-            Version installée : <strong data-current>{{ info.current.version ?? 'inconnue' }}</strong>
+            Version installée : <strong data-current>{{ currentLabel(info) }}</strong>
             <span v-if="info.current.date" class="text-muted-foreground"> ({{ when(info.current.date) }})</span>
-            <span v-if="info.current.running" class="text-muted-foreground" data-running> · l'app tourne encore sur {{ info.current.running }}</span>
+            <span v-if="info.current.running" class="text-muted-foreground" data-running> · l'app tourne encore sur {{ withRelease(info.current.running, info.current.running_release) }}</span>
           </p>
 
           <div v-if="startedAt && phase" class="bg-muted flex items-center gap-2 rounded-lg px-3 py-2" role="status" data-phase>
@@ -149,7 +149,7 @@ onUnmounted(() => clearTimeout(timer))
                 </a>
               </p>
               <ul v-if="commits.length" class="text-muted-foreground flex flex-col gap-0.5">
-                <li v-for="c in commits" :key="c.commit" class="truncate"><code>{{ c.commit }}</code> {{ c.subject }}</li>
+                <li v-for="c in commits" :key="c.commit" class="truncate"><code>{{ withRelease(c.commit, c.release) }}</code> {{ c.subject }}</li>
                 <li v-if="(info.latest.behind ?? 0) > commits.length">… et {{ (info.latest.behind ?? 0) - commits.length }} autre(s)</li>
               </ul>
               <p v-else-if="notes" class="text-muted-foreground max-h-40 overflow-y-auto whitespace-pre-line">{{ notes }}</p>
@@ -172,7 +172,7 @@ onUnmounted(() => clearTimeout(timer))
           <p v-if="actionError" class="text-destructive" role="alert">{{ actionError }}</p>
           <p v-if="lastStatus" class="text-muted-foreground text-xs" data-last>
             Dernière mise à jour ({{ when(lastStatus.at) }}) :
-            <template v-if="lastStatus.state === 'done'">réussie<template v-if="lastStatus.from && lastStatus.to && lastStatus.from !== lastStatus.to">, {{ lastStatus.from }} → {{ lastStatus.to }}</template><template v-if="lastStatus.message"> ({{ lastStatus.message }})</template>.</template>
+            <template v-if="lastStatus.state === 'done'">réussie<template v-if="lastStatus.from && lastStatus.to && lastStatus.from !== lastStatus.to">, {{ withRelease(lastStatus.from, lastStatus.from_release) }} → {{ withRelease(lastStatus.to, lastStatus.to_release) }}</template><template v-if="lastStatus.message"> ({{ lastStatus.message }})</template>.</template>
             <span v-else class="text-destructive">échouée : {{ lastStatus.message || lastStatus.step }}.</span>
           </p>
         </template>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { getUpdate } from '../lib/api'
-import { installedNotes, loadSeenVersion, noteLines, runningId, saveSeenVersion, type UpdateInfo } from '../lib/update'
+import { currentLabel, installedNotes, loadSeenVersion, noteLines, runningId, saveSeenVersion, type UpdateInfo } from '../lib/update'
 
 // Said once per browser after the app changed version; the first visit only remembers the version.
 const info = ref<UpdateInfo | null>(null)
 const seen = ref(loadSeenVersion())
 const id = computed(() => (info.value ? runningId(info.value) : null))
 const show = computed(() => !!id.value && !!seen.value && id.value !== seen.value)
-const label = computed(() => info.value?.current.version ?? id.value ?? '')
+const label = computed(() => (info.value?.current.version ? currentLabel(info.value) : (id.value ?? '')))
 const notes = computed(() => (info.value ? installedNotes(info.value) : null))
 const lines = computed(() => noteLines(notes.value?.notes ?? ''))
 

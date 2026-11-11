@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import UpdateBanner from '../src/components/UpdateBanner.vue'
 import UpdatePanel from '../src/components/UpdatePanel.vue'
-import { latestLabel, phaseOf, type UpdateInfo } from '../src/lib/update'
+import { currentLabel, latestLabel, phaseOf, withRelease, type UpdateInfo } from '../src/lib/update'
 import { tracker } from '../src/stores/tracker'
 
 const base = (over: Partial<UpdateInfo> = {}): UpdateInfo => ({
@@ -35,6 +35,18 @@ afterEach(() => {
 })
 
 describe('update helpers', () => {
+  it('names a commit by its release when it is exactly one', () => {
+    expect(withRelease('6835c3b', 'v0.2.23')).toBe('v0.2.23 (6835c3b)')
+    expect(withRelease('05ce08f')).toBe('05ce08f')
+    const git = (current: UpdateInfo['current']) => base({ mode: 'git', current })
+    expect(currentLabel(git({ version: 'v0.2.23', commit: '6835c3b', release: 'v0.2.23' }))).toBe('v0.2.23 (6835c3b)')
+    expect(currentLabel(git({ version: 'v0.2.23-1-g05ce08f', commit: '05ce08f' }))).toBe('v0.2.23-1-g05ce08f')
+    expect(currentLabel(base())).toBe('v0.1.0') // portable: the release alone
+    expect(latestLabel(base({ mode: 'git', latest: { version: 'abc1234', behind: 2, release: 'v0.2.24' } }))).toBe(
+      'v0.2.24 (abc1234), 2 nouveaux commits sur main',
+    )
+  })
+
   it('labels the new version', () => {
     expect(latestLabel(base())).toBe('version v0.2.0')
     expect(latestLabel(base({ mode: 'git', latest: { version: 'abc', behind: 1, commits: [] } }))).toBe('1 nouveau commit sur main')
