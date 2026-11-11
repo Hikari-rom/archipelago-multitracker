@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from typing import Callable
 
-from .goals import Goal, GoalContext, plural
+from .goals import DESCRIBERS, Goal, GoalContext, plural
 
 
 def upper1(text: str) -> str:
@@ -717,6 +717,415 @@ def librarian(c: GoalContext) -> Goal:
     return g
 
 
+
+def luigis_mansion(c: GoalContext) -> Goal:
+    rank = num(c, "rank requirement", "rank_requirement", 0)
+    g = Goal(c, "Vaincre King Boo" + (f" avec le rang {'HGFEDCBA'[rank]} ou mieux" if 0 < rank < 8 else ""))
+    if c.opt("boo gates", "boo_gates", True):
+        boos = num(c, "final boo count", "final_boo_count", 0)
+        if boos:
+            g.step(f"{boos} Boos pour ouvrir l'Autel secret", None)
+    g.final("Vaincre King Boo (tableau de Mario)")
+    return g
+
+
+def majora(c: GoalContext) -> Goal:
+    moon, majora_n = num(c, "moon_remains_required", "moon_remains_required", 4), num(c, "majora_remains_required", "majora_remains_required", 4)
+    g = Goal(c, f"{moon} restes de boss pour la Lune, {majora_n} pour Majora, puis vaincre Majora")
+    remains = ["Odolwa's Remains", "Goht's Remains", "Gyorg's Remains", "Twinmold's Remains"]
+    cap(g, "Restes de boss", sum(c.has(r) for r in remains), max(moon, majora_n))
+    g.final("Vaincre Majora")
+    return g
+
+
+def nine_sols(c: GoalContext) -> Goal:
+    seals = num(c, "seals_for_eigong", "seals_for_eigong", 8)
+    g = Goal(c, f"{plural(seals, 'Sol Seal')}, puis vaincre Eigong")
+    cap(g, "Sol Seals", c.count_where(lambda n: n.startswith("Seal of ")), seals)
+    g.final("Vaincre Eigong")
+    return g
+
+
+def nodebuster(c: GoalContext) -> Goal:
+    infinity = choice(c, "goal", "goal", {"release_virus": 0, "release_virus_with_infinity": 1}, 0) == 1
+    g = Goal(c, "Libérer le virus" + (" avec les 9 améliorations Infinity" if infinity else ""))
+    if infinity:
+        have = sum(c.has(f"Infinity{i}") for i in range(1, 10)) + c.count("Progressive Infinity")
+        cap(g, "Infinity", have, 9)
+    g.final("Libérer le virus", "Virus Released")
+    return g
+
+
+
+def overcooked2(c: GoalContext) -> Goal:
+    stars = num(c, None, "stars_to_win", 0)
+    g = Goal(c, (f"{stars} étoiles pour débloquer le 6-6, puis le finir" if stars else "Débloquer et finir le 6-6"))
+    g.final("Finir le 6-6", "6-6 Completed")
+    return g
+
+
+def peggle(item: str, total_key: str, required_key: str, final: str, hunt: str):
+    def describe(c: GoalContext) -> Goal:
+        goal = c.opt("goal", "goal", 0)
+        need = num(c, required_key, required_key, 30)
+        total = num(c, total_key, None, 0)
+        need = min(need, total) if total else need
+        hunt_mode = goal in (1, hunt)
+        g = Goal(c, f"{need} {item}s" + ("" if hunt_mode else ", puis finir le niveau final"))
+        cap(g, f"{item}s", c.count(item), need)
+        g.final("Objectif atteint" if hunt_mode else final)
+        return g
+    return describe
+
+
+def pvz(c: GoalContext) -> Goal:
+    reqs = [("adventure_levels_goal", "niveaux de l'Aventure"), ("adventure_areas_goal", "zones de l'Aventure"),
+            ("minigame_levels_goal", "mini-jeux"), ("puzzle_levels_goal", "niveaux Puzzle"),
+            ("survival_levels_goal", "niveaux Survie"), ("cloudy_day_levels_goal", "niveaux Cloudy Day"),
+            ("bonus_levels_goal", "niveaux bonus"), ("overall_levels_goal", "niveaux au total")]
+    parts = [f"{n} {label}" for key, label in reqs if (n := num(c, key, key.replace("overall", "total"), 0))]
+    text = ", ".join(parts)
+    g = Goal(c, f"{text}, puis vaincre Dr. Zomboss (Toit 5-10)" if text else "Vaincre Dr. Zomboss (Toit 5-10)")
+    g.final("Vaincre Dr. Zomboss", "Roof: Dr. Zomboss (Clear)")
+    return g
+
+
+
+def emerald(c: GoalContext) -> Goal:
+    goal = choice(c, "goal", "goal", {"champion": 0, "steven": 1, "norman": 2, "legendary_hunt": 3}, 0)
+    badges = c.count_where(lambda n: n.endswith(" Badge"))
+    if goal == 3:
+        n = num(c, "legendary_hunt_count", "legendary_hunt_count", 3)
+        catch = bool(c.opt("legendary_hunt_catch", "legendary_hunt_catch", False))
+        g = Goal(c, f"{'Capturer' if catch else 'Vaincre ou capturer'} {plural(n, 'légendaire')}")
+    elif goal == 2:
+        g = Goal(c, "Vaincre Norman (arène de Petalburg)")
+        if num(c, "norman_requirement", None, 0) == 0 and (n := num(c, "norman_count", "norman_count", 0)):
+            cap(g, "Badges", badges, n)
+    elif goal == 1:
+        g = Goal(c, "Vaincre Steven (Meteor Falls)")
+    else:
+        g = Goal(c, "Devenir Champion (Conseil 4 et Wallace)")
+        if num(c, "elite_four_requirement", None, 0) == 0 and (n := num(c, "elite_four_count", "elite_four_count", 8)):
+            cap(g, "Badges", badges, n)
+    g.final("Objectif atteint")
+    return g
+
+
+def powerwash(c: GoalContext) -> Goal:
+    goal = choice(c, "goal_type", "goal_type", {"mcguffin": 0, "level": 1}, 0)
+    if goal == 0:
+        need = num(c, "jobs_done", None, 0)
+        g = Goal(c, f"{need} A Job Well Done")
+        cap(g, "A Job Well Done", c.count("A Job Well Done"), need)
+    else:
+        n = num(c, None, "amount_of_levels_to_goal", 0)
+        g = Goal(c, f"Finir {plural(n, 'niveau', 'niveaux')} du but" if n > 0 else "Finir les niveaux du but")
+    g.final("Objectif atteint")
+    return g
+
+
+def raft(c: GoalContext) -> Goal:
+    return Goal(c, "Finir l'histoire (Utopia)").final("Finir l'histoire")
+
+
+def ror2(c: GoalContext) -> Goal:
+    victory = choice(c, "victory", "victory", {"any": 0, "mithrix": 1, "voidling": 2, "limbo": 3, "falseson": 4}, 0)
+    label = {0: "Gagner une partie (n'importe quelle fin)", 1: "Vaincre Mithrix (Commencement)",
+             2: "Vaincre le Voidling (The Planetarium)", 3: "Vaincre le Scavenger (A Moment, Whole)",
+             4: "Vaincre False Son (Prime Meridian)"}.get(victory, "Gagner une partie")
+    return Goal(c, label).final(label)
+
+
+
+def slime_rancher2(c: GoalContext) -> Goal:
+    goal = c.opt("goal", "goal", "labyrinth_open")
+    goal = {0: "labyrinth_open", 1: "newbucks", 2: "prismacore", 3: "slimepedia", 4: "plort_seller",
+            5: "prisma_shard_hunt"}.get(goal, goal)
+    bucks, plorts = num(c, "newbucks_goal_amount", "newbucks_goal_amount", 50000), num(c, "plort_goal_amount", None, 0)
+    shards = num(c, "prisma_shards_required", "prisma_shards_required", 8)
+    label = {"labyrinth_open": "Ouvrir les deux entrées du Grey Labyrinth",
+             "newbucks": f"Gagner {bucks:,} Newbucks au total".replace(",", " "),
+             "prismacore": "Stabiliser le Prismacore (fin de l'histoire)", "slimepedia": "Compléter la Slimepedia",
+             "plort_seller": f"Vendre {plorts} plorts de chaque type" if plorts else "Vendre assez de plorts de chaque type",
+             "prisma_shard_hunt": f"{shards} Prisma Shards, puis stabiliser le Prismacore"}.get(goal, "Objectif")
+    g = Goal(c, label)
+    if goal == "prisma_shard_hunt":
+        cap(g, "Prisma Shards", c.count("Prisma Shard"), shards)
+    g.final(label, "Gigi: Fight Complete" if goal in ("prismacore", "prisma_shard_hunt") else None)
+    return g
+
+
+ST_GOALS = {-1: "Vaincre Malladus", 0: "Finir le Temple de la Forêt", 1: "Finir le Temple des Neiges",
+            2: "Finir le Temple de l'Océan", 3: "Finir le Temple du Feu", 4: "Finir le Temple du Sable",
+            5: "Finir la section 1 de la Tour des Dieux", 6: "Finir la section 2 de la Tour des Dieux",
+            7: "Finir la section 3 de la Tour des Dieux", 8: "Finir la section 4 de la Tour des Dieux",
+            9: "Vaincre Staven (Byrne)", 10: "Finir la section 6 de la Tour des Dieux"}
+
+
+def spirit_tracks(c: GoalContext) -> Goal:
+    goal = c.opt("goal", "goal", -1)
+    if isinstance(goal, str):
+        goal = {"defeat_malladus": -1, "defeat_staven": 9}.get(goal, -1)
+    label = ST_GOALS.get(goal, "Vaincre Malladus")
+    g = Goal(c, label)
+    if goal == -1:
+        access = num(c, "dark_realm_access", None, 1)
+        dungeons, shards = num(c, "dungeons_required", "dungeons_required", 5), num(c, "compass_shard_count", None, 0)
+        if access in (0, 3):
+            g.item("Compass of Light", "Compass of Light")
+        if access in (2, 3) and shards:
+            cap(g, "Compass of Light Shards", c.count("Compass of Light Shard"), shards)
+        if access in (1, 3) and dungeons:
+            g.step(f"{plural(dungeons, 'donjon')} pour ouvrir le Royaume des Ténèbres", None)
+    g.final(label)
+    return g
+
+
+STARDEW_GOALS = {0: "Restaurer le Centre communautaire", 1: "4 bougies à l'évaluation de Grand-père",
+                 2: "Atteindre le niveau 120 de la mine", 3: "Finir la quête « Cryptic Note » (Skull Cavern, étage 100)",
+                 4: "Pêcher tous les poissons (Master Angler)", 5: "Compléter la collection du musée",
+                 6: "Se marier et avoir deux enfants (Full House)", 7: "Trouver les 130 Golden Walnuts",
+                 8: "Finir tous les objectifs de la Guilde des aventuriers", 9: "Tout expédier (Full Shipment)",
+                 10: "Cuisiner toutes les recettes (Gourmet Chef)", 11: "Fabriquer tous les objets (Craft Master)",
+                 12: "Gagner 10 millions de g (Legend)", 13: "Trouver tous les Stardrops",
+                 20: "Porter tous les chapeaux (Mad Hatter)", 21: "Manger tous les aliments (Ultimate Foodie)",
+                 24: "Faire tous les checks (Allsanity)", 25: "Perfection"}
+
+
+def stardew(c: GoalContext) -> Goal:
+    goal = c.opt("goal", "goal", 0)
+    if isinstance(goal, str):
+        goal = {"community_center": 0, "grandpa_evaluation": 1, "bottom_of_the_mines": 2, "cryptic_note": 3,
+                "master_angler": 4, "complete_collection": 5, "full_house": 6, "greatest_walnut_hunter": 7,
+                "protector_of_the_valley": 8, "full_shipment": 9, "gourmet_chef": 10, "craft_master": 11, "legend": 12,
+                "mystery_of_the_stardrops": 13, "mad_hatter": 20, "ultimate_foodie": 21, "allsanity": 24,
+                "perfection": 25}.get(goal, 0)
+    label = STARDEW_GOALS.get(goal, "Objectif")
+    g = Goal(c, label)
+    if goal == 0:
+        rooms = ["Pantry", "Crafts Room", "Fish Tank", "Boiler Room", "Bulletin Board", "Vault"]
+        known = [r for r in rooms if f"Complete {r}" in c.locations]
+        if known:
+            cap(g, "Salles terminées", sum(f"Complete {r}" in c.checked for r in known), len(known))
+    elif goal == 24:
+        checks_counter(g, "Checks", lambda n: True)
+    g.final(label)
+    return g
+
+
+def stray(c: GoalContext) -> Goal:
+    return Goal(c, "Ouvrir la Walled City 99 (fin de l'histoire)").final("Ouvrir la Walled City 99")
+
+
+
+def super_meat_boy(c: GoalContext) -> Goal:
+    goal = c.opt("goal", "goal", 1)
+    goal = {"larries": 0, "light_world": 1, "dark_world": 2, "light_world_chapter7": 3, "dark_world_chapter7": 4,
+            "boss_tokens": 5, "bandages": 6, "achievements": 7}.get(goal, goal)
+    bandages, tokens = num(c, "bandages_amount", "bandages_amount", 100), num(c, "boss_token_req", "boss_token_req", 0)
+    achievements = num(c, "achievement_tokens", "achievement_tokens", 0)
+    label = {0: "Vaincre les Larries (chapitre 5)", 1: "Vaincre Dr. Fetus (Light World)",
+             2: "Vaincre Dr. Fetus (Dark World)", 3: "Finir le chapitre 7 (Light World)",
+             4: "Finir le chapitre 7 (Dark World)", 5: f"{tokens} Boss Tokens", 6: f"{bandages} Bandages",
+             7: f"{achievements} Achievement Tokens"}.get(goal, "Objectif")
+    g = Goal(c, label)
+    if goal == 6:
+        cap(g, "Bandages", c.count("Bandage"), bandages)
+    if goal == 7:
+        cap(g, "Achievement Tokens", c.count("Achievement Token"), achievements)
+    if goal == 5 or (c.opt("boss_tokens", "boss_tokens", False) and goal in (6, 7)):
+        cap(g, "Boss Tokens", c.count("Boss Token"), tokens)
+    final = {0: "5-Boss Larries Lament", 1: "6-Boss LW Dr. Fetus", 2: "6-Boss DW Dr. Fetus"}.get(goal)
+    g.final(label if goal in (0, 1, 2, 3, 4) else "Objectif atteint", final)
+    return g
+
+
+def terranil(c: GoalContext) -> Goal:
+    n = num(c, "levels_cleared_to_goal", "levels_cleared_to_goal", 7)
+    return Goal(c, f"Finir {plural(n, 'niveau', 'niveaux')} (décollage)").final("Objectif atteint")
+
+
+def terraria(c: GoalContext) -> Goal:
+    bosses = [b for b in c.slot_data.get("goal") or [] if isinstance(b, str)]
+    if bosses:
+        c.sources.add("slot_data")
+    g = Goal(c, "Vaincre " + ", ".join(bosses) if bosses else "Vaincre le boss du but")
+    for b in bosses:
+        g.location(b, b)
+    g.final("Objectif atteint")
+    return g
+
+
+def tfwr(c: GoalContext) -> Goal:
+    goal = choice(c, "goal", "goal", {"gold": 0, "dinosaur_tail": 1})
+    if goal == 1:
+        return Goal(c, "Une queue de dinosaure de 1 000 blocs (Size Matters)").final("Size Matters", "Size Matters")
+    return Goal(c, "Récolter 1 000 pièces d'or (Gold Farmer)").final("Gold Farmer", "Gold Farmer")
+
+
+def the_wind_waker(c: GoalContext) -> Goal:
+    # Hyrule needs the 8 Triforce Shards; with required_bosses, Puppet Ganon's door needs the chosen bosses
+    bosses = bool(c.opt("required_bosses", "required_bosses", False))
+    g = Goal(c, "Les 8 Triforce Shards, puis Ganondorf" + (" (et les boss requis)" if bosses else ""))
+    g.counter("Triforce Shards", sum(c.has(f"Triforce Shard {i}") for i in range(1, 9)), 8)
+    if bosses:
+        n = num(c, "num_required_bosses", "num_required_bosses", 4)
+        g.step(f"{plural(n, 'boss requis', 'boss requis')} (marqués sur la carte marine)", None)
+    g.final("Vaincre Ganondorf", "Defeat Ganondorf")
+    return g
+
+
+def the_witness(c: GoalContext) -> Goal:
+    goal = choice(c, "victory_condition", "victory_condition",
+                  {"elevator": 0, "challenge": 1, "mountain_box_short": 2, "mountain_box_long": 3, "panel_hunt": 4})
+    if goal == 4:
+        panels = num(c, "panel_hunt_required_absolute", None, 0)
+        label = f"Résoudre {plural(panels, 'panneau de chasse', 'panneaux de chasse')}" if panels else \
+            "Résoudre les panneaux de chasse (Panel Hunt)"
+        g = Goal(c, label + ", puis la fin secrète du Tutorial")
+        g.step("Panneaux de chasse (suivis par le client)", None)
+        g.final("Fin secrète du Tutorial")
+        return g
+    lasers = num(c, "challenge_lasers" if goal == 1 else "mountain_lasers",
+                 "challenge_lasers" if goal == 1 else "mountain_lasers", 7 if goal != 1 else 11)
+    label = {0: "Lancer l'ascenseur au pied de la montagne", 1: "Terminer le Challenge secret",
+             2: "Résoudre la boîte du sommet (solution courte)",
+             3: "Résoudre la boîte du sommet (solution longue)"}.get(goal, "Objectif")
+    g = Goal(c, f"{label} ({plural(lasers, 'laser', 'lasers')})")
+    if c.opt("shuffle_lasers", "shuffle_lasers", 0):
+        cap(g, "Lasers reçus", c.count_where(lambda n: n.endswith(" Laser")), lasers)
+    else:
+        g.step(f"{plural(lasers, 'laser activé', 'lasers activés')}", None)
+    g.final(label)
+    return g
+
+
+TABS_LEVEL = re.compile(r"\((\w+)-\d+\)$")
+
+
+def tabs(c: GoalContext) -> Goal:
+    campaigns = [x for x in c.opt("required_campaigns", "required_campaigns", None)
+                 or ["Introduction", "Adventure", "Challenge"] if isinstance(x, str)]
+    g = Goal(c, "Finir tous les niveaux des campagnes " + ", ".join(sorted(campaigns)))
+    for camp in sorted(campaigns):
+        checks_counter(g, camp, lambda n, camp=camp: (m := TABS_LEVEL.search(n)) is not None and m.group(1) == camp)
+    g.final("Toutes les campagnes requises terminées")
+    return g
+
+
+def trackmania(c: GoalContext) -> Goal:
+    # "Victory!" needs every medal of the progression type over all the series
+    series = [x for x in c.slot_data.get("SeriesData") or [] if isinstance(x, dict)]
+    n_series = num(c, "SeriesNumber", "series_number", len(series)) or len(series)
+    total = sum(int(x.get("MedalTotal") or 0) for x in series[:n_series])
+    target = num(c, None, "target_time", 0)
+    if "TargetTimeSetting" in c.slot_data:
+        c.sources.add("slot_data")
+        target = round(float(c.slot_data.get("TargetTimeSetting") or 0) * 100)
+    medal = "Bronze Medal" if target < 100 else "Silver Medal" if target < 200 else \
+        "Gold Medal" if target < 300 else "Author Medal"
+    g = Goal(c, f"Toutes les médailles de progression ({medal}) des {plural(n_series, 'série', 'séries')}"
+             if total else "Toutes les médailles de progression")
+    if total:
+        cap(g, medal, c.count(medal), total)
+    g.final("Victory!")
+    return g
+
+
+def trombone_champ(c: GoalContext) -> Goal:
+    tracks = num(c, "goal", "goal", 10)
+    reductions = num(c, "rating_start", "rating_start", 0) - num(c, "rating", "rating", 0)
+    if tracks:
+        g = Goal(c, f"Battre {plural(tracks, 'morceau', 'morceaux')}")
+        checks_counter(g, "Morceaux battus", lambda n: n.startswith("Beat: "), tracks)
+    else:
+        track = c.opt("goal_track", "goal_track", None)
+        hot_dogs = num(c, "hot_dogs", "hot_dogs", 0)
+        g = Goal(c, f"Battre le morceau du but ({track})" if isinstance(track, str) and track != "none"
+                 else "Battre le morceau du but")
+        if hot_dogs:
+            cap(g, "Hot Dogs", c.count("Hot Dog"), hot_dogs)
+    if reductions > 0:
+        cap(g, "Rank Reductions", c.count("Rank Reduction"), reductions)
+    g.final("Objectif atteint")
+    return g
+
+
+def ultrakill(c: GoalContext) -> Goal:
+    # the goal level opens after `goal_requirement` cleared levels (events seen by the client only)
+    level = str(c.opt("goal", "goal_level", "") or "").replace("_", "-").upper()
+    levels = num(c, "goal_requirement", "goal_requirement", 15)
+    perfect = bool(c.opt("perfect_goal", "perfect_goal", False))
+    label = f"Terminer {level or 'le niveau du but'}" + (" en rang P" if perfect else "")
+    g = Goal(c, f"{label} ({plural(levels, 'niveau terminé', 'niveaux terminés')} pour l'ouvrir)")
+    g.step(f"{plural(levels, 'niveau terminé', 'niveaux terminés')} (vus par le client)", None)
+    g.final(label)
+    return g
+
+
+def vvvvvv(c: GoalContext) -> Goal:
+    # "V" needs the four areas, each opened by `DoorCost` trinkets (all trinkets 1..4×DoorCost)
+    cost = num(c, "DoorCost", "door_cost", 3)
+    needed = [f"Trinket {i:02d}" for i in range(1, 4 * cost + 1)]
+    g = Goal(c, "Ouvrir les quatre zones, puis atteindre V")
+    g.counter("Trinkets des zones", sum(c.has(t) for t in needed), len(needed))
+    g.final("Atteindre V", "V")
+    return g
+
+
+def wikipelago(c: GoalContext) -> Goal:
+    fragments = num(c, "required_fragments", "required_fragments", 7)
+    question = c.slot_data.get("goal_question")
+    g = Goal(c, f"{plural(fragments, 'Knowledge Fragment')}, puis trouver la page réponse (Grand Goal)")
+    cap(g, "Knowledge Fragments", c.count("Knowledge Fragment"), fragments)
+    if isinstance(question, str) and question:
+        g.note = f"Question : {question}"
+    g.final("Grand Goal", "Grand Goal")
+    return g
+
+
+def zuma_deluxe(c: GoalContext) -> Goal:
+    # "Victory location" needs the goal level's unlock item (either mode with goal_mode both) and the Sun Idols
+    unlocks = []
+    for key, prefix in (("adventure_goal", "Stage Unlock: "), ("gauntlet_goal", "Board Unlock: ")):
+        level = c.slot_data.get(key)
+        if isinstance(level, str) and level:
+            c.sources.add("slot_data")
+            unlocks.append((level, prefix + level.split("- ", 1)[-1]))
+    idols = num(c, "sun_idols_required_amount", None, 0)
+    names = " ou ".join(level for level, _ in unlocks)
+    g = Goal(c, f"Battre {names}" if names else "Battre le niveau du but")
+    if idols:
+        cap(g, "Sun Idols", c.count("Sun Idol"), idols)
+    if unlocks:
+        g.step("Niveau du but débloqué", any(c.has(item) for _, item in unlocks))
+    g.final("Battre le niveau du but")
+    return g
+
+
+SHAPEZ_LEVEL = re.compile(r"^Level (\d+)$")
+SHAPEZ_UPGRADE = re.compile(r" Upgrade Tier [IVXLCDM]+$")
+
+
+def shapez(c: GoalContext) -> Goal:
+    goal = c.opt("goal", "goal", "vanilla")
+    goal = {0: "vanilla", 1: "mam", 2: "even_fasterer", 3: "efficiency_iii"}.get(goal, goal)
+    if goal in ("vanilla", "mam"):
+        level = num(c, "maxlevel", "goal_amount", 26) if goal == "mam" else 26
+        g = Goal(c, f"Terminer le niveau {level}")
+        checks_counter(g, "Niveaux terminés", lambda n: (m := SHAPEZ_LEVEL.match(n)) is not None
+                       and int(m.group(1)) < level, level - 1)
+    elif goal == "even_fasterer":
+        tier = num(c, "finaltier", "goal_amount", 8)
+        g = Goal(c, f"Tout améliorer jusqu'au palier {tier}")
+        checks_counter(g, "Améliorations", lambda n: SHAPEZ_UPGRADE.search(n) is not None)
+    else:
+        g = Goal(c, "Efficiency III : tous les bâtiments et un tapis ×8")
+    g.final("Goal")
+    return g
+
+
 ROOM_DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Portal 2": portal2,
     "Paint": paint,
@@ -764,5 +1173,37 @@ ROOM_DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Lego Star Wars: The Complete Saga": lego_sw,
     "Lethal Company": lethal_company,
     "Librarian Tidy Up the Arcane Library": librarian,
+    "Luigi's Mansion": luigis_mansion,
+    "Majora's Mask Recompiled": majora,
+    "Nine Sols": nine_sols,
+    "Nodebuster": nodebuster,
+    "Overcooked! 2": overcooked2,
+    "Peggle Deluxe": peggle("Gold Peg", "gold_pegs_total", "gold_pegs_required", "Finir le niveau final", "gold_peg_hunt"),
+    "Peggle Nights": peggle("Shadow Peg", "shadow_pegs_total", "shadow_pegs_required", "Finir le niveau final",
+                            "shadow_peg_hunt"),
+    "Plants vs. Zombies": pvz,
+    "Pokemon Emerald": emerald,
+    "Powerwash Simulator": powerwash,
+    "Raft": raft,
+    "Risk of Rain 2": ror2,
+    "Slime Rancher 2": slime_rancher2,
+    "Spirit Tracks": spirit_tracks,
+    "Stardew Valley": stardew,
+    "Stray": stray,
+    "Super Meat Boy": super_meat_boy,
+    "TerraNil": terranil,
+    "Terraria": terraria,
+    "Terraria Beta": terraria,
+    "The Farmer Was Replaced": tfwr,
+    "The Wind Waker": the_wind_waker,
+    "The Witness": the_witness,
+    "Totally Accurate Battle Simulator": tabs,
+    "Trackmania": trackmania,
+    "Trombone Champ": trombone_champ,
+    "ULTRAKILL": ultrakill,
+    "VVVVVV": vvvvvv,
+    "Wikipelago": wikipelago,
+    "Zuma Deluxe": zuma_deluxe,
+    "shapez": shapez,
 }
-_ = re
+DESCRIBERS.update(ROOM_DESCRIBERS)

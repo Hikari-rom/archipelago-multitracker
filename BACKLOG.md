@@ -166,7 +166,7 @@ La room a 74 jeux qu'on ne gère pas encore. Pour les slots des autres joueurs, 
 - [x] Tests : `tests/test_goals.py` (les 22 jeux sur la seed all22 : compteurs à 0 au départ, pleins avec tout le pool), `frontend/tests/goals.test.ts`
 - [x] (2026-10-14) Étapes « ? » remplacées quand un check les montre : cartes d'Ori BF, Wisps d'Ori WotW, Bowser de SM64
 - [x] (2026-10-14) Mario Kart Double Dash (remplace OoT dans la nouvelle room) : trophées, puis All Cup Tour (débloqué, cylindrée minimale, victoire) ou objectif « trophées »
-- Plus tard, si Romain suit d'autres slots : descripteurs pour les autres jeux de la room (Stardew, Hollow Knight, Subnautica…)
+- [x] (2026-11-11) Descripteurs pour les autres jeux de la room (77 jeux, `goals_room.py`, D38) ; restent Musipelago (pas d'apworld) et « Archipelago » (pas un jeu)
 
 
 ## M19 — Historique, bouton maison, jeu actif choisi, mode compact (demandé par Romain le 2026-10-13)

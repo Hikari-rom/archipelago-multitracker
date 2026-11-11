@@ -650,9 +650,9 @@ DESCRIBERS: dict[str, Callable[[GoalContext], Goal]] = {
     "Fall Guys": fall_guys,
 }
 
-from .goals_room import ROOM_DESCRIBERS  # noqa: E402  the other games of the room, written with the helpers above
-
-DESCRIBERS.update(ROOM_DESCRIBERS)
+# the other games of the room, written with the helpers above; goals_room adds itself to DESCRIBERS (whichever
+# of the two modules is imported first)
+from . import goals_room  # noqa: E402,F401
 
 
 def generic(c: GoalContext) -> Goal:

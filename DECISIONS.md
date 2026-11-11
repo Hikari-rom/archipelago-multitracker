@@ -481,3 +481,15 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   checks, comme avant.
 - Pas un spoiler : c'est la progression du joueur, écrite par son propre client.
 
+## D38 — Objectifs des autres jeux de la room (2026-11-11, demandé par Romain)
+- `backend/multitracker/goals_room.py` : un descripteur par jeu de la room joué par les amis de Romain (77 jeux,
+  écrits du plus joué au moins joué), ajouté à `DESCRIBERS` ; mêmes règles que `goals.py` (slot_data, yaml, items
+  reçus, checks, noms des locations du slot ; jamais de spoiler).
+- Chacun suit la condition de victoire de l'apworld (`completion_condition` et les options qu'elle lit). Quand
+  l'avancement n'est visible que du client (événements, panneaux de chasse de The Witness, niveaux terminés
+  d'ULTRAKILL, image de Paint…), l'étape est affichée « invisible pour un tracker » (`done = None`) plutôt
+  qu'estimée.
+- Les compteurs s'arrêtent à leur cible (`cap`) : des checks en plus de ce que le but demande ne comptent pas.
+- Tests : `tests/test_goals_room.py` (chaque jeu sans données, puis sur la dernière seed de validation quand elle
+  existe, et des cas écrits à la main pour les jeux sans seed). Pas de descripteur pour Musipelago (aucun apworld
+  chargé) ni pour le slot « Archipelago » (pas un jeu).
