@@ -23,6 +23,11 @@
    2026-11-10 : go mode de Haste : l'item de victoire (A New Future) est verrouillé sur un vrai check (boss du shard
    visé), jamais ramassé par le sweep ; `VICTORY_ITEMS` du worker = ce check en logique. Vérifié sur `natazox_haste`.
    Recherche de mise à jour une fois par jour en temps réel, veille comprise (v0.2.23, avec le go mode de Haste).
+   2026-11-11 : page Configuration immédiate (24 s → 0,07 s) : elle n'attend plus le worker de logique (conditions
+   de victoire en cache disque `data/cache/goal_options.json`, seulement les jeux suivis) ; but choisi aussi depuis
+   l'onglet « But » et la page Objectifs (case « Choisir le but à la main » cochée) ; le redémarrage après une
+   mise à jour ne se déclare plus en échec (course dans `app.sh start`, horloge du navigateur) ; une release
+   s'affiche « v0.2.24 (sha) » (v0.2.24).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

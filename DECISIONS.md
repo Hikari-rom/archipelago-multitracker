@@ -426,6 +426,12 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   descripteur) et va dans le yaml dont le monde est régénéré (logique et go mode la suivent ; si le `slot_data`
   fixe déjà l'option, il garde le dernier mot pour la logique). Valeur hors des choix : refusée par l'API, ignorée
   à l'exécution. Quand le but reste inconnu, la carte garde son affichage et dit où le choisir si c'est possible.
+  2026-11-11 (demandé par Romain) : le choix se fait aussi depuis l'onglet « But » d'un jeu et les cartes de la page
+  Objectifs, seulement quand la case est cochée dans la Configuration (le résumé du slot porte alors
+  `goal_options`/`goal_chosen`) ; `PUT /api/slots/<slot>/goal` écrit `config/room.yaml` comme la Configuration.
+  Les conditions de victoire sont gardées sur disque (`data/cache/goal_options.json`, empreinte des apworlds) et
+  la page Configuration ne les demande au worker que pour les jeux suivis, sans l'attendre : il importe tous les
+  mondes (20 à 30 s sur le Pi) et passe d'abord la logique des slots (la page mettait 24 s à s'afficher).
 - **Campagne** (100 jeux, `docs/COMPAT.md` § Go mode) : aucune avance restante. Terraria Beta : la référence
   suit maintenant la condition que l'apworld pose lui-même sous UT (locations de but atteignables), car sa victoire
   est un item à adresse, vu par le multiworld complet seulement après le boss. ArchipelaCode : `go_mode: false`

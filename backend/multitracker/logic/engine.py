@@ -8,6 +8,7 @@ by the reference tests) — the others show "Logique indisponible".
 from __future__ import annotations
 
 import asyncio
+import time
 import logging
 import multiprocessing as mp
 from pathlib import Path
@@ -184,11 +185,15 @@ class UTLogicEngine(LogicEngine):
             if self._proc is None or not self._proc.is_alive():
                 await asyncio.to_thread(self._spawn)
             try:
+                started = time.monotonic()
                 res = await asyncio.to_thread(self._roundtrip, req)
             except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
-                log.warning("logic worker failed (%s), restarting it", exc)
+                log.warning("logic worker failed on %s (%s) (%s), restarting it", request.slot_name, request.game, exc)
                 await asyncio.to_thread(self._kill)
                 return LogicResult("error", message=f"Le calcul de logique a échoué ({type(exc).__name__})")
+        took = time.monotonic() - started
+        if took > 60:
+            log.info("logic of %s (%s) took %.0f s", request.slot_name, request.game, took)
         state = res.get("state", "error")
         if state != "ok":
             return LogicResult(state, message=res.get("message"))

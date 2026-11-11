@@ -329,6 +329,8 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [x] Arc-en-ciel (cartes, Focus, Objectifs, bandeau), pastille « GO MODE », or > go > BK
 - [x] Réglage « Choisir le but à la main » (Configuration) et sélecteur de but par slot ; « But non décrit » dit où
   le choisir
+- [x] 2026-11-11 : sélecteur aussi dans l'onglet « But » et sur les cartes de la page Objectifs (case cochée dans la
+  Configuration), `PUT /api/slots/<slot>/goal` ; conditions de victoire en cache disque, page Configuration immédiate
 - [ ] Vérifier sur le vrai slot de natazox que les tickets et le go mode s'affichent (demande l'accord de Romain)
 - [x] Campagne go mode (100 jeux) : Terraria Beta (référence), ArchipelaCode (`go_mode: false`), Emerald (vol gratuit
   relu dans `slot_data`, Terra/Marine Cave fermées) ; détail dans `docs/COMPAT.md` § Go mode
