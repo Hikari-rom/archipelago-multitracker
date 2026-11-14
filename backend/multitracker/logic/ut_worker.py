@@ -31,8 +31,12 @@ EXPLAIN_BUDGET = 5.0  # seconds per update to work out what blocks the hinted lo
 GOAL_BUDGET = 20.0  # seconds to work out what the slot lacks for its victory (op goal_needs, once per new item)
 MAX_ALTERNATIVES = 8  # "or" items shown for one item the victory needs
 # Worlds that build only part of their item pool under Universal Tracker: what is still to come is unknown, so no
-# goal needs (D41). Lego Star Wars leaves out the characters drawn at random by the real generation, and its minikits.
-PARTIAL_UT_POOL = {"Lego Star Wars: The Complete Saga"}
+# goal needs (D41). Lego Star Wars leaves out the characters drawn at random by the real generation, and its minikits;
+# Spirit Tracks rebuilds its pool from draws and options slot_data does not give back (its Tracks items, rabbits).
+PARTIAL_UT_POOL = {"Lego Star Wars: The Complete Saga", "Spirit Tracks"}
+# ... and those whose item pool depends on an option slot_data lacks: goal needs only with the player's yaml.
+# ULTRAKILL: unlock_type (levels or layers) decides which unlock items exist.
+POOL_NEEDS_YAML = {"ULTRAKILL"}
 
 _ap_ready = False
 
@@ -204,7 +208,7 @@ def prepare_player_yaml(yaml_path: Path, slot_name: str, game: str, out_dir: Pat
 
 # Worlds that can regenerate from slot_data alone, but whose slot_data misses options that change the
 # logic: when the player's yaml is configured, regenerate from it with slot_data applied on top.
-YAML_PLUS_SLOT_DATA = {"Ori and the Will of the Wisps", "Satisfactory"}
+YAML_PLUS_SLOT_DATA = {"Ori and the Will of the Wisps", "Satisfactory", "ULTRAKILL"}
 # ... and among them, those whose slot_data alone gives a wrong logic (Satisfactory: building placements).
 YAML_REQUIRED = {"Satisfactory"}
 
@@ -388,7 +392,8 @@ class SlotLogic:
                    if loc.parent_region is not None}
         result = {"in_logic": reachable, "regions": regions, "errors": errors[:5],
                   "goal_in_logic": self.goal_in_logic(state, missing)}
-        self._goal_basis = (state, self._counted(received, start)) if result["goal_in_logic"] is False else None
+        self._goal_basis = (state, self._counted(received, start), received, start) \
+            if result["goal_in_logic"] is False else None
         if explain:
             done = set(reachable)
             targets = [loc for loc in mw.get_locations(pid)
@@ -417,6 +422,29 @@ class SlotLogic:
         except Exception:  # noqa: BLE001 - a broken rule must not break the slot's logic
             log.warning("goal condition failed for %s: %s", self.slot_name, traceback.format_exc())
         return None
+
+    def _pool_known(self) -> bool:
+        """The regenerated world has its items. Plants vs. Zombies skips create_items under Universal Tracker: no item
+        at all, what is still to come is unknown. (Fewer items than locations is no sign: Powerwash Simulator leaves
+        most of its filler to its pre_fill, which Universal Tracker does not run.)"""
+        if getattr(self, "_pool_known_cache", None) is None:
+            mw, pid = self.core.multiworld, self.core.player_id
+            self._pool_known_cache = any(i.player == pid for i in mw.itempool) or any(
+                loc.item is not None and loc.address is not None for loc in mw.get_locations(pid))
+            if not self._pool_known_cache:
+                log.info("%s: no item in the regenerated world, no goal needs", self.slot_name)
+        return self._pool_known_cache
+
+    def _extra_items(self, extra, received: list, start: list) -> list:
+        """Items still to come, created for a trial, as if received after `received`: through the same per-game fix
+        as received items (Stardew Valley: the received progression items counter of each copy, by its rank)."""
+        mw, pid = self.core.multiworld, self.core.player_id
+        new = [mw.create_item(name, pid) for name, count in extra.items() for _ in range(count)]
+        if new:
+            from .adapters import adjust_received
+            world = mw.worlds[pid]
+            adjust_received(world.game, world, list(received) + new, start)
+        return new
 
     def _counted(self, received: list, start: list):
         world = self.core.multiworld.worlds[self.core.player_id]
@@ -471,9 +499,8 @@ class SlotLogic:
 
         def reach(loc, extra: Counter) -> bool:
             trial = fresh_copy(state, pid)
-            for name, count in extra.items():
-                for _ in range(count):
-                    trial.collect(mw.create_item(name, pid), True)
+            for item in self._extra_items(extra, received, start or []):
+                trial.collect(item, True)
             trial.sweep_for_advancements(locations=events)
             return loc.can_reach(trial)
 
@@ -485,7 +512,8 @@ class SlotLogic:
                 finished = False
                 break
             trial = fresh_copy(state, pid)
-            trial.collect(mw.create_item(name, pid), True)
+            for item in self._extra_items(Counter({name: 1}), received, start or []):
+                trial.collect(item, True)
             trial.sweep_for_advancements(locations=events)
             for loc in targets:
                 if loc.can_reach(trial):
@@ -548,9 +576,10 @@ class SlotLogic:
         budget. `none`: out of logic even with every item still to come.
         """
         from collections import Counter
-        if self._goal_basis is None or self.game in PARTIAL_UT_POOL:
+        if self._goal_basis is None or self.game in PARTIAL_UT_POOL or not self._pool_known() or (
+                self.game in POOL_NEEDS_YAML and getattr(self, "mode", "") == "slot_data"):
             return None
-        state, have = self._goal_basis
+        state, have, received, start = self._goal_basis
         pool = self._pool()
         key = tuple(sorted((name, count) for name, count in have.items() if name in pool))
         if self._goal_needs_cache is not None and self._goal_needs_cache[0] == key:
@@ -562,9 +591,8 @@ class SlotLogic:
 
         def won(extra: Counter) -> bool:
             trial = fresh_copy(state, pid)
-            for name, count in extra.items():
-                for _ in range(count):
-                    trial.collect(mw.create_item(name, pid), True)
+            for item in self._extra_items(extra, received, start):
+                trial.collect(item, True)
             trial.sweep_for_advancements(locations=events)
             return self._won(trial)
 

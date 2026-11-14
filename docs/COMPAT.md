@@ -163,7 +163,8 @@ Campagne : une seed aux options aléatoires (`--first-run 201`) pour chacun des 
   - Pokemon Emerald : ville de vol gratuit rejouée depuis le `slot_data` (voir la ligne du jeu) : 4/4 (201 à 204)
     et `legendary_hunt` avec Groudon et Kyogre (voir D34).
 - **En retard (toléré)** : Powerwash Simulator (sous UT, l'apworld lit `goal_level_amount` avec une virgule en
-  trop, un tuple : la victoire n'y est jamais vue en logique, ou trop tard).
+  trop, un tuple : la victoire n'y est jamais vue en logique, ou trop tard). Corrigé le 2026-11-14 par un
+  adaptateur (D41) : go mode ok, seeds 901 à 904.
 - **Exclu (`go_mode: false`)** : ArchipelaCode (sa victoire compte `state.locations_checked`, les locations d'où
   viennent les items collectés, et non les problèmes résolus par le joueur : sans sens pour l'app, qui collecte
   les items reçus sans leur location).

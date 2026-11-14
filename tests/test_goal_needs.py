@@ -173,3 +173,18 @@ def test_pool_names_items_by_their_id_and_counts_the_pre_fill_items():
     logic = NS(core=NS(multiworld=mw, player_id=1), slot_name="X", _pool_cache=None,
                world_start=[item("Unlock Bank", 1)])  # a start item the world took out of its pool
     assert SlotLogic._pool(logic) == {"Progressive Bank": 2, "Boss Key": 1, "Azurine": 2}
+
+
+def test_pool_known_needs_some_item():
+    """Plants vs. Zombies creates no item pool under Universal Tracker: what is still to come is unknown. Powerwash
+    Simulator leaves most filler to its pre_fill: few items, but its progression is all there."""
+    from types import SimpleNamespace as NS
+    from multitracker.logic.ut_worker import SlotLogic
+
+    def logic(pool_size: int, locations: int):
+        mw = NS(itempool=[NS(player=1)] * pool_size,
+                get_locations=lambda player: [NS(address=i, item=None) for i in range(locations)])
+        return NS(core=NS(multiworld=mw, player_id=1), slot_name="X")
+    assert SlotLogic._pool_known(logic(100, 100))
+    assert SlotLogic._pool_known(logic(5, 100))
+    assert not SlotLogic._pool_known(logic(0, 100))

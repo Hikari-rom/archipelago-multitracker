@@ -532,7 +532,87 @@ RECEIVED_HOOKS_M24: dict[str, Callable[[Any, list, list], None]] = {
 }
 
 
+@contextlib.contextmanager
+def _powerwash_simulator(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """Powerwash Simulator, under Universal Tracker:
+    1. goal_type, levels_to_goal and amount_of_levels_to_goal are not in slot_data: the regeneration keeps their
+       defaults (the "A Job Well Done" hunt), whatever the slot's goal. slot_data tells them apart: a level goal sends
+       its levels and a positive goal_level_amount, the hunt ["None"] and -1. Set them before generate_early.
+    2. generate_early keeps `goal_level_amount` as a 1-tuple (stray comma), so the "Satisfied the Urge" goal never
+       holds, and the number of "A Job Well Done" the goal needs is worked out again from the regenerated options
+       instead of read back (slot_data["jobs_done"]): set both from slot_data before the rules are made."""
+    import ast
+    original_early, original = world_cls.generate_early, world_cls.set_rules
+    try:
+        amount = int(slot_data.get("goal_level_amount", 0))
+        levels = ast.literal_eval(str(slot_data.get("goal_levels", "[]")))
+        levels = [str(level) for level in (levels if isinstance(levels, (list, tuple)) else [])
+                  if str(level) != "None"]
+    except (TypeError, ValueError, SyntaxError):
+        log.warning("Powerwash Simulator: unreadable goal in slot_data, the victory may be wrong")
+        amount, levels = 0, []
+
+    def generate_early(self) -> None:
+        if "goal_level_amount" in slot_data:
+            options = self.options
+            if amount > 0 and levels:
+                options.goal_type.value = 1
+                options.levels_to_goal = type(options.levels_to_goal)(levels)
+                options.amount_of_levels_to_goal = type(options.amount_of_levels_to_goal)(amount)
+            elif amount < 0:
+                options.goal_type.value = 0
+        original_early(self)
+
+    def set_rules(self) -> None:
+        try:
+            if "jobs_done" in slot_data:
+                self.mcguffin_requirement = int(slot_data["jobs_done"])
+            if "goal_level_amount" in slot_data:
+                self.check_goal_level_count = int(slot_data["goal_level_amount"])
+        except (TypeError, ValueError):
+            log.warning("Powerwash Simulator: unreadable goal in slot_data, the victory may be wrong")
+        original(self)
+
+    with patch_attr(world_cls, "generate_early", generate_early), patch_attr(world_cls, "set_rules", set_rules):
+        yield
+
+
+@contextlib.contextmanager
+def _the_witness(world_cls: type, slot_data: dict[str, Any], location_ids: set[int]):
+    """The Witness, panel hunt: the panels to solve are drawn with world.random (EntityHuntPicker) and sent in
+    slot_data["hunt_entities"] (ints), never read back: the regeneration hunted other panels, so its victory came at
+    the wrong count of solved panels. Take them from slot_data."""
+    wanted = slot_data.get("hunt_entities")
+    if not isinstance(wanted, list) or not wanted:
+        yield
+        return
+    try:
+        wanted_ints = {int(h) for h in wanted}
+    except (TypeError, ValueError):
+        log.warning("The Witness: unreadable hunt_entities in slot_data, the panel hunt may be wrong")
+        yield
+        return
+    hunt_mod = importlib.import_module(f"{world_cls.__module__}.entity_hunt")
+    static = importlib.import_module(f"{world_cls.__module__}.data.static_logic")
+    picker_cls = hunt_mod.EntityHuntPicker
+    original = picker_cls.pick_panel_hunt_panels
+
+    def pick_panel_hunt_panels(self, total_amount: int) -> set[str]:
+        known = set(static.ENTITIES_BY_HEX) | set(self.ALL_ELIGIBLE_ENTITIES)
+        picked = {h for h in known if int(h, 16) in wanted_ints}
+        if len(picked) != len(wanted_ints):
+            log.warning("The Witness: %d hunt panels of slot_data unknown, drawn again", len(wanted_ints) - len(picked))
+            return original(self, total_amount)
+        self.HUNT_ENTITIES = picked
+        return picked
+
+    with patch_attr(picker_cls, "pick_panel_hunt_panels", pick_panel_hunt_panels):
+        yield
+
+
 ADAPTERS_M24: dict[str, Callable[[type, dict[str, Any], set[int]], ContextManager]] = {
+    "Powerwash Simulator": _powerwash_simulator,
+    "The Witness": _the_witness,
     "ArchipelaCode": _archipelacode,
     "Cuphead": _cuphead,
     "Don't Starve Together": _dont_starve_together,

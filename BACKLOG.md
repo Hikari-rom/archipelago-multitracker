@@ -337,10 +337,25 @@ Par lots de 5 jeux validés, une release `v0.2.N` par lot.
 - [ ] Hollow Knight, seeds 201 et 203 aux options aléatoires (202 OK) : 5 locations du slot absentes du monde
   recalculé, logique annoncée sous-estimée (jamais en avance) ; options en cause à trouver
 - [ ] TerraNil, seed 201 : « River Valley » en retard à la sphère 19 (0 en logique contre 6), retard seulement
-- [ ] Powerwash Simulator : go mode en retard (tuple `goal_level_amount` dans l'apworld sous UT), adaptateur possible
+- [x] Powerwash Simulator : go mode en retard (tuple `goal_level_amount` dans l'apworld sous UT) ; adaptateur
+  (but relu dans le `slot_data`, D41) : 4/4 go mode ok (seeds 901 à 904, buts `level` et `mcguffin`)
 - [ ] Idées : notification ou ligne du fil au passage en go mode ; go mode des autres joueurs (Room complète, Indices)
 
 ## M30 — Infos du tableau de bord au choix (demandé par Romain le 2026-11-09, D36)
 - [x] Densité Essentiel / Standard / Complet et une case par info dans Configuration › Affichage (sur cet appareil)
 - [x] Totaux, bandeau, cartes actives, carrousel téléphone, tuiles, panneau et liste Focus suivent le réglage ;
   alertes toujours affichées ; Complet par défaut, identique à avant
+
+## M31 — Ce qui manque pour la victoire (demandé par Romain le 2026-11-14, D41)
+- [x] Worker `goal_needs` : ensemble minimal d'items à venir pour que la victoire soit en logique, « ou », budget 20 s
+- [x] Service : hints pas encore trouvés de ces items et leur accès ; API `objective.needs` ; bloc sous le but et
+  « fin : N items manquants » sur les cartes
+- [x] Validation `validate_logic.py --goal-needs` (référence : multiworld complet) ; campagne sur les jeux de la room
+- [x] Corrigé en route : filler rétrogradé et inventaire de départ (Celeste, TWW HD), victoire verrouillée sur un
+  vrai check (KH BbS, R&C3, MKDD : go mode plus tôt), régions des copies d'état (AEMinecraft), ids partagés
+  (Cookie Clicker), items de pré-remplissage (Phantom Hourglass), départ tiré au hasard (KH BbS)
+- [ ] Lego Star Wars: The Complete Saga et Plants vs. Zombies : pool partiel ou absent sous UT, pas d'items
+  manquants ; « ce qui bloque » un indice
+  (D30) en souffre aussi (même pool)
+- [ ] Spirit Tracks : pool reconstruit sans ses items « … Tracks » ni ses lapins tirés au hasard (options et tirages
+  absents du `slot_data`) ; pas d'items manquants en attendant un adaptateur (`PARTIAL_UT_POOL`)

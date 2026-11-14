@@ -558,9 +558,26 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
 - Le pool compte aussi les items que le monde garde pour son propre pré-remplissage (`get_pre_fill_items`) :
   Universal Tracker s'arrête après `generate_basic`, ils ne sont ni dans le pool ni placés. Phantom Hourglass y garde
   ses métaux de boss (les 6 sont nécessaires à la victoire avec les options de Romain : « none » à tort avant).
-- Pas d'items manquants pour Lego Star Wars: The Complete Saga (`PARTIAL_UT_POOL`) : sous Universal Tracker, le monde
-  ne crée qu'une partie de son pool (les personnages tirés au hasard par la vraie génération et les minikits n'y sont
-  pas), ce qui reste à venir est inconnu sans spoiler (« none » à tort en début de partie).
+- Pas d'items manquants quand le monde régénéré n'a pas son pool : Lego Star Wars: The Complete Saga
+  (`PARTIAL_UT_POOL` : sous Universal Tracker il ne crée qu'une partie de son pool, sans les personnages tirés au
+  hasard par la vraie génération ni les minikits ; Spirit Tracks, dont le pool dépend de tirages et d'options absents
+  du `slot_data` : ses items « … Tracks », ses lapins) et tout monde régénéré sans aucun item (`_pool_known` :
+  Plants vs. Zombies saute `create_items` sous UT). Ce qui reste à venir y est inconnu sans spoiler (« none » à tort
+  sinon). Avoir moins d'items que de locations n'en est pas un signe : Powerwash Simulator laisse l'essentiel de ses
+  filler à son `pre_fill`.
+- Powerwash Simulator (adaptateur) : `goal_type`, `levels_to_goal` et `amount_of_levels_to_goal` ne sont pas dans le
+  `slot_data`, la régénération gardait le but par défaut (chasse aux « A Job Well Done ») ; le `slot_data` les
+  distingue (niveaux et `goal_level_amount` > 0 pour un but de niveaux, ["None"] et -1 sinon). Corrige aussi le go
+  mode (en retard depuis M29 : `goal_level_amount` gardé en tuple, `jobs_done` recalculé au lieu d'être relu).
+- The Witness (adaptateur) : les panneaux de la chasse (panel hunt) sont tirés au hasard et envoyés dans le
+  `slot_data` (`hunt_entities`) mais jamais relus : la régénération en chassait d'autres, la victoire tombait au
+  mauvais nombre de panneaux résolus (ensemble « suffisant » qui ne l'était pas). Corrige aussi son go mode.
+- ULTRAKILL : `unlock_type` (niveaux ou couches) décide quels items existent et n'est pas dans le `slot_data` :
+  yaml du joueur + `slot_data` (`YAML_PLUS_SLOT_DATA`), et pas d'items manquants sans yaml (`POOL_NEEDS_YAML`).
+- Les items d'essai passent par le même correctif que les items reçus (`adjust_received`, rang de chaque exemplaire
+  après ceux déjà reçus : compteur d'items de progression de Stardew Valley), aussi pour ce qui bloque un indice.
+- Logique minorée ou en retard (Factorio, D32 ; Stardew Valley) : l'ensemble suffit mais n'est pas toujours minimal
+  (des items en trop), jamais l'inverse.
 - Vérification : `validate_logic.py --goal-needs` compare chaque résultat au multiworld complet de la génération
   (l'ensemble suffit, chaque exemplaire est nécessaire, chaque « ou » remplace bien son item, « none » vrai) ;
   campagne sur les jeux de la room avec logique : `EXTRA_ARGS=--goal-needs SUMMARY=needs scripts/testenv/campaign.sh`.
