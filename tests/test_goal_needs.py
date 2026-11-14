@@ -140,12 +140,36 @@ def test_service_shows_the_needs_with_their_hints(tmp_path, monkeypatch):
     assert engine.asked == 1 and s._goal_needs_view("Me") is None and "Me" not in s.goal_needs
 
 
-def test_counted_leaves_out_filler_copies_and_the_start_inventory():
-    """Taken off the pool: the progression items that came from it. Not the copies demoted to filler, nor the start
-    inventory (The Wind Waker HD's first sword is not in the pool: taking it off left one sword too few to come)."""
+def test_counted_leaves_out_filler_copies_and_the_yaml_start_inventory():
+    """Taken off the slot's items: the progression items received, start inventory included (the world's own start
+    items, The Wind Waker HD's first sword or KH Birth by Sleep's starting worlds, are in the slot's items:
+    `world_start`). Not the copies demoted to filler, nor the yaml's `start_inventory` (added on top by the generator)."""
     from types import SimpleNamespace as Item
     from multitracker.logic.ut_worker import counted
-    start_sword = Item(name="Progressive Sword", advancement=True)
-    received = [start_sword, Item(name="Progressive Sword", advancement=True),
+    start_sword, yaml_bomb = Item(name="Progressive Sword", advancement=True), Item(name="Bombs", advancement=True)
+    received = [start_sword, yaml_bomb, Item(name="Progressive Sword", advancement=True), Item(name="Bombs", advancement=True),
                 Item(name="Strawberry", advancement=True), Item(name="Strawberry", advancement=False)]
-    assert counted(received, [start_sword]) == {"Progressive Sword": 1, "Strawberry": 1}
+    assert counted(received, [start_sword, yaml_bomb], {"Bombs": 1}) == {"Progressive Sword": 2, "Bombs": 1,
+                                                                         "Strawberry": 1}
+    assert counted(received, [start_sword, yaml_bomb]) == {"Progressive Sword": 2, "Bombs": 2, "Strawberry": 1}
+
+
+def test_pool_names_items_by_their_id_and_counts_the_pre_fill_items():
+    """Received items are named from their id (datapackage): Cookie Clicker's "Unlock Bank" and "Progressive Bank"
+    share one id. Items kept for the world's own pre-fill (Phantom Hourglass's boss metals) are neither in the pool
+    nor placed in Universal Tracker's regeneration (it stops after generate_basic)."""
+    from types import SimpleNamespace as NS
+    from multitracker.logic.ut_worker import SlotLogic
+
+    def item(name, code, advancement=True, player=1):
+        return NS(name=name, code=code, advancement=advancement, player=player)
+
+    placed = item("Boss Key", 3)
+    world = NS(item_id_to_name={1: "Progressive Bank", 2: "Rupee", 3: "Boss Key", 4: "Azurine"},
+               get_pre_fill_items=lambda: [item("Azurine", 4), item("Azurine", 4), placed])  # placed: counted once
+    mw = NS(itempool=[item("Unlock Bank", 1), item("Rupee", 2, advancement=False), item("Other", 9, player=2)],
+            worlds={1: world},
+            get_locations=lambda player: [NS(item=placed, address=10), NS(item=item("Event", None), address=None)])
+    logic = NS(core=NS(multiworld=mw, player_id=1), slot_name="X", _pool_cache=None,
+               world_start=[item("Unlock Bank", 1)])  # a start item the world took out of its pool
+    assert SlotLogic._pool(logic) == {"Progressive Bank": 2, "Boss Key": 1, "Azurine": 2}

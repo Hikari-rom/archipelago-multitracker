@@ -535,15 +535,32 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   contre tous les autres. Ensemble minimal (rien ne peut en être retiré), pas forcément le plus petit possible.
 - Budget de 20 s par calcul (`GOAL_BUDGET`) : au-delà, « many » (trop long à détailler), ou alternatives
   incomplètes (`complete: false`). Résultat en cache tant que les items de progression reçus ne changent pas.
-- Items reçus retirés du pool : seulement ceux de progression qui en viennent (`counted`). Pas les copies que le
-  générateur a rétrogradées en filler (Celeste : les fraises en trop, flags du serveur), ni l'inventaire de départ
-  (location -2, absent du pool : la première Progressive Sword de The Wind Waker HD). Sinon il restait trop peu de
-  copies à venir et la victoire paraissait impossible (« none »). Corrige aussi ce qui bloque un indice (page Indices, D30).
+- Items du slot = pool du monde régénéré + items de départ que le monde se donne lui-même (`push_precollected`,
+  enregistrés pendant la régénération : Universal Tracker les retire de `precollected_items`) : les mondes
+  de départ de KH Birth by Sleep (tirés au hasard, donc pas les mêmes que ceux de la vraie seed) ou la première
+  Progressive Sword de The Wind Waker HD sortent du pool. Items reçus retirés (`counted`) : ceux de progression,
+  inventaire de départ compris, sauf les copies du `start_inventory` du yaml (ajoutées par le générateur en plus des
+  items du monde) et les copies rétrogradées en filler (Celeste : les fraises en trop, flags du serveur). Sinon il
+  manquait des items à venir et la victoire paraissait impossible (« none ») ou trop proche. Corrige aussi ce qui
+  bloque un indice (page Indices, D30).
 - Victoire posée, verrouillée, sur un vrai check du slot (KH Birth by Sleep : « Victory » sur le boss final ;
   Ratchet & Clank 3, Mario Kart Double Dash) : la condition de victoire ne devient vraie qu'une fois ce check fait,
   donc le go mode ne s'allumait jamais avant, et les items manquants se réduisaient à « Victory ». Détecté depuis
   le monde (`locked_victory_location` : un item verrouillé sur un vrai check qui suffit seul à la condition) ; le go
   mode est alors ce check en logique, comme `VICTORY_ITEMS` (Haste). Test : `test_go_mode.py` (KH BbS, lot m7a).
+- Chaque essai part d'une copie de l'état dont les régions atteignables sont remises à zéro (`fresh_copy`) : AEMinecraft
+  déclare ses conditions indirectes mais en oublie, donc la mise à jour incrémentale des régions d'un état copié
+  laissait des entrées bloquées, et le résultat dépendait de l'ordre d'exploration (« none » à tort). Sert aussi aux
+  essais de ce qui bloque un indice (D30).
+- Pool compté par le nom que le datapackage donne à l'id de chaque item (celui des items reçus et des hints) : Cookie
+  Clicker donne le même id à « Unlock Bank » et « Progressive Bank » (le datapackage garde le second), les exemplaires
+  reçus n'étaient jamais retirés du pool.
+- Le pool compte aussi les items que le monde garde pour son propre pré-remplissage (`get_pre_fill_items`) :
+  Universal Tracker s'arrête après `generate_basic`, ils ne sont ni dans le pool ni placés. Phantom Hourglass y garde
+  ses métaux de boss (les 6 sont nécessaires à la victoire avec les options de Romain : « none » à tort avant).
+- Pas d'items manquants pour Lego Star Wars: The Complete Saga (`PARTIAL_UT_POOL`) : sous Universal Tracker, le monde
+  ne crée qu'une partie de son pool (les personnages tirés au hasard par la vraie génération et les minikits n'y sont
+  pas), ce qui reste à venir est inconnu sans spoiler (« none » à tort en début de partie).
 - Vérification : `validate_logic.py --goal-needs` compare chaque résultat au multiworld complet de la génération
   (l'ensemble suffit, chaque exemplaire est nécessaire, chaque « ou » remplace bien son item, « none » vrai) ;
   campagne sur les jeux de la room avec logique : `EXTRA_ARGS=--goal-needs SUMMARY=needs scripts/testenv/campaign.sh`.

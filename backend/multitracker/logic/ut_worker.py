@@ -30,6 +30,9 @@ log = logging.getLogger("multitracker.logic")
 EXPLAIN_BUDGET = 5.0  # seconds per update to work out what blocks the hinted locations
 GOAL_BUDGET = 20.0  # seconds to work out what the slot lacks for its victory (op goal_needs, once per new item)
 MAX_ALTERNATIVES = 8  # "or" items shown for one item the victory needs
+# Worlds that build only part of their item pool under Universal Tracker: what is still to come is unknown, so no
+# goal needs (D41). Lego Star Wars leaves out the characters drawn at random by the real generation, and its minikits.
+PARTIAL_UT_POOL = {"Lego Star Wars: The Complete Saga"}
 
 _ap_ready = False
 
@@ -252,7 +255,9 @@ class SlotLogic:
         from .adapters import regeneration_patch
         start_names = [world_cls.item_id_to_name[code] for code in start_items or ()
                        if code in world_cls.item_id_to_name]
-        with regeneration_patch(game, world_cls, slot_data, set(location_ids or ()), start_names):
+        pushed: list = []
+        with regeneration_patch(game, world_cls, slot_data, set(location_ids or ()), start_names), \
+                recording_precollected(pushed):
             self._regenerate(core, world_cls, slot_name, game, slot_data, yaml_path, goal or {})
         if core.multiworld is None or core.player_id is None:
             refused = adapter_refusal(core.gen_error or "")
@@ -261,6 +266,11 @@ class SlotLogic:
             tail = (core.gen_error or "").strip().splitlines()[-1:] or ["raison inconnue"]
             raise RuntimeError(f"régénération du monde impossible : {tail[0][:300]}")
         self.core = core
+        # Items the world itself gives at start (taken out of its pool: KH Birth by Sleep's starting worlds, The Wind
+        # Waker HD's first sword): Universal Tracker drops them from precollected_items (the server sends the real
+        # ones, with location -2). Part of the slot's items all the same, for what is still to come (D41).
+        self.world_start = [item for mw, item in pushed if mw is core.multiworld and item.player == core.player_id
+                            and item.code is not None]
         self.init_seconds = round(time.perf_counter() - started, 2)
         from .adapters import logic_note
         self.note = logic_note(game, core.multiworld.worlds[core.player_id])
@@ -378,7 +388,7 @@ class SlotLogic:
                    if loc.parent_region is not None}
         result = {"in_logic": reachable, "regions": regions, "errors": errors[:5],
                   "goal_in_logic": self.goal_in_logic(state, missing)}
-        self._goal_basis = (state, counted(received, start)) if result["goal_in_logic"] is False else None
+        self._goal_basis = (state, self._counted(received, start)) if result["goal_in_logic"] is False else None
         if explain:
             done = set(reachable)
             targets = [loc for loc in mw.get_locations(pid)
@@ -408,15 +418,36 @@ class SlotLogic:
             log.warning("goal condition failed for %s: %s", self.slot_name, traceback.format_exc())
         return None
 
+    def _counted(self, received: list, start: list):
+        world = self.core.multiworld.worlds[self.core.player_id]
+        option = getattr(getattr(world, "options", None), "start_inventory", None)
+        return counted(received, start, getattr(option, "value", None) or {})
+
     def _pool(self):
-        """Progression items of the slot's world (item pool and items placed by the world itself), by name."""
+        """Progression items of the slot's world (item pool and items placed by the world itself), by the name their
+        id has in the datapackage: the name received items get. Cookie Clicker gives "Unlock Bank" and
+        "Progressive Bank" the same id (the datapackage keeps the latter): by the item's own name, the received
+        copies were never taken off the pool.
+        Also the items the world keeps for its own pre-fill (`get_pre_fill_items`): Universal Tracker stops after
+        generate_basic, so they are neither in the pool nor placed. Phantom Hourglass keeps its boss metals there (the
+        victory needs them all), as do worlds that confine keys to their dungeons."""
         from collections import Counter
         if self._pool_cache is None:
             mw, pid = self.core.multiworld, self.core.player_id
+            world = mw.worlds[pid]
+            names = world.item_id_to_name
             items = [i for i in mw.itempool if i.player == pid]
             items += [loc.item for loc in mw.get_locations(pid) if loc.item is not None and loc.address is not None
                       and loc.item.player == pid]
-            self._pool_cache = Counter(i.name for i in items if i.code is not None and i.advancement)
+            try:
+                pre_fill = list(world.get_pre_fill_items())
+            except Exception:  # noqa: BLE001 - a world's hook must not break the slot's logic
+                log.warning("get_pre_fill_items failed for %s: %s", self.slot_name, traceback.format_exc())
+                pre_fill = []
+            items += getattr(self, "world_start", [])
+            seen = {id(i) for i in items}
+            items += [i for i in pre_fill if id(i) not in seen and i.player == pid]
+            self._pool_cache = Counter(names.get(i.code, i.name) for i in items if i.code is not None and i.advancement)
         return self._pool_cache
 
     def blockers(self, state, received: list, targets: list, start: list | None = None) -> dict[int, dict[str, Any]]:
@@ -428,7 +459,7 @@ class SlotLogic:
         like the logic itself: nothing about where the items are.
         """
         from collections import Counter
-        have = counted(received, start or [])
+        have = self._counted(received, start or [])
         key = (tuple(sorted(have.items())), tuple(sorted(int(t.address) for t in targets)))
         if self._blockers_cache is not None and self._blockers_cache[0] == key:
             return self._blockers_cache[1]
@@ -439,7 +470,7 @@ class SlotLogic:
         names = sorted(to_come)
 
         def reach(loc, extra: Counter) -> bool:
-            trial = state.copy()
+            trial = fresh_copy(state, pid)
             for name, count in extra.items():
                 for _ in range(count):
                     trial.collect(mw.create_item(name, pid), True)
@@ -453,7 +484,7 @@ class SlotLogic:
             if time.perf_counter() > deadline:
                 finished = False
                 break
-            trial = state.copy()
+            trial = fresh_copy(state, pid)
             trial.collect(mw.create_item(name, pid), True)
             trial.sweep_for_advancements(locations=events)
             for loc in targets:
@@ -517,7 +548,7 @@ class SlotLogic:
         budget. `none`: out of logic even with every item still to come.
         """
         from collections import Counter
-        if self._goal_basis is None:
+        if self._goal_basis is None or self.game in PARTIAL_UT_POOL:
             return None
         state, have = self._goal_basis
         pool = self._pool()
@@ -530,7 +561,7 @@ class SlotLogic:
         to_come = pool - have
 
         def won(extra: Counter) -> bool:
-            trial = state.copy()
+            trial = fresh_copy(state, pid)
             for name, count in extra.items():
                 for _ in range(count):
                     trial.collect(mw.create_item(name, pid), True)
@@ -618,14 +649,52 @@ class SlotLogic:
         return {"kind": "set", "items": items, "complete": complete}
 
 
-def counted(received: list, start: list):
-    """The received items to take off the world's pool (what is left is still to come), by name: the progression ones
-    that came from the pool. A world can demote copies of an item to filler (Celeste's excess Strawberries, with the
-    server's flags), and the start inventory (location -2: The Wind Waker HD's first Progressive Sword) is not in the
-    pool: taking those off too would leave too few copies still to come."""
+def fresh_copy(state, player: int):
+    """A copy of `state` that works out the player's reachable regions again from the start. The copy keeps the regions
+    found with fewer items and only extends them; a world that misses indirect conditions (AEMinecraft: entrances that
+    depend on reaching another region) then keeps entrances blocked that the added items open, depending on the order
+    the regions are explored in (its victory looked out of reach with every item still to come)."""
+    trial = state.copy()
+    trial.reachable_regions[player] = set()
+    trial.blocked_connections[player] = set()
+    trial.stale[player] = True
+    return trial
+
+
+@contextlib.contextmanager
+def recording_precollected(pushed: list):
+    """Record (multiworld, item) for each item a world pushes to precollected_items during the regeneration."""
+    from BaseClasses import MultiWorld
+    original = MultiWorld.push_precollected
+
+    def push_precollected(multiworld, item):
+        pushed.append((multiworld, item))
+        return original(multiworld, item)
+
+    MultiWorld.push_precollected = push_precollected
+    try:
+        yield
+    finally:
+        MultiWorld.push_precollected = original
+
+
+def counted(received: list, start: list, option_start: Mapping[str, int] | None = None):
+    """The received items to take off the slot's items (what is left is still to come), by name: the progression
+    ones. Not the copies a world demoted to filler (Celeste's excess Strawberries, with the server's flags). The start
+    inventory (location -2) counts too (the world's own start items are in the slot's items, see `world_start`),
+    except the copies of the yaml's `start_inventory`: added by the generator on top of the world's items."""
     from collections import Counter
     starting = {id(i) for i in start}
-    return Counter(i.name for i in received if i.advancement and id(i) not in starting)
+    extra = Counter(dict(option_start or {}))
+    out = Counter()
+    for i in received:
+        if not i.advancement:
+            continue
+        if id(i) in starting and extra[i.name] > 0:
+            extra[i.name] -= 1
+            continue
+        out[i.name] += 1
+    return out
 
 
 # Worlds without a completion condition (the client sends the goal itself): the location that wins the game.

@@ -208,6 +208,19 @@ def check_goal_needs(multiworld, player: int, snap: Snapshot, needs: dict[str, A
             if reference_logic(multiworld, player, snap, dict(to_come))[1]:
                 out["errors"].append("none, but every item still to come wins")
         return out
+    # The tool names items as the datapackage does; two names can share an id (Cookie Clicker's "Unlock Bank" and
+    # "Progressive Bank", the datapackage keeps the latter): add the item the seed really has under that id.
+    world = multiworld.worlds[player]
+    real = {i.code: i.name for i in multiworld.itempool if i.player == player and i.code is not None}
+    real.update({loc.item.code: loc.item.name for loc in multiworld.get_locations() if loc.item is not None
+                 and loc.item.player == player and loc.item.code is not None})
+
+    def seed_name(name: str) -> str:
+        return real.get(world.item_name_to_id.get(name), name)
+
+    needs = dict(needs, items=[dict(e, name=seed_name(e["name"]),
+                                    **{"or": [dict(a, name=seed_name(a["name"])) for a in e.get("or", [])]})
+                               for e in needs["items"]])
     base = {i["name"]: i["count"] for i in needs["items"]}
     out["items"] = sum(base.values())
     if not reference_logic(multiworld, player, snap, base)[1]:
