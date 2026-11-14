@@ -39,7 +39,8 @@
    après une mise à jour qui perdait le cache des conditions de victoire) : 0,01 s (D40).
    2026-11-14 : sous le but de chaque slot pas encore en go mode, les items qui manquent pour la victoire (quantités,
    « ou », hints pas encore trouvés et leur accès ; « fin : N items manquants » sur les cartes), calculés dans le
-   worker sans spoiler (D41). Vérifiés sur les jeux de la room avec logique (`validate_logic.py --goal-needs`).
+   worker sans spoiler (D41). Vérifiés sur les jeux de la room avec logique (`validate_logic.py --goal-needs`). Choisis
+   slot par slot (case « fin » de la Configuration, `goal_needs: false`).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

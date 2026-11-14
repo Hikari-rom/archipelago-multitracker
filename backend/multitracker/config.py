@@ -23,6 +23,7 @@ class SlotConfig:
     yaml: Path | None = None  # player yaml, used by the logic engine when the world needs it
     owner: str | None = None  # player owning the slot (multi-player support)
     goal: dict[str, str] | None = None  # victory chosen by hand {option: value}, used when goal_override is on (D34)
+    goal_needs: bool = True  # show (and work out) what the victory lacks (D41); off = nothing asked to the worker
 
 
 @dataclass
@@ -74,7 +75,7 @@ def load(path: Path | None = None) -> RoomConfig:
         goal = entry.get("goal")
         goal = {str(k): str(v) for k, v in goal.items()} if isinstance(goal, dict) and goal else None
         slots.append(SlotConfig(name=name, game=entry.get("game"), yaml=yaml_path, owner=entry.get("owner"),
-                                goal=goal))
+                                goal=goal, goal_needs=entry.get("goal_needs") is not False))
     return RoomConfig(server=str(raw.get("server") or ""), password=str(raw.get("password") or ""), slots=slots,
                       path=path, room_url=raw.get("room_url") or None, wake_room=raw.get("wake_room") is True,
                       scout_checked=raw.get("scout_checked") is not False,
@@ -127,6 +128,8 @@ def save(cfg: RoomConfig, path: Path | None = None) -> Path:
             entry["owner"] = slot.owner
         if slot.goal:
             entry["goal"] = dict(slot.goal)
+        if not slot.goal_needs:
+            entry["goal_needs"] = False
         data["slots"].append(entry)
     path.parent.mkdir(parents=True, exist_ok=True)
     content = ("# Écrit par l'app (page Configuration). Modifiable à la main.\n"

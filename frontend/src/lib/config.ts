@@ -7,6 +7,8 @@ export interface ConfigSlot {
   yaml?: string | null
   /** victory chosen by hand {option: value}, {} = automatic (D34) */
   goal?: Record<string, string>
+  /** show what the victory lacks (D41); absent = on */
+  goal_needs?: boolean
 }
 /** An option of the game's apworld that chooses its victory (D34). Values are the option's keys, never translated. */
 export interface GoalOption {
@@ -74,7 +76,14 @@ export interface PutConfigBody {
   room_dashboard?: boolean
   hints_foreign_logic?: boolean
   goal_override?: boolean
-  slots: { name: string; game: string; owner: string | null; yaml: string | null; goal?: Record<string, string> }[]
+  slots: {
+    name: string
+    game: string
+    owner: string | null
+    yaml: string | null
+    goal?: Record<string, string>
+    goal_needs: boolean
+  }[]
 }
 
 export interface SlotRow {
@@ -84,6 +93,7 @@ export interface SlotRow {
   yaml: string // '' = aucun
   owner: string
   goal?: Record<string, string> // {} or absent = automatic
+  goalNeeds?: boolean // what the victory lacks, shown on the slot (D41); absent = on
 }
 
 /** The row's goal with `option` set to `value` ('' = back to automatic for that option). */
@@ -106,11 +116,17 @@ export function mergeRows(
     if (seen.has(p.name)) continue
     seen.add(p.name)
     const c = cfg.get(p.name)
-    rows.push({ name: p.name, game: p.game || c?.game || '', checked: !!c, yaml: c?.yaml ?? '', owner: c?.owner ?? '', goal: { ...(c?.goal ?? {}) } })
+    rows.push({
+      name: p.name, game: p.game || c?.game || '', checked: !!c, yaml: c?.yaml ?? '', owner: c?.owner ?? '',
+      goal: { ...(c?.goal ?? {}) }, goalNeeds: c?.goal_needs !== false,
+    })
   }
   for (const c of configured) {
     if (seen.has(c.name)) continue
-    rows.push({ name: c.name, game: c.game, checked: true, yaml: c.yaml ?? '', owner: c.owner ?? '', goal: { ...(c.goal ?? {}) } })
+    rows.push({
+      name: c.name, game: c.game, checked: true, yaml: c.yaml ?? '', owner: c.owner ?? '', goal: { ...(c.goal ?? {}) },
+      goalNeeds: c.goal_needs !== false,
+    })
   }
   return rows
 }
@@ -122,7 +138,7 @@ export function mergeDiscovered(rows: SlotRow[], players: { name: string; game: 
   for (const p of players) {
     if (have.has(p.name)) continue
     have.add(p.name)
-    out.push({ name: p.name, game: p.game, checked: false, yaml: '', owner: '', goal: {} })
+    out.push({ name: p.name, game: p.game, checked: false, yaml: '', owner: '', goal: {}, goalNeeds: true })
   }
   return out
 }
@@ -177,7 +193,7 @@ export function buildPutBody(opts: {
     slots: opts.rows
       .filter((r) => r.checked)
       .map((r) => ({
-        name: r.name, game: r.game, owner: r.owner.trim() || null, yaml: r.yaml || null,
+        name: r.name, game: r.game, owner: r.owner.trim() || null, yaml: r.yaml || null, goal_needs: r.goalNeeds !== false,
         ...(opts.goalOverride ? { goal: { ...(r.goal ?? {}) } } : {}),
       })),
   }

@@ -155,6 +155,13 @@ async def test_goal_through_the_config_api(tmp_path):
             assert summary["goal_choosable"] is True
             r = await client.put("/api/config", json={"server": "127.0.0.1:1", "slots": [{**slot, "goal": {}}]})
             assert r.status_code == 200 and config_mod.load(path).slots[0].goal is None
+            # what the victory lacks (D41): on by default, kept when omitted
+            assert (await client.get("/api/config")).json()["slots"][0]["goal_needs"] is True
+            r = await client.put("/api/config", json={"server": "127.0.0.1:1", "slots": [{**slot, "goal_needs": False}]})
+            assert r.status_code == 200 and config_mod.load(path).slots[0].goal_needs is False
+            r = await client.put("/api/config", json={"server": "127.0.0.1:1", "slots": [slot]})
+            assert r.status_code == 200 and config_mod.load(path).slots[0].goal_needs is False
+            assert (await client.get("/api/config")).json()["slots"][0]["goal_needs"] is False
 
 
 async def test_goal_choice_only_when_the_option_is_on(tmp_path):

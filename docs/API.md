@@ -156,7 +156,8 @@ Toutes les écritures (`POST`, `PUT`) refusent les requêtes d'un autre site (en
  "goal_override": false,                   // buts choisis à la main pris en compte (désactivé par défaut, D34)
  "has_backup": true,                       // config/room.yaml.bak existe (bouton « Restaurer »)
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml",
-            "goal": {}}],                  // but choisi à la main {option: valeur}, {} = automatique
+            "goal": {},                    // but choisi à la main {option: valeur}, {} = automatique
+            "goal_needs": true}],          // afficher ce qui manque pour la victoire (D41)
  "player_yamls": ["config/players/kh2.yaml", "config/players/romain/romain_kh2.yaml"],
  "yamls": [{"path": "config/players/romain/romain_kh2.yaml",
             "players": [{"name": "romain_kh2", "game": "Kingdom Hearts 2"}],   // un par document du yaml
@@ -210,7 +211,8 @@ document avec `name` et `game`). Réponse `{"path": "...", "players": [...], "st
  "hints_foreign_logic": true,                        // omis = garder le réglage actuel
  "goal_override": false,                             // omis = garder le réglage actuel
  "slots": [{"name": "Romain_KH2", "game": "Kingdom Hearts 2", "owner": "Romain", "yaml": "config/players/kh2.yaml",
-            "goal": {"Goal": "hitlist"}}]}           // omis = garder, {} = automatique
+            "goal": {"Goal": "hitlist"},             // omis = garder, {} = automatique
+            "goal_needs": false}]}                   // omis = garder (activé pour un nouveau slot)
 ```
 Écrit `config/room.yaml` (l'ancienne version va dans `config/room.yaml.bak`) et recharge les connexions (un `snapshot`
 SSE suit). `yaml` doit être un fichier de `config/players/` (sinon 400). Seul ce qui change se reconnecte (D29) : autre

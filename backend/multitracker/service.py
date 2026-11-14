@@ -252,7 +252,12 @@ class Service:
         for name, slot in new.items():
             if name not in self.trackers:
                 self._start_tracker(slot)
-            elif _same_yaml(slot.yaml, old[name].yaml) and self.goal_choice(name) == old_goals.get(name):
+                continue
+            if not slot.goal_needs:
+                self.goal_needs.pop(name, None)
+            if _same_yaml(slot.yaml, old[name].yaml) and self.goal_choice(name) == old_goals.get(name):
+                if slot.goal_needs and not old[name].goal_needs and self.trackers[name].state.status == "connected":
+                    self._schedule_logic(name)  # turned back on: the needs follow the logic
                 continue
             elif self.trackers[name].state.status == "connected":  # another yaml or goal: same items, new logic
                 self._session[name] = self._session.get(name, 0) + 1
@@ -436,7 +441,7 @@ class Service:
         and go mode is trusted for the game. Worked out by the worker after the logic, so it never delays it."""
         st = self.trackers[name].state
         if (result.state != "ok" or result.goal_in_logic is not False or st.goal_reached
-                or st.game in go_mode_disabled()):
+                or st.game in go_mode_disabled() or not self.slot_configs[name].goal_needs):
             if self.goal_needs.pop(name, None) is not None:
                 self.publish(name)
             return
@@ -680,7 +685,7 @@ class Service:
         finder can do that check (same access as the Hints page). Only while the slot is not in go mode."""
         needs = self.goal_needs.get(name)
         st = self.trackers[name].state
-        if needs is None or st.goal_reached or self.go_mode(name):
+        if needs is None or st.goal_reached or self.go_mode(name) or not self.slot_configs[name].goal_needs:
             return None
         if needs.get("kind") != "set":
             return {"kind": needs.get("kind")}

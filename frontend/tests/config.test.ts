@@ -72,9 +72,15 @@ describe('PUT payload', () => {
     expect(b.server).toBeUndefined()
     expect(b.password).toBeNull()
     expect(b.slots).toEqual([
-      { name: 'Romain_KH2', game: 'Kingdom Hearts 2', owner: 'Romain', yaml: 'config/players/kh2.yaml' },
-      { name: 'Alice_Hades', game: 'Hades', owner: 'Alice', yaml: null },
+      { name: 'Romain_KH2', game: 'Kingdom Hearts 2', owner: 'Romain', yaml: 'config/players/kh2.yaml', goal_needs: true },
+      { name: 'Alice_Hades', game: 'Hades', owner: 'Alice', yaml: null, goal_needs: true },
     ])
+  })
+  it('what the victory lacks: on unless the slot turned it off (D41)', () => {
+    const rows = mergeRows([{ ...configured[0], goal_needs: false }], found)
+    expect(rows.map((r) => [r.name, r.goalNeeds])).toEqual([['Romain_KH2', false], ['Alice_Hades', true]])
+    const b = buildPutBody({ roomUrl: '', server: 'h:1', password: { value: '', clear: false }, rows })
+    expect(b.slots.map((s) => s.goal_needs)).toEqual([false])
   })
   it('server when no room url', () => {
     const b = buildPutBody({ roomUrl: '', server: ' h:38281 ', password: { value: 'p', clear: false }, rows: [] })

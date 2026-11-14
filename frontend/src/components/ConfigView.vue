@@ -544,7 +544,10 @@ const selectClass =
           <CardTitle>
             Slots à suivre <span class="text-muted-foreground text-sm font-normal">({{ checkedRows.length }} / {{ rows.length }})</span>
           </CardTitle>
-          <CardDescription>Coche tes slots ; le yaml et le joueur se règlent sur les slots cochés.</CardDescription>
+          <CardDescription>
+            Coche tes slots ; le yaml et le joueur se règlent sur les slots cochés. « Fin » : afficher sous le but ce
+            qui manque pour la victoire (jeux avec logique).
+          </CardDescription>
         </CardHeader>
         <CardContent class="flex flex-col gap-3 px-5">
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_minmax(0,14rem)]">
@@ -573,13 +576,13 @@ const selectClass =
           <!-- Bounded height: a room has 150+ slots, the page must not grow with them. -->
           <ul v-else data-slot-list class="max-h-[min(60vh,36rem)] divide-y overflow-y-auto overscroll-contain rounded-lg border text-sm">
             <li
-              class="text-muted-foreground bg-card sticky top-0 z-10 hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)] sm:gap-2"
+              class="text-muted-foreground bg-card sticky top-0 z-10 hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem] sm:gap-2"
               aria-hidden="true"
             >
-              <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span>
+              <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span><span>fin</span>
             </li>
             <li v-for="(r, i) in visible" :key="r.name" :class="cn('flex flex-col gap-1 px-3 py-1.5', !r.checked && 'opacity-75')">
-              <div class="grid grid-cols-1 items-center gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)]">
+              <div class="grid grid-cols-1 items-center gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem]">
                 <div class="flex min-w-0 items-center gap-2.5">
                   <Checkbox :id="`cfg-row-${i}`" v-model="r.checked" :aria-label="`suivre ${r.name}`" />
                   <label :for="`cfg-row-${i}`" class="min-w-0 flex-1 cursor-pointer truncate" :title="`${r.name} · ${r.game || 'jeu inconnu'}`">
@@ -601,6 +604,15 @@ const selectClass =
                     class="h-8 w-20 shrink-0 sm:w-full"
                     :aria-label="`joueur de ${r.name}`"
                   />
+                  <label
+                    v-if="games[r.game]?.logic"
+                    data-goal-needs
+                    class="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs"
+                    title="Afficher ce qui manque pour la victoire"
+                  >
+                    <Checkbox v-model="r.goalNeeds" :aria-label="`ce qui manque pour la victoire de ${r.name}`" />
+                    <span class="text-muted-foreground sm:sr-only">fin</span>
+                  </label>
                 </div>
               </div>
               <p v-if="r.checked && goalOverride && goalLoading.has(r.game)" class="text-muted-foreground pl-6.5 text-xs" data-goal-loading>

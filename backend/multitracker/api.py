@@ -75,6 +75,7 @@ class SlotBody(BaseModel):
     yaml: str | None = None
     owner: str | None = None
     goal: dict[str, str] | None = None  # victory chosen by hand (D34); None = keep, {} = automatic
+    goal_needs: bool | None = None  # show what the victory lacks (D41); None = keep (on for a new slot)
 
 
 class GoalBody(BaseModel):
@@ -268,7 +269,8 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
                 "goal_override": cfg.goal_override,
                 "has_backup": backup_path(cfg.path).exists(),
                 "slots": [{"name": s.name, "game": s.game, "owner": s.owner,
-                           "yaml": _rel(s.yaml), "goal": s.goal or {}} for s in cfg.slots],
+                           "yaml": _rel(s.yaml), "goal": s.goal or {}, "goal_needs": s.goal_needs}
+                          for s in cfg.slots],
                 "player_yamls": [y["path"] for y in yamls], "yamls": yamls,
                 "games": games, "goal_options_pending": pending}
 
@@ -403,7 +405,10 @@ def create_app(service_factory: Callable[[], Service], frontend_dist: Path | Non
             slots = [SlotConfig(name=s.name.strip(), game=s.game or None, yaml=safe_yaml_path(s.yaml),
                                 owner=(s.owner or "").strip() or None,
                                 goal=(previous[s.name.strip()].goal if s.goal is None and s.name.strip() in previous
-                                      else s.goal or None)) for s in body.slots]
+                                      else s.goal or None),
+                                goal_needs=(s.goal_needs if s.goal_needs is not None
+                                            else previous[s.name.strip()].goal_needs if s.name.strip() in previous
+                                            else True)) for s in body.slots]
             await check_goals(service, slots)
         except ConfigError as exc:
             raise HTTPException(400, str(exc)) from exc

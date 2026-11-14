@@ -138,6 +138,30 @@ def test_service_shows_the_needs_with_their_hints(tmp_path, monkeypatch):
     engine.goal_in_logic = True
     asyncio.run(run())
     assert engine.asked == 1 and s._goal_needs_view("Me") is None and "Me" not in s.goal_needs
+    # turned off for this slot in the Configuration: nothing shown, nothing asked; back on: worked out again
+    import dataclasses
+    engine.goal_in_logic = False
+    off = dataclasses.replace(s.config, slots=[dataclasses.replace(s.config.slots[0], goal_needs=False)])
+    asyncio.run(s._update_slots(off))
+    asyncio.run(run())
+    assert engine.asked == 1 and s._goal_needs_view("Me") is None and "Me" not in s.goal_needs
+
+    async def back_on():
+        await s._update_slots(dataclasses.replace(off, slots=[dataclasses.replace(off.slots[0], goal_needs=True)]))
+        await s._logic_tasks["Me"]
+    asyncio.run(back_on())
+    assert engine.asked == 2 and s._goal_needs_view("Me")["kind"] == "set"
+
+
+def test_goal_needs_setting_round_trips(tmp_path):
+    from multitracker import config
+    path = tmp_path / "room.yaml"
+    path.write_text("server: 127.0.0.1:1\nslots: [{name: A}, {name: B, goal_needs: false}]\n")
+    cfg = config.load(path)
+    assert [s.goal_needs for s in cfg.slots] == [True, False]
+    config.save(cfg)
+    assert "goal_needs: false" in path.read_text() and path.read_text().count("goal_needs") == 1
+    assert [s.goal_needs for s in config.load(path).slots] == [True, False]
 
 
 def test_counted_leaves_out_filler_copies_and_the_yaml_start_inventory():

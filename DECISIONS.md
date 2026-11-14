@@ -582,3 +582,7 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   (l'ensemble suffit, chaque exemplaire est nécessaire, chaque « ou » remplace bien son item, « none » vrai) ;
   campagne sur les jeux de la room avec logique : `EXTRA_ARGS=--goal-needs SUMMARY=needs scripts/testenv/campaign.sh`.
   Tests : `tests/test_goal_needs.py`, `frontend/tests/v2/goals.test.ts`.
+- Choisi par slot (case « fin » de « Slots à suivre » dans la Configuration, `goal_needs: false` dans
+  `config/room.yaml`, demandé par Romain) : activé par défaut ; désactivé, rien n'est affiché ni demandé au worker
+  (moins de calcul sur le Pi). Le changer ne reconnecte rien ; le réactiver relance la logique du slot, les items
+  manquants suivent. La case n'apparaît que pour les jeux avec logique.
