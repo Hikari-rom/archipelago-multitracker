@@ -176,3 +176,21 @@ Campagne : une seed aux options aléatoires (`--first-run 201`) pour chacun des 
   Zuma Deluxe et Trombone Champ (la génération de test échoue, sans rapport avec l'app).
 - **Retards de logique déjà connus ou sans avance** : Stardew Valley (retard d'un point, voir sa ligne), TerraNil
   (seed 201 : « River Valley » en retard à la sphère 19, voir BACKLOG). Leur go mode est correct.
+
+## Ce qui manque pour la victoire (D41, campagne du 2026-11-14)
+
+`validate_logic.py --goal-needs` vérifie à chaque sphère où la victoire est hors logique l'ensemble d'items donné
+par l'app contre le multiworld complet : il suffit, chaque exemplaire est nécessaire, chaque « ou » remplace son
+item, et « none » (même tous les items à venir ne suffisent pas) est vrai. Campagne : une seed aux options
+aléatoires (`--first-run 901`) pour chacun des 99 jeux de la room avec logique (Factorio en `--lower-bound`).
+
+- **OK du premier coup** : 89 jeux (calcul ≤ 2,5 s, souvent moins de 0,1 s).
+- **Corrigés puis revalidés** : The Witness (panneaux de la chasse relus dans le `slot_data`, 3/3), Powerwash
+  Simulator (but relu dans le `slot_data`, 4/4, go mode compris), ULTRAKILL (yaml + `slot_data`, 3/3 ; logique
+  toujours OK sans yaml), Phantom Hourglass (métaux de boss : seed 903 et 2/2 avec le yaml de Romain ; seeds 901 et
+  902 : génération de test en échec, sans rapport avec l'app), Cookie Clicker, AEMinecraft, KH Birth by Sleep.
+- **Ensemble suffisant mais pas toujours minimal** (logique en retard ou minorée, jamais en avance) : Stardew
+  Valley, Factorio.
+- **Pas d'items manquants** (pool du monde impossible à reconstruire sans spoiler) : Lego Star Wars: The Complete
+  Saga, Spirit Tracks (voir BACKLOG), Plants vs. Zombies (aucun item créé sous UT).
+- **Génération de test en échec** (sans rapport avec l'app) : Big Walk, Zuma Deluxe.
