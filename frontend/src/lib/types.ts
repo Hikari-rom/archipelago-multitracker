@@ -24,7 +24,32 @@ export interface Objective {
   note?: string
   /** where the options came from: "slot_data", "yaml" or "slot_data + yaml" */
   source: string | null
+  /** what the victory still lacks in logic (D41), while the slot is not in go mode */
+  needs?: GoalNeeds
 }
+
+/** Hint of an item the victory needs: where it is, and whether its finder can do that check (Hints page access). */
+export interface GoalNeedHint {
+  item: string
+  finder: string
+  finder_game: string | null
+  location: string
+  access: 'ok' | 'blocked' | 'pending' | 'unknown' | 'found'
+}
+
+export interface GoalNeedItem {
+  name: string
+  count: number
+  /** items that can replace this one */
+  or: { name: string; count: number }[]
+  hints: GoalNeedHint[]
+}
+
+/** set: these items together (nothing in it can be dropped); many: too long to work out; none: out of logic even
+ * with every item still to come. */
+export type GoalNeeds =
+  | { kind: 'set'; items: GoalNeedItem[]; complete: boolean }
+  | { kind: 'many' | 'none' }
 
 export interface SlotSummary {
   name: string

@@ -28,6 +28,8 @@ from .. import apenv
 log = logging.getLogger("multitracker.logic")
 
 EXPLAIN_BUDGET = 5.0  # seconds per update to work out what blocks the hinted locations
+GOAL_BUDGET = 20.0  # seconds to work out what the slot lacks for its victory (op goal_needs, once per new item)
+MAX_ALTERNATIVES = 8  # "or" items shown for one item the victory needs
 
 _ap_ready = False
 
@@ -221,6 +223,9 @@ class SlotLogic:
         self.random_options: list[str] = []
         self._pool_cache = None
         self._blockers_cache: tuple[tuple, dict[int, dict[str, Any]]] | None = None
+        # state of the last update while the victory was out of logic (with the items it had), for goal_needs
+        self._goal_basis: tuple[Any, Any] | None = None
+        self._goal_needs_cache: tuple[tuple, dict[str, Any]] | None = None
         world_cls = AutoWorldRegister.world_types.get(game)
         from ..user_apworlds import user_games
         imported = game in user_games()  # D27: each user imports this apworld from their own Archipelago
@@ -373,13 +378,14 @@ class SlotLogic:
                    if loc.parent_region is not None}
         result = {"in_logic": reachable, "regions": regions, "errors": errors[:5],
                   "goal_in_logic": self.goal_in_logic(state, missing)}
+        self._goal_basis = (state, counted(received, start)) if result["goal_in_logic"] is False else None
         if explain:
             done = set(reachable)
             targets = [loc for loc in mw.get_locations(pid)
                        if isinstance(loc.address, int) and loc.address in explain and loc.address in missing
                        and loc.address not in done]
             if targets:
-                result["blockers"] = self.blockers(state, received, targets)
+                result["blockers"] = self.blockers(state, received, targets, start)
         return result
 
     def goal_in_logic(self, state, missing: set[int]) -> bool | None:
@@ -413,7 +419,7 @@ class SlotLogic:
             self._pool_cache = Counter(i.name for i in items if i.code is not None and i.advancement)
         return self._pool_cache
 
-    def blockers(self, state, received: list, targets: list) -> dict[int, dict[str, Any]]:
+    def blockers(self, state, received: list, targets: list, start: list | None = None) -> dict[int, dict[str, Any]]:
         """What the slot lacks to reach each of `targets` (unreachable locations), among the items still to come.
 
         `single`: any one of `items` is enough. `set`: all of `items` ([name, count]) together, a minimal set
@@ -422,7 +428,7 @@ class SlotLogic:
         like the logic itself: nothing about where the items are.
         """
         from collections import Counter
-        have = Counter(i.name for i in received)
+        have = counted(received, start or [])
         key = (tuple(sorted(have.items())), tuple(sorted(int(t.address) for t in targets)))
         if self._blockers_cache is not None and self._blockers_cache[0] == key:
             return self._blockers_cache[1]
@@ -492,6 +498,135 @@ class SlotLogic:
             need[name] = high
         return {"kind": "set", "items": [[name, count] for name, count in sorted(need.items())]}
 
+    def _won(self, state) -> bool:
+        """The victory with `state` (the same test as goal_in_logic, for an unchecked victory)."""
+        mw, pid = self.core.multiworld, self.core.player_id
+        location = victory_location(mw, pid)
+        if location is not None:
+            return bool(location.can_reach(state))
+        return bool(mw.completion_condition[pid](state))
+
+    def goal_needs(self, budget: float = GOAL_BUDGET) -> dict[str, Any] | None:
+        """What the slot lacks for its victory, among the items still to come (None: the victory is in logic, or the
+        world does not say what it is). Derived from the world's rules and item pool, like the logic: nothing about
+        where the items are.
+
+        `set`: items [{name, count, or: [{name, count}]}] that together make the victory reachable, nothing in it can be
+        dropped; `or` lists items that can replace one of them (the cheapest of two greedy passes is kept, the other
+        gives the alternatives; a lone item is tried against every other one). `many`: not worked out within the
+        budget. `none`: out of logic even with every item still to come.
+        """
+        from collections import Counter
+        if self._goal_basis is None:
+            return None
+        state, have = self._goal_basis
+        pool = self._pool()
+        key = tuple(sorted((name, count) for name, count in have.items() if name in pool))
+        if self._goal_needs_cache is not None and self._goal_needs_cache[0] == key:
+            return self._goal_needs_cache[1]
+        mw, pid = self.core.multiworld, self.core.player_id
+        events = [loc for loc in mw.get_locations(pid) if not loc.address]
+        deadline = time.perf_counter() + budget
+        to_come = pool - have
+
+        def won(extra: Counter) -> bool:
+            trial = state.copy()
+            for name, count in extra.items():
+                for _ in range(count):
+                    trial.collect(mw.create_item(name, pid), True)
+            trial.sweep_for_advancements(locations=events)
+            return self._won(trial)
+
+        try:
+            if not won(to_come):
+                out: dict[str, Any] = {"kind": "none"}
+            else:
+                out = self._goal_set(won, to_come, deadline)
+        except Exception:  # noqa: BLE001 - a broken rule must not break the slot's logic
+            log.warning("goal needs failed for %s: %s", self.slot_name, traceback.format_exc())
+            return None
+        self._goal_needs_cache = (key, out)
+        return out
+
+    @staticmethod
+    def _shrink(won, need, order: list[str], deadline: float):
+        """Drop what the victory does not need, by halves then smaller chunks (most items of a pool are not needed:
+        far fewer sweeps than one per item), then lower the counts. None when the budget runs out."""
+        need = need.copy()
+        pending = [name for name in order if name in need]
+        size = max(1, len(pending) // 2)
+        while pending:
+            kept = []
+            for start in range(0, len(pending), size):
+                if time.perf_counter() > deadline:
+                    return None
+                chunk = pending[start:start + size]
+                trial = need.copy()
+                for name in chunk:
+                    del trial[name]
+                if won(trial):
+                    need = trial
+                else:
+                    kept += chunk
+            if size == 1:
+                break
+            pending, size = kept, max(1, size // 2)
+        for name in sorted(need):
+            low, high = 1, need[name]
+            while low < high:
+                if time.perf_counter() > deadline:
+                    return None
+                mid = (low + high) // 2
+                trial = need.copy()
+                trial[name] = mid
+                if won(trial):
+                    high = mid
+                else:
+                    low = mid + 1
+            need[name] = high
+        return need
+
+    @staticmethod
+    def _goal_set(won, to_come, deadline: float) -> dict[str, Any]:
+        names = sorted(to_come)
+        first = SlotLogic._shrink(won, to_come, names, deadline)
+        if first is None:
+            return {"kind": "many"}
+        second = SlotLogic._shrink(won, to_come, names[::-1], deadline)
+        best, other = first, second
+        if second is not None and (sum(second.values()), len(second)) < (sum(first.values()), len(first)):
+            best, other = second, first
+        alternatives: dict[str, list[dict[str, Any]]] = {name: [] for name in best}
+        complete = second is not None
+        if len(best) == 1 and sum(best.values()) == 1:  # one item left: which others would do as well
+            candidates = [name for name in names if name not in best]
+        else:  # what the other pass took instead
+            candidates = sorted(set(other or ()) - set(best))
+        for name in sorted(best):
+            for alt in candidates:
+                if len(alternatives[name]) >= MAX_ALTERNATIVES:
+                    break
+                if time.perf_counter() > deadline:
+                    complete = False
+                    break
+                trial = best.copy()
+                del trial[name]
+                trial[alt] = (other or {}).get(alt, 1)
+                if won(trial):
+                    alternatives[name].append({"name": alt, "count": trial[alt]})
+        items = [{"name": name, "count": count, "or": alternatives[name]} for name, count in sorted(best.items())]
+        return {"kind": "set", "items": items, "complete": complete}
+
+
+def counted(received: list, start: list):
+    """The received items to take off the world's pool (what is left is still to come), by name: the progression ones
+    that came from the pool. A world can demote copies of an item to filler (Celeste's excess Strawberries, with the
+    server's flags), and the start inventory (location -2: The Wind Waker HD's first Progressive Sword) is not in the
+    pool: taking those off too would leave too few copies still to come."""
+    from collections import Counter
+    starting = {id(i) for i in start}
+    return Counter(i.name for i in received if i.advancement and id(i) not in starting)
+
 
 # Worlds without a completion condition (the client sends the goal itself): the location that wins the game.
 GOAL_LOCATIONS = {"Fall Guys": "Win a Final Round"}
@@ -510,6 +645,40 @@ def victory_location(multiworld, player: int):
     if item:
         return next((loc for loc in multiworld.get_locations(player)
                      if loc.item is not None and loc.item.player == player and loc.item.name == item), None)
+    world = multiworld.worlds[player]
+    if not hasattr(world, "_mt_victory_location"):
+        world._mt_victory_location = locked_victory_location(multiworld, player)
+    return world._mt_victory_location
+
+
+def locked_victory_location(multiworld, player: int):
+    """The real check of the player that holds, locked, an item that wins the game on its own (KH Birth by Sleep's
+    "Victory" on the final boss, Ratchet & Clank 3's "Biobliterator Defeated!"): the completion condition only becomes
+    true once that check is done and its item received, so go mode is that check being in logic (as VICTORY_ITEMS,
+    found from the world itself). None when there is no such check, or when the condition needs nothing."""
+    from BaseClasses import CollectionState
+    condition = multiworld.completion_condition.get(player)
+    if condition is None or not has_real_completion(condition):
+        return None
+    events = [loc for loc in multiworld.get_locations(player) if loc.address is None]
+    candidates = [loc for loc in multiworld.get_locations(player)
+                  if isinstance(loc.address, int) and loc.locked and loc.item is not None
+                  and loc.item.player == player and loc.item.advancement]
+    if not candidates:
+        return None
+    try:
+        empty = CollectionState(multiworld)
+        empty.sweep_for_advancements(locations=events)
+        if condition(empty):
+            return None
+        for loc in candidates:
+            state = CollectionState(multiworld)
+            state.collect(loc.item, True)
+            state.sweep_for_advancements(locations=events)
+            if condition(state):
+                return loc
+    except Exception:  # noqa: BLE001 - an odd world must not break its logic
+        log.warning("victory location of %s: %s", multiworld.player_name[player], traceback.format_exc())
     return None
 
 
@@ -626,6 +795,12 @@ class Worker:
                     log.warning("goal options of %s: %s", game, traceback.format_exc())
                     options[game] = []
             return {"state": "ok", "options": options}
+        if req.get("op") == "goal_needs":  # what the victory lacks, from the slot's last update (D41)
+            cached = self.slots.get(req["slot_name"])
+            logic = cached[1] if cached is not None else None
+            if not isinstance(logic, SlotLogic):
+                return {"state": "ok", "needs": None}
+            return {"state": "ok", "needs": logic.goal_needs(float(req.get("budget", GOAL_BUDGET)))}
         if req.get("op") == "forget":
             if self.slots.pop(req["slot_name"], None) is not None:
                 gc.collect()  # regenerated multiworlds are cyclic

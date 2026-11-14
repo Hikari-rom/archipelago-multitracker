@@ -106,3 +106,24 @@ async def test_service_go_mode(tmp_path, monkeypatch):
         assert service.go_mode("b") is False  # go_mode: false in config/apworlds.yaml
     finally:
         await service.stop()
+
+
+def test_locked_victory_on_a_real_check_kh_birth_by_sleep(tool):
+    """KH Birth by Sleep locks "Victory" on its final boss, a real check, without saying so (unlike Haste, listed in
+    VICTORY_ITEMS): found from the world, go mode lights up once that boss is in logic, before it is beaten."""
+    import logic_reference as lr
+    from multitracker.logic.ut_worker import victory_location
+    zip_path = generated_seed("m7a", 11, spoiler=1)
+    multidata = lr.load_multidata(zip_path)
+    multiworld = lr.regenerate("m7a", 11)
+    lr.check_same_fill(multiworld, multidata)
+    player = next(p for p in multiworld.player_ids if multiworld.game[p] == "Kingdom Hearts Birth by Sleep")
+    final = victory_location(multiworld, player)
+    assert final is not None and final.item.name == "Victory" and isinstance(final.address, int)
+    report = lr.compare_slot(multiworld, multidata, player, FIXTURES / "m7a" / "khbbs.yaml", tool=tool)
+    assert not report.get("error"), report.get("error")
+    snaps = report["snapshots"]
+    assert not [s for s in snaps if s["goal_over"] or s["goal_under"]], [
+        (s["sphere"], s["goal_tool"], s["goal_reference"]) for s in snaps]
+    before = [s for s, snap in zip(snaps, lr.snapshots(multiworld, player)) if final.address in snap.missing]
+    assert any(s["goal_tool"] for s in before), [(s["sphere"], s["goal_tool"]) for s in before]

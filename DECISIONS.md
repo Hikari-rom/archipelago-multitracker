@@ -518,3 +518,33 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   `ut_worker.py`, nom et taille des apworlds livrés, date seulement pour ceux importés par l'utilisateur.
   Enregistrement mesuré ensuite : 0,01 s, cache vide, juste après le démarrage.
 
+
+## D41 — Ce qui manque pour la victoire (2026-11-14, demandé par Romain)
+- Sous le but de chaque slot qui n'est pas en go mode : les items qui manquent pour que la victoire soit en logique,
+  avec leurs quantités, les items qui peuvent en remplacer un (« ou »), et, pour ceux qui ont un hint pas encore
+  trouvé, où ils sont et si le check est faisable (même accès que la page Indices). Sur les cartes : « fin : N items
+  manquants ».
+- Calcul dans le worker (`SlotLogic.goal_needs`, op `goal_needs`), après la logique du slot, seulement si la victoire
+  est hors logique (`goal_in_logic` faux) et que le go mode du jeu est fiable (`go_mode` pas à false) : il ne retarde
+  jamais la logique. Même test de victoire que le go mode (`victory_location`, sinon condition de victoire).
+  Zéro spoiler : règles du monde, son pool d'items et les items reçus, comme la logique ; rien sur l'endroit des items.
+- Méthode : on ajoute tous les items de progression pas encore reçus (la victoire doit devenir atteignable, sinon
+  « none »), puis on retire ce qui ne sert pas, par moitiés puis par paquets plus petits (la plupart des items d'un
+  pool ne servent pas : bien moins de passages de logique qu'un par item), puis on baisse les quantités (dichotomie).
+  Deux passes en ordre inverse : on garde la moins chère, l'autre donne les alternatives ; un item seul est essayé
+  contre tous les autres. Ensemble minimal (rien ne peut en être retiré), pas forcément le plus petit possible.
+- Budget de 20 s par calcul (`GOAL_BUDGET`) : au-delà, « many » (trop long à détailler), ou alternatives
+  incomplètes (`complete: false`). Résultat en cache tant que les items de progression reçus ne changent pas.
+- Items reçus retirés du pool : seulement ceux de progression qui en viennent (`counted`). Pas les copies que le
+  générateur a rétrogradées en filler (Celeste : les fraises en trop, flags du serveur), ni l'inventaire de départ
+  (location -2, absent du pool : la première Progressive Sword de The Wind Waker HD). Sinon il restait trop peu de
+  copies à venir et la victoire paraissait impossible (« none »). Corrige aussi ce qui bloque un indice (page Indices, D30).
+- Victoire posée, verrouillée, sur un vrai check du slot (KH Birth by Sleep : « Victory » sur le boss final ;
+  Ratchet & Clank 3, Mario Kart Double Dash) : la condition de victoire ne devient vraie qu'une fois ce check fait,
+  donc le go mode ne s'allumait jamais avant, et les items manquants se réduisaient à « Victory ». Détecté depuis
+  le monde (`locked_victory_location` : un item verrouillé sur un vrai check qui suffit seul à la condition) ; le go
+  mode est alors ce check en logique, comme `VICTORY_ITEMS` (Haste). Test : `test_go_mode.py` (KH BbS, lot m7a).
+- Vérification : `validate_logic.py --goal-needs` compare chaque résultat au multiworld complet de la génération
+  (l'ensemble suffit, chaque exemplaire est nécessaire, chaque « ou » remplace bien son item, « none » vrai) ;
+  campagne sur les jeux de la room avec logique : `EXTRA_ARGS=--goal-needs SUMMARY=needs scripts/testenv/campaign.sh`.
+  Tests : `tests/test_goal_needs.py`, `frontend/tests/v2/goals.test.ts`.

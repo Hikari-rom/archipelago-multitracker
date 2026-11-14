@@ -9,6 +9,7 @@ then compare the app's logic with the full-multiworld reference at every sphere.
   validate_logic.py "Hollow Knight" --runs 3 --no-yaml   (logic from slot_data only: another player's slot)
   validate_logic.py "Celeste (Open World)" --runs 3 --tool-yaml old.yaml   (the tool gets a stale yaml)
   validate_logic.py "Factorio" --runs 3 --lower-bound   (rules known to be late: only "over" is a difference)
+  validate_logic.py "Jak 3" --runs 3 --goal-needs   (also check what the victory lacks, D41, at each snapshot)
 
 Results: test-output/logic_validation/<game>.json, one line per run on stdout.
 Exit code 0 only if every run that generated had zero difference.
@@ -24,6 +25,7 @@ import subprocess
 import sys
 import time
 import traceback
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,12 +48,21 @@ def goal_summary(reports: list[dict]) -> str:
     return "ok" if not late and not early else f"late {late} early {early}"
 
 
+def needs_summary(reports: list[dict]) -> dict:
+    """Goal needs (D41) checked at the snapshots where the victory was out of logic."""
+    checks = [s["needs"] for r in reports for s in r["snapshots"] if "needs" in s]
+    return {"checked": len(checks), "kinds": dict(Counter(c["kind"] for c in checks)),
+            "errors": [(c["sphere"], e) for c in checks for e in c["errors"]][:10],
+            "max_seconds": max((c["seconds"] for c in checks), default=0)}
+
+
 def run_once(game: str, companions: list[str], run: int, keep_default: bool, retries: int = 3,
-             player_yaml: Path | None = None, tool_yaml: bool | Path = True, lower_bound: bool = False) -> dict:
+             player_yaml: Path | None = None, tool_yaml: bool | Path = True, lower_bound: bool = False,
+             goal_needs: bool = False) -> dict:
     """One validation run; random options that make the generation itself fail are re-rolled."""
     res: dict = {}
     for attempt in range(retries + 1):
-        res = _run_once(game, companions, run, keep_default, attempt, player_yaml, tool_yaml, lower_bound)
+        res = _run_once(game, companions, run, keep_default, attempt, player_yaml, tool_yaml, lower_bound, goal_needs)
         if res.get("generated") is not False:
             break
     res["attempts"] = attempt + 1
@@ -59,7 +70,8 @@ def run_once(game: str, companions: list[str], run: int, keep_default: bool, ret
 
 
 def _run_once(game: str, companions: list[str], run: int, keep_default: bool, attempt: int,
-              player_yaml: Path | None = None, tool_yaml: bool | Path = True, lower_bound: bool = False) -> dict:
+              player_yaml: Path | None = None, tool_yaml: bool | Path = True, lower_bound: bool = False,
+              goal_needs: bool = False) -> dict:
     """tool_yaml: True = the tool gets the slot's own yaml, False = none, a Path = that yaml instead (another
     yaml than the one the seed was generated with, e.g. the player's yaml of a previous room).
     lower_bound: the tool may miss locations in logic ("under", counted), never add one ("over")."""
@@ -117,15 +129,18 @@ def _run_once(game: str, companions: list[str], run: int, keep_default: bool, at
             reports.append(lr.compare_slot(multiworld, multidata, player,
                                            tool_yaml if isinstance(tool_yaml, Path) else
                                            players / f"{multiworld.player_name[player]}.yaml" if tool_yaml else None,
-                                           max_snapshots=30, tool=tool))
+                                           max_snapshots=30, tool=tool, goal_needs=goal_needs))
     bad = [s for r in reports for s in r["snapshots"]
            if s["over"] or s["goal_over"] or (s["under"] and not lower_bound)]
     bad += [{"error": r["error"]} for r in reports if r.get("error")]
+    needs = needs_summary(reports) if goal_needs else None
+    if needs and needs["errors"]:
+        bad.append({"goal_needs": needs["errors"]})
     return {"run": run, "generated": True, "ok": not bad and bool(reports),
             "mode": reports[0]["mode"] if reports else None,
             "snapshots": sum(len(r["snapshots"]) for r in reports), "bad": bad,
             "late": [(s["sphere"], s["tool"], s["reference"]) for r in reports for s in r["snapshots"] if s["under"]],
-            "goal": goal_summary(reports),
+            "goal": goal_summary(reports), "needs": needs,
             "found": [sum(s[k] for r in reports for s in r["snapshots"]) for k in ("tool", "reference")],
             "options": (players / f"{next(iter(names))}.yaml").read_text()[:2000]}
 
@@ -147,6 +162,8 @@ def main() -> int:
                         help="the tool gets no yaml (slot_data only), like for another player's slot")
     parser.add_argument("--tool-yaml", type=Path,
                         help="the tool gets this yaml instead of the slot's own one (stale yaml of another room)")
+    parser.add_argument("--goal-needs", action="store_true",
+                        help="also check what the victory lacks (D41) against the full multiworld")
     parser.add_argument("--lower-bound", action="store_true",
                         help="only a location wrongly in logic is a difference; late ones are counted")
     args = parser.parse_args()
@@ -159,7 +176,8 @@ def main() -> int:
         started = time.time()
         try:
             res = run_once(args.game, args.companions, run, args.default_options, player_yaml=args.yaml,
-                           tool_yaml=args.tool_yaml or not args.no_yaml, lower_bound=args.lower_bound)
+                           tool_yaml=args.tool_yaml or not args.no_yaml, lower_bound=args.lower_bound,
+                           goal_needs=args.goal_needs)
         except Exception as exc:  # report and continue with the next run
             traceback.print_exc()
             res = {"run": run, "generated": None, "error": f"{type(exc).__name__}: {exc}"[:400]}
@@ -167,11 +185,12 @@ def main() -> int:
         results.append(res)
         status = ("OK " if res.get("ok") else "GEN" if res.get("generated") is False
                   else "NC " if res.get("comparable") is False else "KO ")
+        needs = f"needs {json.dumps(res.get('needs'), ensure_ascii=False)[:400]} " if args.goal_needs else ""
         print(f"{status} run {run}: {res.get('snapshots', '-')} snapshots, {res['seconds']}s go mode {res.get('goal')} "
-              f"{res.get('error', '')} {json.dumps(res.get('bad', [])[:1], ensure_ascii=False)[:600]}"
+              f"{needs}{res.get('error', '')} {json.dumps(res.get('bad', [])[:1], ensure_ascii=False)[:600]}"
               + (f" in logic, tool/reference over all snapshots: {res.get('found')}; late (sphere, tool, reference): "
                  f"{res.get('late')}" if args.lower_bound else ""), flush=True)
-    out = WORK / f"{slug(args.game)}{'_yaml' if args.yaml else ''}{'_noyaml' if args.no_yaml else ''}{'_toolyaml' if args.tool_yaml else ''}{'_lower' if args.lower_bound else ''}.json"
+    out = WORK / f"{slug(args.game)}{'_yaml' if args.yaml else ''}{'_noyaml' if args.no_yaml else ''}{'_toolyaml' if args.tool_yaml else ''}{'_lower' if args.lower_bound else ''}{'_needs' if args.goal_needs else ''}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
     generated = [r for r in results if r.get("generated") and r.get("comparable", True)]

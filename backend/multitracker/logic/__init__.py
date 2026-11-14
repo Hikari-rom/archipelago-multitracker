@@ -58,6 +58,10 @@ class LogicEngine:
     async def forget(self, slot_name: str) -> None:
         """Free what the engine keeps for a slot (its regenerated world)."""
 
+    async def goal_needs(self, slot_name: str) -> dict[str, Any] | None:
+        """What the slot lacks for its victory, from its last computation (None: in logic, unknown, no worker)."""
+        return None
+
     async def goal_options(self, games: list[str]) -> dict[str, list[dict[str, Any]]] | None:
         """Options choosing the victory of each game (D34); None when unknown (no worker)."""
         return None

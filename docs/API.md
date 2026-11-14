@@ -43,7 +43,14 @@ Base : `http://<pi>:42753`. JSON partout. Les noms d'items, de locations et de j
     "counters": [{"label": "Strawberry", "current": 12, "target": 40}],  // + "detail" optionnel
     "steps": [{"label": "Finir The Summit A (The Summit A - Level Clear)", "done": false}],  // done null : invisible pour un tracker
     "note": null,                       // explication optionnelle
-    "source": "slot_data"               // slot_data | yaml | manuel | mod, joints par « + » (manuel : but choisi, D34 ; mod : data storage du client, D37)
+    "source": "slot_data",              // slot_data | yaml | manuel | mod, joints par « + » (manuel : but choisi, D34 ; mod : data storage du client, D37)
+    "needs": {                          // D41, absent en go mode, but atteint ou victoire inconnue : ce qui manque pour la victoire
+      "kind": "set",                    // set | many (trop long à calculer) | none (hors logique même avec tous les items à venir)
+      "complete": true,                 // false : les alternatives n'ont pas toutes été cherchées (budget de 20 s)
+      "items": [{"name": "Dark Eco Crystal", "count": 3, "or": [],   // or : [{name, count}] qui peuvent remplacer cet item
+                 "hints": [{"item": "Dark Eco Crystal", "finder": "kuro", "finder_game": "Celeste (Open World)",
+                            "location": "Forsaken City A - Room 9", "access": "ok"}]}]  // hints pas encore trouvés ; access : ok | blocked | pending | unknown (page Indices)
+    }
   },
   "updated_at": 1791593222.5,
   "last_check_at": 1791593100.0         // dernier check de ce slot vu par l'app (epoch), null avant le premier

@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import time
+from collections import Counter
 import zipfile
 import zlib
 from dataclasses import dataclass, field
@@ -113,8 +115,10 @@ def reference_in_logic(multiworld, player: int, snap: Snapshot) -> set[int]:
 UT_GOAL_REACHABLE = {"Terraria Beta"}
 
 
-def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], bool | None]:
-    """Locations in logic at this snapshot, and whether the victory is (go mode), on the full multiworld."""
+def reference_logic(multiworld, player: int, snap: Snapshot,
+                    extra: dict[str, int] | None = None) -> tuple[set[int], bool | None]:
+    """Locations in logic at this snapshot, and whether the victory is (go mode), on the full multiworld.
+    `extra`: items of the player received on top of the snapshot's (name -> count), for the goal needs (D41)."""
     import copy
     from BaseClasses import CollectionState, ItemClassification
     state = CollectionState(multiworld)
@@ -125,6 +129,9 @@ def reference_logic(multiworld, player: int, snap: Snapshot) -> tuple[set[int], 
             item = copy.copy(item)
             item.classification = ItemClassification.progression
         state.collect(item, True, loc)
+    for name, count in (extra or {}).items():
+        for _ in range(count):
+            state.collect(multiworld.worlds[player].create_item(name), True)
     state.sweep_for_advancements(locations=[loc for loc in multiworld.get_locations(player) if loc.address is None])
     reachable = {loc.address for loc in multiworld.get_reachable_locations(state, player)
                  if loc.address is not None and loc.address in snap.missing}
@@ -182,8 +189,46 @@ def as_sent_by_server(value: Any) -> Any:
     return json.loads(encode(value))
 
 
+def check_goal_needs(multiworld, player: int, snap: Snapshot, needs: dict[str, Any] | None) -> dict[str, Any]:
+    """The victory needs the tool gave (D41), against the full multiworld: the set wins, every copy in it is needed,
+    every "or" item replaces its item. "none": even every item still to come does not win."""
+    out: dict[str, Any] = {"sphere": snap.sphere, "kind": (needs or {}).get("kind"), "errors": []}
+    if needs is None:
+        out["errors"].append("no needs while the victory is out of logic")
+        return out
+    if needs["kind"] != "set":
+        if needs["kind"] == "none":
+            to_come = Counter()
+            received = Counter(loc.item.name for loc in snap.received)
+            pool = Counter(i.name for i in multiworld.itempool if i.player == player and i.advancement)
+            pool += Counter(loc.item.name for loc in multiworld.get_locations()
+                            if loc.item is not None and loc.item.player == player and loc.address is not None
+                            and loc.item.advancement)
+            to_come = pool - received
+            if reference_logic(multiworld, player, snap, dict(to_come))[1]:
+                out["errors"].append("none, but every item still to come wins")
+        return out
+    base = {i["name"]: i["count"] for i in needs["items"]}
+    out["items"] = sum(base.values())
+    if not reference_logic(multiworld, player, snap, base)[1]:
+        out["errors"].append(f"not enough: {base}")
+        return out
+    for name, count in base.items():
+        fewer = dict(base, **{name: count - 1})
+        if reference_logic(multiworld, player, snap, fewer)[1]:
+            out["errors"].append(f"{name} x{count} not all needed")
+    for entry in needs["items"]:
+        for alt in entry.get("or", []):
+            trial = {k: v for k, v in base.items() if k != entry["name"]}
+            trial[alt["name"]] = alt["count"]
+            if not reference_logic(multiworld, player, snap, trial)[1]:
+                out["errors"].append(f"{alt['name']} x{alt['count']} does not replace {entry['name']}")
+    return out
+
+
 def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: Path | None,
-                 max_snapshots: int | None = None, tool: ToolProcess | None = None) -> dict[str, Any]:
+                 max_snapshots: int | None = None, tool: ToolProcess | None = None,
+                 goal_needs: bool = False) -> dict[str, Any]:
     own_tool = tool is None
     tool = tool or ToolProcess()
     try:
@@ -225,6 +270,12 @@ def compare_slot(multiworld, multidata: dict[str, Any], player: int, yaml_path: 
                 "goal_over": res.get("goal_in_logic") is True and not goal_ref,
                 "goal_under": bool(goal_ref) and res.get("goal_in_logic") is not True,
             })
+            if goal_needs and res.get("goal_in_logic") is False and goal_ref is False:
+                started = time.perf_counter()
+                needs = tool.request({"op": "goal_needs", "slot_name": name}).get("needs")
+                check = check_goal_needs(multiworld, player, snap, needs)
+                check["seconds"] = round(time.perf_counter() - started, 2)
+                report["snapshots"][-1]["needs"] = check
         report["ok"] = all(not s["under"] and not s["over"] and not s["goal_over"] for s in report["snapshots"])
         return report
     finally:

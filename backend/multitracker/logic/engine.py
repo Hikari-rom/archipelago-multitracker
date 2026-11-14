@@ -176,6 +176,27 @@ class UTLogicEngine(LogicEngine):
                 return None
         return res.get("options") if res.get("state") == "ok" else None
 
+    async def goal_needs(self, slot_name: str) -> dict[str, Any] | None:
+        """What the slot lacks for its victory, from its last computation (D41)."""
+        if self._timeouts.get(slot_name, 0) >= self.MAX_TIMEOUTS:
+            return None
+        async with self._lock:
+            if self._proc is None or not self._proc.is_alive():
+                return None  # a new worker has no world for this slot yet
+            try:
+                started = time.monotonic()
+                res = await asyncio.to_thread(self._roundtrip, {"op": "goal_needs", "slot_name": slot_name})
+            except (TimeoutError, EOFError, OSError, BrokenPipeError) as exc:
+                log.warning("logic worker failed on the goal of %s (%s), restarting it", slot_name, exc)
+                if isinstance(exc, TimeoutError):
+                    self._timeouts[slot_name] = self._timeouts.get(slot_name, 0) + 1
+                await asyncio.to_thread(self._kill)
+                return None
+        took = time.monotonic() - started
+        if took > 5:
+            log.info("goal needs of %s took %.1f s", slot_name, took)
+        return res.get("needs") if res.get("state") == "ok" else None
+
     async def compute(self, request: LogicRequest) -> LogicResult:
         if not self.games.get(request.game, False):
             return LogicResult("unavailable", message=no_logic_reason(request.game, request.game in self.games))

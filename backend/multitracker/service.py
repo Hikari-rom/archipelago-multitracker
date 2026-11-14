@@ -72,6 +72,7 @@ class Service:
         self._reload_lock = asyncio.Lock()
         self._sent_index_cache: tuple[tuple, dict] | None = None
         self._explained: dict[str, set[int]] = {}  # hinted locations the last logic request asked about
+        self.goal_needs: dict[str, dict[str, Any]] = {}  # what each slot lacks for its victory (D41)
         self.goal_options: dict[str, list[dict[str, Any]]] = {}  # game -> options choosing its victory (D34)
         self._goal_options_task: asyncio.Task | None = None
         self._goal_lock = asyncio.Lock()
@@ -272,6 +273,7 @@ class Service:
         self._publish_pending.discard(name)
         self.logic.pop(name, None)
         self._explained.pop(name, None)
+        self.goal_needs.pop(name, None)
 
     async def restart_logic(self) -> None:
         """Restart the logic worker (it loads the worlds once, e.g. newly imported apworlds) and recompute every slot."""
@@ -283,6 +285,7 @@ class Service:
         for name, tracker in self.trackers.items():
             self._session[name] = self._session.get(name, 0) + 1  # drop results computed by the old worker
             self.logic[name] = LogicResult("pending")
+            self.goal_needs.pop(name, None)
             if tracker.state.status == "connected":
                 self._schedule_logic(name)
             self.publish(name)
@@ -374,6 +377,7 @@ class Service:
         if "connected" in kinds:
             self._session[name] = self._session.get(name, 0) + 1
             self.logic[name] = LogicResult("pending")  # never show the previous session's results
+            self.goal_needs.pop(name, None)
         if kinds & LOGIC_KINDS and tracker.state.status == "connected":
             self._schedule_logic(name)
         elif ("hints" in kinds and st.status == "connected"
@@ -424,6 +428,32 @@ class Service:
             self.logic[name] = result
             self.publish(name)
             self.hints.publish()
+            if name not in self._logic_dirty:  # newer changes recompute the logic first
+                await self._update_goal_needs(name, result, session)
+
+    async def _update_goal_needs(self, name: str, result: LogicResult, session: int) -> None:
+        """What the slot lacks for its victory (D41), once its logic is known: only while the victory is out of logic
+        and go mode is trusted for the game. Worked out by the worker after the logic, so it never delays it."""
+        st = self.trackers[name].state
+        if (result.state != "ok" or result.goal_in_logic is not False or st.goal_reached
+                or st.game in go_mode_disabled()):
+            if self.goal_needs.pop(name, None) is not None:
+                self.publish(name)
+            return
+        try:
+            needs = await self.logic_engine.goal_needs(name)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("goal needs failed for %s", name)
+            needs = None
+        if self._session.get(name, 0) != session or name in self._logic_dirty:
+            return  # stale: a newer computation follows
+        if needs is None:
+            self.goal_needs.pop(name, None)
+        else:
+            self.goal_needs[name] = needs
+        self.publish(name)
 
     def logic_settled(self, name: str) -> bool:
         """True when no logic recomputation is pending or running for this slot."""
@@ -636,10 +666,40 @@ class Service:
             override_names={o["option"]: o["display"] for o in self.goal_options.get(game, [])},
             storage=dict(st.storage))
         try:
-            return describe_goal(ctx)
+            objective = describe_goal(ctx)
         except Exception:  # noqa: BLE001  a describer must never break the slot's summary
             log.exception("goal description failed for %s (%s)", name, game)
             return None
+        needs = self._goal_needs_view(name)
+        if objective is not None and needs is not None:
+            objective["needs"] = needs
+        return objective
+
+    def _goal_needs_view(self, name: str) -> dict[str, Any] | None:
+        """The items the victory lacks (D41), each with the hints that say where it is (not found yet), and whether the
+        finder can do that check (same access as the Hints page). Only while the slot is not in go mode."""
+        needs = self.goal_needs.get(name)
+        st = self.trackers[name].state
+        if needs is None or st.goal_reached or self.go_mode(name):
+            return None
+        if needs.get("kind") != "set":
+            return {"kind": needs.get("kind")}
+        where: dict[str, list[dict[str, Any]]] = {}
+        for hint in st.hints:
+            if hint.get("receiving_player") != st.slot or hint.get("found"):
+                continue
+            finder, location = hint.get("finding_player"), hint.get("location")
+            item = self.datapackage.item_name(st.game, hint.get("item"))
+            finder_slot = (st.players.get(finder) or {}).get("name")
+            where.setdefault(item, []).append({
+                "finder": self.player_name(st, finder), "finder_game": self.player_game(st, finder),
+                "location": self.datapackage.location_name(self.player_game(st, finder), location),
+                "access": self.hints._access(finder_slot, location, False).get("state")})
+        items = []
+        for entry in needs.get("items", []):
+            names = [entry["name"], *(alt["name"] for alt in entry.get("or", []))]
+            items.append({**entry, "hints": [dict(h, item=n) for n in names for h in where.get(n, [])]})
+        return {"kind": "set", "items": items, "complete": bool(needs.get("complete", True))}
 
     def _item_view(self, st, index: int, item: dict, time: tuple, seen: int) -> dict[str, Any]:
         received_at, received_after = time

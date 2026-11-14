@@ -1,5 +1,5 @@
 // "Objectifs" page and the goal line of the dashboard cards.
-import type { GoalCounter, Objective, SlotSummary } from './types'
+import type { GoalCounter, GoalNeedHint, GoalNeedItem, Objective, SlotSummary } from './types'
 
 /** The counter shown on a card: the first one not reached yet (or the last one when all are). */
 export function mainCounter(o: Objective | null | undefined): GoalCounter | null {
@@ -37,4 +37,23 @@ export const SOURCE_LABELS: Record<string, string> = {
   yaml: 'options lues dans le yaml du joueur',
   'slot_data + yaml': 'options lues dans le slot_data du serveur et le yaml du joueur',
   'mod + slot_data': 'options lues dans le slot_data, victoires lues dans le profil du mod',
+}
+
+/** An item the victory needs (D41): « Dark Eco Crystal ×3 ». */
+export function needLabel(n: Pick<GoalNeedItem, 'name' | 'count'>): string {
+  return n.count > 1 ? `${n.name} ×${n.count}` : n.name
+}
+
+/** Copies the victory still needs, all items together. */
+export function needsCount(o: Objective | null | undefined): number {
+  const n = o?.needs
+  return n?.kind === 'set' ? n.items.reduce((sum, i) => sum + i.count, 0) : 0
+}
+
+export const NEED_ACCESS: Record<GoalNeedHint['access'], string> = {
+  ok: 'check faisable maintenant',
+  blocked: 'check pas encore en logique',
+  pending: 'logique en cours de calcul',
+  unknown: 'accès inconnu',
+  found: 'trouvé',
 }

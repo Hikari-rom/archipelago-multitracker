@@ -23,6 +23,7 @@ exports[`dashboard with every info shown (Complet) > active card 1`] = `
     <!--v-if-->
     <p class="text-sm text-muted-foreground ml-auto">But non décrit pour ce jeu
       <!--v-if-->
+      <!--v-if-->
     </p>
   </div>
   <!--v-if-->
@@ -65,6 +66,7 @@ exports[`dashboard with every info shown (Complet) > focus panel 1`] = `
       </div>
     </div>
     <p class="text-sm text-muted-foreground">But non décrit pour ce jeu
+      <!--v-if-->
       <!--v-if-->
     </p>
   </div>
@@ -115,6 +117,7 @@ exports[`dashboard with every info shown (Complet) > phone carousel 1`] = `
       </div>
     </div>
     <p class="text-sm text-muted-foreground mt-2">But non décrit pour ce jeu
+      <!--v-if-->
       <!--v-if-->
     </p>
     <div class="mt-2 flex items-center justify-between gap-2"><button type="button" data-dismiss="" class="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-accent">✕ Plus actif</button><button type="button" data-details="" class="inline-flex min-h-11 items-center rounded-lg border px-3 text-sm hover:bg-accent">Détails ↑</button></div>
