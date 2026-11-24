@@ -93,3 +93,13 @@ describe('detail race', () => {
     expect((tracker.details.b as any).tag).toBe('fresh')
   })
 })
+
+describe('Configuration tab addresses', () => {
+  it('a tab of the Configuration page opens the Configuration view', () => {
+    location.hash = '#config/fonctions'
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+    expect(tracker.view).toBe('config')
+    location.hash = ''
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+  })
+})

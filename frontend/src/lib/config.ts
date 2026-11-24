@@ -340,8 +340,44 @@ export function distinctGames(rows: SlotRow[]): string[] {
 }
 
 /** "#config?room=https://..." or "?room=..." -> the room link to pre-fill, if any. */
+/** "#config", "#config/<tab>", each optionally followed by "?room=...". */
+export const CONFIG_HASH = /^#config(\/[a-z]+)?(\?|$)/
+
+export type ConfigTab = 'slots' | 'room' | 'fonctions' | 'affichage' | 'app'
+export const CONFIG_TABS: readonly ConfigTab[] = ['slots', 'room', 'fonctions', 'affichage', 'app']
+
+/** "#config/room?room=..." -> 'room'; no tab, or an unknown one -> null. */
+export function configTabFromHash(hash: string): ConfigTab | null {
+  const m = /^#config\/([a-z]+)(\?|$)/.exec(hash)
+  return m && (CONFIG_TABS as readonly string[]).includes(m[1]) ? (m[1] as ConfigTab) : null
+}
+
+/** The tab shown when the page opens: the address first, then Room for a first setup or a room link to fill in. */
+export function initialConfigTab(o: { hashTab: ConfigTab | null; hasSlots: boolean; prefillRoom: boolean }): ConfigTab {
+  if (o.hashTab) return o.hashTab
+  return o.prefillRoom || !o.hasSlots ? 'room' : 'slots'
+}
+
+export type SlotMode = 'tracked' | 'all' | 'fix'
+
+/** Slots shown by the Slots tab: tracked ones, the whole room, or tracked ones to fix; the search covers slot, game, player. */
+export function slotView(rows: SlotRow[], diags: Record<string, Diag[]>, o: { text: string; mode: SlotMode }): SlotRow[] {
+  const n = o.text.trim().toLowerCase()
+  return rows.filter((r) => {
+    if (o.mode !== 'all' && !r.checked) return false
+    if (o.mode === 'fix' && !(diags[r.name] ?? []).some((d) => d.level !== 'info')) return false
+    return !n || [r.name, r.game, r.owner].some((v) => v.toLowerCase().includes(n))
+  })
+}
+
+/** Same configuration to save, whatever the order of the slots. */
+export function sameBody(a: PutConfigBody, b: PutConfigBody): boolean {
+  const norm = (x: PutConfigBody) => JSON.stringify({ ...x, slots: [...x.slots].sort((p, q) => p.name.localeCompare(q.name)) })
+  return norm(a) === norm(b)
+}
+
 export function roomFromLocation(hash: string, search: string): string {
-  if (!/^#config(\?|$)/.test(hash)) return ''
+  if (!CONFIG_HASH.test(hash)) return ''
   const q = hash.includes('?') ? hash.slice(hash.indexOf('?') + 1) : search.replace(/^\?/, '')
   try {
     return new URLSearchParams(q).get('room')?.trim() ?? ''

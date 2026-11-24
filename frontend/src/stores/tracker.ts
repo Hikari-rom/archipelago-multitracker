@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import * as api from '../lib/api'
-import { roomFromLocation } from '../lib/config'
+import { CONFIG_HASH, roomFromLocation, type ConfigTab } from '../lib/config'
 import { clockOffset, loadActiveMinutes } from '../lib/history'
 import { splitFeatured } from '../lib/dashboard'
 
@@ -139,7 +139,7 @@ export type View = 'dashboard' | 'config' | 'logs' | 'goals' | 'history' | 'room
 
 function viewFromHash(): View {
   if (typeof location === 'undefined') return 'dashboard'
-  if (/^#config(\?|$)/.test(location.hash)) return 'config'
+  if (CONFIG_HASH.test(location.hash)) return 'config'
   if (location.hash === '#goals') return 'goals'
   if (location.hash === '#hints') return 'hints'
   if (location.hash === '#history') return 'history'
@@ -190,6 +190,15 @@ export function setView(v: View): void {
   try {
     if (v !== 'dashboard') location.hash = v
     else if (location.hash) history.replaceState(null, '', location.pathname + location.search)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Writes the open tab of the Configuration page in the address (a link or a reload comes back to it). */
+export function setConfigTab(tab: ConfigTab): void {
+  try {
+    history.replaceState(null, '', `${location.pathname}${location.search}#config/${tab}`)
   } catch {
     /* ignore */
   }

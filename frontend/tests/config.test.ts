@@ -3,6 +3,7 @@ import {
   ALL_OWNERS, NO_OWNER, autoAssociate, buildPutBody, checkByName, diagnose, distinctGames, distinctOwners,
   filterByOwner, filterRows, mergeDiscovered, mergeRows, nameMatches, passwordPayload, probeMessage, roomFromLocation,
   setAll, setChecked, showOwnerFilter, withDiscovered, withGoal,
+  configTabFromHash, initialConfigTab, sameBody, slotView, type Diag, type PutConfigBody, type SlotRow,
 } from '../src/lib/config'
 import { summaryText } from '../src/lib/logic'
 import { mk } from './helpers'
@@ -212,5 +213,45 @@ describe('yaml association and diagnosis', () => {
   it('probe messages', () => {
     expect(probeMessage({ ok: false, errors: ['InvalidPassword'] }, 'a')).toBe('Échec : mot de passe refusé')
     expect(probeMessage({ ok: true, errors: [], game: 'Jak 3' }, 'a')).toBe('Connexion réussie (slot a, Jak 3).')
+  })
+})
+
+describe('tabbed Configuration page helpers', () => {
+  it('reads the tab from the address', () => {
+    expect(configTabFromHash('#config/room')).toBe('room')
+    expect(configTabFromHash('#config/room?room=x')).toBe('room')
+    expect(configTabFromHash('#config')).toBeNull()
+    expect(configTabFromHash('#config?room=x')).toBeNull()
+    expect(configTabFromHash('#config/xyz')).toBeNull()
+    expect(configTabFromHash('#hints')).toBeNull()
+  })
+  it('picks the tab shown on arrival', () => {
+    expect(initialConfigTab({ hashTab: 'app', hasSlots: false, prefillRoom: true })).toBe('app')
+    expect(initialConfigTab({ hashTab: null, hasSlots: false, prefillRoom: false })).toBe('room')
+    expect(initialConfigTab({ hashTab: null, hasSlots: true, prefillRoom: true })).toBe('room')
+    expect(initialConfigTab({ hashTab: null, hasSlots: true, prefillRoom: false })).toBe('slots')
+  })
+  it('filters the slots: tracked, all, to fix, and a search on slot, game and player', () => {
+    const A: SlotRow = { name: 'A', game: 'Kingdom Hearts 2', checked: true, yaml: '', owner: 'kuro' }
+    const B: SlotRow = { name: 'B', game: 'Hades', checked: false, yaml: '', owner: '' }
+    const C: SlotRow = { name: 'C', game: 'Jak 3', checked: true, yaml: '', owner: '' }
+    const rows = [A, B, C]
+    const diags: Record<string, Diag[]> = { A: [{ level: 'info', text: 'i' }], B: [], C: [{ level: 'warn', text: 'w' }] }
+    expect(slotView(rows, diags, { text: '', mode: 'tracked' })).toEqual([A, C])
+    expect(slotView(rows, diags, { text: '', mode: 'all' })).toEqual([A, B, C])
+    expect(slotView(rows, diags, { text: '', mode: 'fix' })).toEqual([C])
+    expect(slotView(rows, diags, { text: 'KURO', mode: 'all' })).toEqual([A])
+    expect(slotView(rows, diags, { text: 'hades', mode: 'tracked' })).toEqual([])
+  })
+  it('compares two saved configurations, whatever the order of the slots', () => {
+    const s1 = { name: 'A', game: 'G', owner: null, yaml: null, goal_needs: true }
+    const s2 = { name: 'B', game: 'G', owner: 'kuro', yaml: 'y', goal_needs: true }
+    const a: PutConfigBody = { room_url: 'u', slots: [s1, s2] }
+    expect(sameBody(a, { room_url: 'u', slots: [s2, s1] })).toBe(true)
+    expect(sameBody(a, { room_url: 'u', slots: [{ ...s1, goal_needs: false }, s2] })).toBe(false)
+    expect(sameBody({ ...a, password: 'x' }, a)).toBe(false)
+  })
+  it('reads the room to pre-fill from a tab address too', () => {
+    expect(roomFromLocation('#config/room?room=https://a', '')).toBe('https://a')
   })
 })
