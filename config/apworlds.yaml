@@ -256,10 +256,7 @@ apworlds:
     logic: true
   bigwalk:
     game: "Big Walk"
-    source: github
-    repo: Grizfreak/BigWalk-archipelago
-    tag: "1.0.1"
-    asset: "bigwalk.apworld"
+    source: user  # Grizfreak/BigWalk-archipelago was deleted from GitHub (2026-11-24): imported from each user's Archipelago
     logic: true
   clair_obscur:
     game: "Clair Obscur Expedition 33"

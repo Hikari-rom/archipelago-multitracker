@@ -63,6 +63,9 @@ apworlds:
   satisfactory:
     source: core
     game: Satisfactory
+  factorio:
+    source: core
+    game: Factorio
   tww:
     source: core
     game: The Wind Waker
@@ -402,17 +405,7 @@ apworlds:
     source: github
     game: Baldur's Gate 3
   bigwalk:
-    repo: Grizfreak/BigWalk-archipelago
-    tag: 1.0.1
-    published: '2026-10-16T06:56:46Z'
-    asset_pattern: bigwalk.apworld
-    asset: bigwalk.apworld
-    url: https://github.com/Grizfreak/BigWalk-archipelago/releases/download/1.0.1/bigwalk.apworld
-    size: 170288
-    file: bigwalk.apworld
-    sha256: 4022bcd3597e653a3275a7c022677e460611502584d943376544984e727b12a0
-    downloaded_at: '2026-10-24T10:27:58+00:00'
-    source: github
+    source: user
     game: Big Walk
   clair_obscur:
     repo: Demorck/ClairObscur_APWorld
