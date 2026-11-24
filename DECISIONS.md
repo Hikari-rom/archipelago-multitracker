@@ -586,3 +586,22 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
   `config/room.yaml`, demandé par Romain) : activé par défaut ; désactivé, rien n'est affiché ni demandé au worker
   (moins de calcul sur le Pi). Le changer ne reconnecte rien ; le réactiver relance la logique du slot, les items
   manquants suivent. La case n'apparaît que pour les jeux avec logique.
+
+## D42 — Configuration en onglets (2026-11-24, demandé par Romain)
+- **Le problème** : la page était devenue très longue ; avec 156 slots dans la room, les options se retrouvaient
+  sous la liste et « tout n'est pas vraiment rangé ».
+- **Choix de Romain** : piste A (onglets) parmi trois (onglets, menu latéral, page repliable), au style de la v2.
+  Spec : `docs/superpowers/specs/2026-11-21-config-page-design.md`.
+- **Onglets** : Slots (yamls, slots, but, « fin »), Room (lien, mot de passe, test, réveil), Fonctions (Historique,
+  Indices, but à la main, room complète, chacune avec la page qu'elle change), Affichage (cet appareil, appliqué tout
+  de suite), App (apworlds, mises à jour, restauration). Un point signale un onglet à voir. L'onglet ouvert est dans
+  l'adresse (`#config/<onglet>`) ; à l'arrivée : Room en première installation ou avec `#config?room=`, sinon Slots ;
+  « Voir » du bandeau de mise à jour ouvre App.
+- **Slots** : pastilles Suivis / Toute la room / À corriger, recherche sur slot, jeu et joueur ; tableau sur PC
+  (≥ 700 px), liste + panneau par slot sur mobile.
+- **Enregistrer** : une barre flottante n'apparaît que si le corps `PUT /api/config` diffère de celui de la config
+  enregistrée (une association automatique de yaml à l'ouverture compte : elle doit être enregistrée) ; « Annuler »
+  remet la config enregistrée. Après l'enregistrement, retour au tableau de bord comme avant.
+- Code : état dans `components/config/form.ts` (`useConfigForm`), un composant par onglet dans `components/config/`.
+  Aucun changement backend.
+

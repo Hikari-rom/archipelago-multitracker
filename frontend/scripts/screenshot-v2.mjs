@@ -15,6 +15,8 @@ const shots = [
   ['dashboard-cards-standard', '/', { 'amt-v2-layout': 'cards', 'amt-v2-display': '{"preset":"standard","shown":[]}' }],
   ['dashboard-focus-essentiel', '/', { 'amt-v2-layout': 'focus', 'amt-v2-display': '{"preset":"essentiel","shown":[]}' }],
   ['config', '/#config', {}],
+  ['config-fonctions', '/#config/fonctions', {}],
+  ['config-app', '/#config/app', {}],
   ['history', '/#history', {}],
   ['goals', '/#goals', {}],
 ]

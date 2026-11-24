@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { getUpdate } from '../lib/api'
 import { latestLabel, loadDismissed, saveDismissed, UPDATE_ANCHOR, type UpdateInfo } from '../lib/update'
-import { setView, tracker } from '../stores/tracker'
+import { tracker } from '../stores/tracker'
 
 // The server checks a minute after it starts, then once a day: the page asks it often, and on waking up.
 const REFRESH_MS = 5 * 60 * 1000
@@ -25,7 +25,13 @@ async function load(): Promise<void> {
 }
 
 async function onOpen(): Promise<void> {
-  setView('config')
+  // The App tab of the Configuration page holds the update panel
+  tracker.view = 'config'
+  try {
+    history.replaceState(null, '', `${location.pathname}${location.search}#config/app`)
+  } catch {
+    /* ignore */
+  }
   await nextTick()
   // ConfigView loads first: wait for the panel to exist
   for (let i = 0; i < 20; i++) {

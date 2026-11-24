@@ -187,6 +187,16 @@ describe('UpdateBanner', () => {
     expect(next.find('[data-update-banner]').exists()).toBe(true)
   })
 
+  it('« Voir » opens the App tab of the Configuration page', async () => {
+    stubFetch(() => base())
+    const w = mount(UpdateBanner)
+    await flushPromises()
+    await w.findAll('button').find((b) => b.text() === 'Voir')!.trigger('click')
+    expect(tracker.view).toBe('config')
+    expect(location.hash).toBe('#config/app')
+    history.replaceState(null, '', '/')
+  })
+
   it('appears soon after the server finds the version, even on a page opened before its first check', async () => {
     vi.useFakeTimers()
     stubFetch(() => base({ available: false, latest: null, checked_at: null }))
