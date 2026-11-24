@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BEFORE_TRACKING, category, dayLabel, groupByDay } from '../../src/v2/lib/days'
+import { BEFORE_TRACKING, category, dayLabel, groupByDay, itemClass } from '../../src/v2/lib/days'
 
 // local time: build timestamps from Date parts so the test does not depend on the timezone
 const at = (y: number, mo: number, d: number, h: number, mi: number) => new Date(y, mo, d, h, mi).getTime() / 1000
@@ -36,5 +36,12 @@ describe('days', () => {
     expect(category({ progression: false, useful: true, trap: false })).toBe('UTILE')
     expect(category({ progression: true, useful: false, trap: true })).toBe('PIÈGE')
     expect(category({ progression: false, useful: false, trap: false })).toBeNull()
+  })
+  it('item colour: trap, then progression, then useful, filler plain (Indices and the Hints tab)', () => {
+    const f = { progression: false, useful: false, trap: false }
+    expect(itemClass({ ...f, trap: true, progression: true })).toBe('text-error')
+    expect(itemClass({ ...f, progression: true, useful: true })).toBe('font-semibold text-new')
+    expect(itemClass({ ...f, useful: true })).toBe('text-logic')
+    expect(itemClass(f)).toBe('')
   })
 })

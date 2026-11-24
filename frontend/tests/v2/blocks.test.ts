@@ -126,6 +126,34 @@ describe('card blocks', () => {
     expect(t).not.toContain('null')
     expect(w.find('[role="tabpanel"]').attributes('aria-labelledby')).toBe(w.find('[aria-selected="true"]').attributes('id'))
   })
+  it('detail tabs: hinted items in the colours of the Indices page', async () => {
+    const h = { finder: 'kuro', finder_game: 'Stardew Valley', receiver: 'ww', receiver_game: 'TWW', found: false, in_logic: false }
+    const no = { progression: false, useful: false, trap: false }
+    tracker.details = {
+      ww: {
+        ...mk({ name: 'ww' }), items_list: [], in_logic_locations: [],
+        hints_mine_elsewhere: [
+          { ...h, ...no, item: 'Hookshot', location: 'Chest', progression: true },
+          { ...h, ...no, item: 'Rupee', location: 'Box' },
+        ],
+        hints_in_my_world: [
+          { ...h, ...no, item: 'Map Skip', location: 'Cafe', receiver: 'natazox', useful: true, in_logic: true },
+          { ...h, ...no, item: 'Ice Trap', location: 'Tree', receiver: 'natazox', trap: true },
+        ],
+      } as unknown as SlotDetail,
+    }
+    const w = mount(DetailTabs, { props: { name: 'ww', initial: 'hints' } })
+    await flushPromises()
+    const item = (name: string) => w.findAll('[data-hint-item]').find((e) => e.text().includes(name))!
+    expect(item('Hookshot').text()).toBe('★ Hookshot')
+    expect(item('Hookshot').classes()).toEqual(expect.arrayContaining(['font-semibold', 'text-new']))
+    expect(item('Map Skip').classes()).toContain('text-logic')
+    expect(item('Ice Trap').classes()).toContain('text-error')
+    expect(item('Rupee').classes()).toEqual([])
+    const lines = w.findAll('li').map((l) => l.text())
+    expect(lines).toContain('◆ Cafe contient Map Skip pour natazox')
+    expect(lines).toContain('★ Hookshot → Chest ∆ kuro (Stardew Valley)')
+  })
   it('detail tabs: no "Marquer comme vu" when nothing is new', async () => {
     tracker.details = { ww: { ...mk({ name: 'ww' }), items_list: [], hints_mine_elsewhere: [], hints_in_my_world: [], in_logic_locations: [] } as unknown as SlotDetail }
     const w = mount(DetailTabs, { props: { name: 'ww', initial: 'new' } })

@@ -2,9 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { formatReceived } from '../../lib/history'
-import { hintInMyWorld, hintMineElsewhere } from '../../lib/logic'
 import { loadDetail, markSeen, tracker } from '../../stores/tracker'
-import { CATEGORY_CLASS, category, itemOrigin } from '../lib/days'
+import { CATEGORY_CLASS, category, itemClass, itemOrigin } from '../lib/days'
 import { regionsOf } from '../lib/regions'
 import GoalBlock from './GoalBlock.vue'
 import GoalChooser from './GoalChooser.vue'
@@ -126,8 +125,13 @@ function onKey(e: KeyboardEvent): void {
       <template v-else-if="tab === 'hints'">
         <p v-if="!hintsWorld.length && !hintsElsewhere.length" class="text-sm text-muted-foreground">Aucun hint.</p>
         <ul class="space-y-1.5 text-sm">
-          <li v-for="(h, n) in hintsWorld" :key="'w' + n"><span v-if="h.in_logic" class="text-hint" aria-label="en logique">◆ </span>{{ hintInMyWorld(h) }}</li>
-          <li v-for="(h, n) in hintsElsewhere" :key="'e' + n">{{ hintMineElsewhere(h) }}</li>
+          <li v-for="(h, n) in hintsWorld" :key="'w' + n">
+            <span v-if="h.in_logic" class="text-hint" aria-label="en logique">◆ </span>{{ h.location }} contient
+            <span data-hint-item :class="itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> pour {{ h.receiver }}
+          </li>
+          <li v-for="(h, n) in hintsElsewhere" :key="'e' + n">
+            <span data-hint-item :class="itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> → {{ h.location }} ∆ {{ h.finder }} ({{ h.finder_game }})
+          </li>
         </ul>
       </template>
 

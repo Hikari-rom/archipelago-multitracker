@@ -5,6 +5,7 @@ import { COLUMN_LABEL, STATUS_LABEL, hintPin, sortHints, type HintColumn } from 
 import type { HintRow } from '../../lib/types'
 import type { HintsSort } from '../lib/prefs'
 import { isPinned } from '../../stores/tracker'
+import { itemClass } from '../lib/days'
 import HintAccessCell from './HintAccessCell.vue'
 import MdiIcon from './MdiIcon.vue'
 import PinButton from './PinButton.vue'
@@ -37,12 +38,6 @@ function ariaSort(key: HintColumn) {
 }
 function rowKey(h: HintRow) {
   return `${h.finder}\u0000${h.location_id ?? h.location}`
-}
-function itemClass(h: HintRow) {
-  if (h.trap) return 'text-error'
-  if (h.progression) return 'font-semibold text-new'
-  if (h.useful) return 'text-logic'
-  return ''
 }
 function here(h: HintRow) {
   return !!props.context && h.finder_slot === props.context

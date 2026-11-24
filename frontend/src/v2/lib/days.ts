@@ -48,6 +48,13 @@ export function itemOrigin(i: { origin?: string; sender?: string; location?: str
   const who = i.origin === 'start' ? 'inventaire de départ' : i.origin === 'server' ? 'donné par le serveur' : i.own ? 'trouvé par toi' : `de ${i.sender}`
   return i.location && i.origin !== 'start' ? `${who} · ${i.location}` : who
 }
+/** Text colour of an item name (Indices page, Hints tab of the details): trap, progression (bold, with a ★), useful. */
+export function itemClass(i: { progression: boolean; useful: boolean; trap: boolean }): string {
+  if (i.trap) return 'text-error'
+  if (i.progression) return 'font-semibold text-new'
+  if (i.useful) return 'text-logic'
+  return ''
+}
 export function category(i: { progression: boolean; useful: boolean; trap: boolean }): Category | null {
   if (i.trap) return 'PIÈGE'
   if (i.progression) return 'PROG'
