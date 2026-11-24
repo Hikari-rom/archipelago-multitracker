@@ -255,3 +255,11 @@ describe('tabbed Configuration page helpers', () => {
     expect(roomFromLocation('#config/room?room=https://a', '')).toBe('https://a')
   })
 })
+
+describe('diagnostics point at the tabs', () => {
+  it('an apworld to import is found in the App tab', () => {
+    const row: SlotRow = { name: 'A', game: 'G', checked: true, yaml: '', owner: '' }
+    const d = diagnose(row, [], { G: { logic: false, needs_yaml: false, user: true, imported: false } as never })
+    expect(d[0].text).toContain('onglet App')
+  })
+})

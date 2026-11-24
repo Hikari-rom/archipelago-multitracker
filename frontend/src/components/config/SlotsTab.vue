@@ -1,131 +1,134 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CircleAlert, FileUp, Info, TriangleAlert, Wand2 } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
+import { ChevronRight, FileUp, Wand2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { distinctGames, filterRows, setChecked } from '../../lib/config'
+import { setChecked, slotView, type SlotMode, type SlotRow } from '../../lib/config'
 import { shortYaml, type ConfigForm } from './form'
+import SlotDiags from './SlotDiags.vue'
+import SlotRowFields from './SlotRowFields.vue'
+import SlotSheet from './SlotSheet.vue'
 
 const props = defineProps<{ form: ConfigForm }>()
-const { rows, yamls, yamlPaths, games, goalOverride, goalLoading, diags, uploading, uploadLog, assocInfo, checkedRows } = props.form
-const { goalOptions, onGoal, onAssociate, checkWithYaml } = props.form
+const f = props.form
+const { rows, yamls, games, diags, uploading, uploadLog, assocInfo, owners, goalOverride } = f
 
+const wide = useMediaQuery('(min-width: 700px)')
+const mode = ref<SlotMode>('tracked')
+const text = ref('')
+const sheet = ref<string | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const filterText = ref('')
-const filterGame = ref('')
-const checkedOnly = ref(false)
-const visible = computed(() =>
-  filterRows(rows.value, { text: filterText.value, game: filterGame.value, checkedOnly: checkedOnly.value }),
-)
-const gameOptions = computed(() => distinctGames(rows.value))
-const owners = props.form.owners
+
+const visible = computed(() => slotView(rows.value, diags.value, { text: text.value, mode: mode.value }))
+const toFix = computed(() => slotView(rows.value, diags.value, { text: '', mode: 'fix' }).length)
+const modes = computed<{ key: SlotMode; label: string; count: number }[]>(() => [
+  { key: 'tracked', label: 'Suivis', count: f.checkedRows.value.length },
+  { key: 'all', label: 'Toute la room', count: rows.value.length },
+  { key: 'fix', label: 'À corriger', count: toFix.value },
+])
+const allShownChecked = computed<boolean | 'indeterminate'>(() => {
+  const n = visible.value.filter((r) => r.checked).length
+  return n === 0 ? false : n === visible.value.length ? true : 'indeterminate'
+})
+function toggleShown(): void {
+  rows.value = setChecked(rows.value, new Set(visible.value.map((r) => r.name)), allShownChecked.value !== true)
+}
 
 async function onFiles(ev: Event): Promise<void> {
   const input = ev.target as HTMLInputElement
   const files = [...(input.files ?? [])]
   input.value = ''
-  await props.form.uploadFiles(files)
-}
-function setVisible(value: boolean): void {
-  rows.value = setChecked(rows.value, new Set(visible.value.map((r) => r.name)), value)
+  await f.uploadFiles(files)
 }
 
-const diagIcon = { info: Info, warn: TriangleAlert, error: CircleAlert } as const
-const diagClass = { info: 'text-muted-foreground', warn: 'text-warn-foreground bg-warn', error: 'text-destructive' } as const
-const selectClass =
-  'border-input bg-background h-9 w-full min-w-0 rounded-md border px-2 text-sm shadow-xs focus-visible:ring-ring/50 focus-visible:ring-3'
+/** Second line of a slot on a phone: its main problem, or its yaml and « fin ». */
+function line(r: SlotRow): { text: string; tone: string } {
+  const bad = (diags.value[r.name] ?? []).find((d) => d.level !== 'info')
+  if (r.checked && bad) return { text: `⚠ ${bad.text}`, tone: bad.level === 'error' ? 'text-destructive' : 'text-warn-foreground' }
+  if (!r.checked) return { text: 'non suivi', tone: 'text-muted-foreground' }
+  const fin = games.value[r.game]?.logic && r.goalNeeds !== false ? ' · fin ✓' : ''
+  return { text: `${r.yaml ? shortYaml(r.yaml) : 'aucun yaml'}${fin}`, tone: 'text-muted-foreground' }
+}
+const pill = (on: boolean) =>
+  cn('min-h-9 shrink-0 rounded-full border px-3.5 text-sm max-[699px]:min-h-11', on ? 'border-primary bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground')
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
-    <p class="text-muted-foreground text-sm">
-      {{ yamls.length }} yaml(s) dans <code class="bg-muted rounded px-1">config/players/</code>. Certains jeux en ont besoin
-      pour calculer la logique. « Fin » : afficher sous le but ce qui manque pour la victoire (jeux avec logique).
-    </p>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 max-[699px]:basis-full" role="group" aria-label="Slots affichés">
+        <button v-for="m in modes" :key="m.key" type="button" :data-slot-mode="m.key" :aria-pressed="mode === m.key" :class="pill(mode === m.key)" @click="mode = m.key">
+          {{ m.label }} <span :class="m.key === 'fix' && m.count ? 'text-warn-foreground' : 'text-muted-foreground'">{{ m.count }}</span>
+        </button>
+      </div>
+      <Input v-model="text" type="search" placeholder="Chercher un slot, un jeu, un joueur…" aria-label="Chercher un slot, un jeu, un joueur" class="min-w-0 flex-[1_1_16rem] max-[699px]:h-11" />
+    </div>
     <div class="flex flex-wrap gap-2">
       <input ref="fileInput" type="file" accept=".yaml,.yml" multiple class="sr-only" aria-label="Importer des yamls" @change="onFiles" />
-      <Button type="button" variant="secondary" :disabled="uploading" @click="fileInput?.click()">
+      <Button type="button" size="sm" variant="secondary" class="max-[699px]:min-h-11" :disabled="uploading" @click="fileInput?.click()">
         <FileUp aria-hidden="true" /> {{ uploading ? 'Import…' : 'Importer des yamls' }}
       </Button>
-      <Button type="button" variant="outline" :disabled="!yamls.length" @click="onAssociate">
+      <Button type="button" size="sm" variant="outline" class="max-[699px]:min-h-11" :disabled="!yamls.length" @click="f.onAssociate">
         <Wand2 aria-hidden="true" /> Associer automatiquement
       </Button>
+      <Button type="button" size="sm" variant="outline" class="max-[699px]:min-h-11" @click="f.checkWithYaml">Cocher ceux qui ont un yaml</Button>
+      <span class="text-muted-foreground self-center text-xs">{{ yamls.length }} yaml(s) dans config/players/</span>
     </div>
     <p v-if="assocInfo" class="text-muted-foreground text-sm" role="status">{{ assocInfo }}</p>
     <ul v-if="uploadLog.length" class="flex flex-col gap-1 text-sm" role="status">
       <li v-for="(l, k) in uploadLog" :key="k" :class="l.ok ? 'text-good-foreground' : 'text-destructive'">{{ l.text }}</li>
     </ul>
 
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_minmax(0,14rem)]">
-      <Input v-model="filterText" type="search" placeholder="Rechercher un slot ou un jeu…" aria-label="Rechercher un slot ou un jeu" />
-      <select v-model="filterGame" :class="selectClass" aria-label="Filtrer par jeu">
-        <option value="">Tous les jeux</option>
-        <option v-for="g in gameOptions" :key="g" :value="g">{{ g }}</option>
-      </select>
-    </div>
-    <div class="flex flex-wrap items-center gap-2">
-      <div class="flex min-h-8 items-center gap-2 pr-2">
-        <Checkbox id="cfg-checked-only" v-model="checkedOnly" />
-        <Label for="cfg-checked-only" class="font-normal">Cochés seulement ({{ checkedRows.length }})</Label>
-      </div>
-      <Button type="button" size="sm" variant="outline" :disabled="!visible.length" @click="setVisible(true)">Cocher les {{ visible.length }} affichés</Button>
-      <Button type="button" size="sm" variant="outline" :disabled="!visible.length" @click="setVisible(false)">Décocher les affichés</Button>
-      <Button type="button" size="sm" variant="outline" @click="checkWithYaml">Cocher ceux qui ont un yaml</Button>
+    <p v-if="!rows.length" class="text-muted-foreground text-sm">Aucun slot. Utilise « Découvrir les slots » dans l'onglet Room.</p>
+    <p v-else-if="!visible.length" class="text-muted-foreground text-sm">Aucun slot ne correspond au filtre.</p>
+
+    <!-- Bounded height: a room has 150+ slots, the page must not grow with them. -->
+    <div v-else-if="wide" data-slot-list class="max-h-[min(60vh,36rem)] overflow-auto overscroll-contain rounded-lg border">
+      <table class="w-full border-collapse text-sm">
+        <thead class="bg-card text-muted-foreground sticky top-0 z-10 text-left text-xs">
+          <tr>
+            <th class="w-8 px-3 py-2 font-medium">
+              <Checkbox :model-value="allShownChecked" aria-label="cocher les slots affichés" @update:model-value="toggleShown" />
+            </th>
+            <th class="px-2 py-2 font-medium">Slot</th>
+            <th class="px-2 py-2 font-medium">Yaml</th>
+            <th class="px-2 py-2 font-medium">Joueur</th>
+            <th v-if="goalOverride" class="px-2 py-2 font-medium">But</th>
+            <th class="px-3 py-2 text-center font-medium" title="Afficher ce qui manque pour la victoire">Fin</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="r in visible" :key="r.name" :data-slot-row="r.name" :class="cn('border-t', !r.checked && 'opacity-75')">
+            <td class="px-3 py-2 align-top"><Checkbox v-model="r.checked" class="mt-1.5" :aria-label="`suivre ${r.name}`" /></td>
+            <td class="min-w-0 px-2 py-2 align-top">
+              <div class="text-primary pt-1">{{ r.name }}</div>
+              <div class="text-muted-foreground text-xs">{{ r.game || 'jeu inconnu' }}</div>
+              <SlotDiags v-if="r.checked" :diags="diags[r.name] ?? []" class="mt-1" />
+            </td>
+            <SlotRowFields v-if="r.checked" :form="form" :row="r" />
+            <td v-else :colspan="goalOverride ? 4 : 3" class="text-muted-foreground px-2 py-2 pt-3.5 align-top text-xs">non suivi</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <p v-if="!rows.length" class="text-muted-foreground text-sm">Aucun slot. Utilise « Découvrir les slots ».</p>
-    <p v-else-if="!visible.length" class="text-muted-foreground text-sm">Aucun slot ne correspond au filtre.</p>
-    <ul v-else data-slot-list class="max-h-[min(60vh,36rem)] divide-y overflow-y-auto overscroll-contain rounded-lg border text-sm">
-      <li
-        class="text-muted-foreground bg-card sticky top-0 z-10 hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem] sm:gap-2"
-        aria-hidden="true"
-      >
-        <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span><span>fin</span>
-      </li>
-      <li v-for="(r, i) in visible" :key="r.name" :class="cn('flex flex-col gap-1 px-3 py-1.5', !r.checked && 'opacity-75')">
-        <div class="grid grid-cols-1 items-center gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem]">
-          <div class="flex min-w-0 items-center gap-2.5">
-            <Checkbox :id="`cfg-row-${i}`" v-model="r.checked" :aria-label="`suivre ${r.name}`" />
-            <label :for="`cfg-row-${i}`" class="min-w-0 flex-1 cursor-pointer truncate" :title="`${r.name} · ${r.game || 'jeu inconnu'}`">
-              <span class="font-medium">{{ r.name }}</span>
-              <span class="text-muted-foreground text-xs"> · {{ r.game || 'jeu inconnu' }}</span>
-            </label>
-          </div>
-          <div v-if="r.checked" class="flex gap-2 pl-6.5 sm:contents">
-            <select v-model="r.yaml" :class="cn(selectClass, 'h-8 flex-1')" :aria-label="`yaml de ${r.name}`">
-              <option value="">aucun yaml</option>
-              <option v-for="y in yamlPaths" :key="y" :value="y">{{ shortYaml(y) }}</option>
-              <option v-if="r.yaml && !yamlPaths.includes(r.yaml)" :value="r.yaml">{{ r.yaml }}</option>
-            </select>
-            <Input v-model="r.owner" type="text" list="cfg-owners" placeholder="joueur" class="h-8 w-20 shrink-0 sm:w-full" :aria-label="`joueur de ${r.name}`" />
-            <label v-if="games[r.game]?.logic" data-goal-needs class="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs" title="Afficher ce qui manque pour la victoire">
-              <Checkbox v-model="r.goalNeeds" :aria-label="`ce qui manque pour la victoire de ${r.name}`" />
-              <span class="text-muted-foreground sm:sr-only">fin</span>
-            </label>
-          </div>
-        </div>
-        <p v-if="r.checked && goalOverride && goalLoading.has(r.game)" class="text-muted-foreground pl-6.5 text-xs" data-goal-loading>
-          Lecture des conditions de victoire de {{ r.game }}…
-        </p>
-        <div v-if="r.checked && goalOverride && goalOptions(r.game).length" data-goal-choice class="flex flex-wrap items-center gap-2 pl-6.5">
-          <label v-for="o in goalOptions(r.game)" :key="o.option" class="flex min-w-0 items-center gap-2 text-xs">
-            <span class="text-muted-foreground shrink-0">But · {{ o.display }}</span>
-            <select :value="r.goal?.[o.option] ?? ''" :class="cn(selectClass, 'h-8 w-auto max-w-[16rem]')" :aria-label="`${o.display} de ${r.name}`" @change="onGoal(r, o.option, $event)">
-              <option value="">automatique</option>
-              <option v-for="c in o.choices" :key="c" :value="c">{{ c }}</option>
-            </select>
-          </label>
-        </div>
-        <ul v-if="r.checked && diags[r.name].length" class="flex flex-col gap-0.5 pl-6.5">
-          <li v-for="(d, k) in diags[r.name]" :key="k" :class="cn('flex items-start gap-1.5 rounded px-1.5 py-0.5 text-xs', diagClass[d.level])">
-            <component :is="diagIcon[d.level]" class="mt-px size-3.5 shrink-0" aria-hidden="true" />{{ d.text }}
-          </li>
-        </ul>
+    <ul v-else data-slot-list class="max-h-[min(65vh,40rem)] divide-y overflow-y-auto overscroll-contain rounded-lg border">
+      <li v-for="r in visible" :key="r.name" :data-slot-row="r.name" class="flex items-center gap-3 pl-3">
+        <Checkbox v-model="r.checked" :aria-label="`suivre ${r.name}`" />
+        <button type="button" data-slot-open class="flex min-h-14 min-w-0 flex-1 items-center gap-2 py-2 pr-3 text-left" @click="sheet = r.name">
+          <span class="min-w-0 flex-1">
+            <span class="text-primary block truncate">{{ r.name }}</span>
+            <span class="text-muted-foreground block truncate text-xs">{{ r.game || 'jeu inconnu' }}</span>
+            <span :class="cn('block truncate font-mono text-[11px]', line(r).tone)">{{ line(r).text }}</span>
+          </span>
+          <ChevronRight class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+        </button>
       </li>
     </ul>
+    <SlotSheet :form="form" :name="sheet" @close="sheet = null" />
     <datalist id="cfg-owners"><option v-for="o in owners" :key="o" :value="o" /></datalist>
   </div>
 </template>

@@ -81,7 +81,7 @@ describe('ConfigView', () => {
     release()
     await flushPromises()
     expect(w.find('[data-goal-loading]').exists()).toBe(false)
-    expect(w.find('[data-goal-choice]').text()).toContain('But · Goal')
+    expect(w.find('[data-goal-choice]').text()).toContain('Goal') // under the « But » column
   })
 
   it('the « fin » box only for the games with logic, off when the slot turned it off', async () => {

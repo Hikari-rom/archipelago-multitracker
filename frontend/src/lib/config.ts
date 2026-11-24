@@ -297,7 +297,7 @@ export function diagnose(
   if (!row.game) out.push({ level: 'info', text: 'jeu inconnu tant que la room n\'est pas découverte' })
   else if (!info) out.push({ level: 'info', text: 'pas d\'apworld : suivi des checks seulement' })
   else if (info.user && !info.imported) {
-    out.push({ level: 'info', text: 'apworld à importer depuis ton Archipelago (en bas de la page) : suivi des checks seulement' })
+    out.push({ level: 'info', text: 'apworld à importer depuis ton Archipelago (onglet App) : suivi des checks seulement' })
   }
   else if (!info.logic) out.push({ level: 'info', text: 'logique pas encore assez fiable pour ce jeu : suivi des checks seulement' })
   if (row.yaml) {
