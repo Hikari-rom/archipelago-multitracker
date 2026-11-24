@@ -1,80 +1,74 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import {
-  AlarmClock, CircleAlert, CircleCheck, FileUp, Info, Link2, PlugZap, RotateCcw, Search, TriangleAlert, Wand2,
-} from '@lucide/vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import UpdatePanel from './UpdatePanel.vue'
-import UserApworldsPanel from './UserApworldsPanel.vue'
-import { distinctGames, filterRows, setChecked } from '../lib/config'
-import { shortYaml, useConfigForm } from './config/form'
-import { ACTIVE_CHOICES, saveActiveMinutes } from '../lib/history'
-import { setActiveMode, setView, shows, tracker } from '../stores/tracker'
-import DisplayInfos from '../v2/components/DisplayInfos.vue'
-import { HINTS_LAYOUT_LABELS, saveHintsLayout, saveTicker, TICKER_LABELS, type HintsLayout, type TickerStyle } from '../v2/lib/prefs'
+import { getUpdate } from '../lib/api'
+import { CONFIG_TABS, configTabFromHash, initialConfigTab, type ConfigTab } from '../lib/config'
+import { setConfigTab, setView, tracker } from '../stores/tracker'
+import AppTab from './config/AppTab.vue'
+import DisplayTab from './config/DisplayTab.vue'
+import FeaturesTab from './config/FeaturesTab.vue'
+import RoomTab from './config/RoomTab.vue'
+import SaveBar from './config/SaveBar.vue'
+import SlotsTab from './config/SlotsTab.vue'
+import { useConfigForm } from './config/form'
 
+/** bottomNav: the v2 shows a navigation bar at the bottom of phones, the save bar goes above it. */
+defineProps<{ bottomNav?: boolean }>()
 const emit = defineEmits<{ saved: [] }>()
 
 const form = useConfigForm()
-const {
-  cfg, roomUrl, server, advanced, password, clearPassword, wakeRoom, scoutChecked, roomDashboard, hintsForeignLogic,
-  goalOverride, rows, loading, loadError, room, discovering, discoverError, waking, probing, probeResult, uploading,
-  uploadLog, assocInfo, saving, saveError, restoring, yamls, games, goalOptions, goalLoading, yamlPaths, owners,
-  checkedRows, diags, summary, canSave, roomGames, onDiscover, onProbe, onAssociate, checkWithYaml, onGoal,
-} = form
+const { loading, loadError, summary, room, discoverError } = form
 
-const fileInput = ref<HTMLInputElement | null>(null)
-const filterText = ref('')
-const filterGame = ref('')
-const checkedOnly = ref(false)
-const visible = computed(() =>
-  filterRows(rows.value, { text: filterText.value, game: filterGame.value, checkedOnly: checkedOnly.value }),
+const LABELS: Record<ConfigTab, string> = { slots: 'Slots', room: 'Room', fonctions: 'Fonctions', affichage: 'Affichage', app: 'App' }
+const tab = ref<ConfigTab>('slots')
+const updateReady = ref(false)
+const toFix = computed(() => summary.value.warnings + summary.value.errors)
+const dots = computed<Record<ConfigTab, boolean>>(() => ({
+  slots: toFix.value > 0,
+  room: !!room.value?.sleeping || !!discoverError.value,
+  fonctions: false,
+  affichage: false,
+  app: updateReady.value,
+}))
+
+const prefilled = !!tracker.prefillRoom
+watch(loading, (l) => {
+  if (!l) {
+    tab.value = initialConfigTab({ hashTab: configTabFromHash(location.hash), hasSlots: !form.firstSetup.value, prefillRoom: prefilled })
+  }
+})
+watch(tab, (t) => setConfigTab(t))
+// "#config?room=..." opened while the page is shown: the link is filled in on the Room tab. Sync: the form clears
+// prefillRoom in its own watcher, before a pre-flush watcher here would see it.
+watch(
+  () => tracker.prefillRoom,
+  (v) => {
+    if (v && !loading.value) tab.value = 'room'
+  },
+  { flush: 'sync' },
 )
-const gameOptions = computed(() => distinctGames(rows.value))
+function onHash(): void {
+  const t = configTabFromHash(location.hash)
+  if (t) tab.value = t
+}
 
 onMounted(() => {
   void form.load()
+  window.addEventListener('hashchange', onHash)
+  getUpdate()
+    .then((u) => (updateReady.value = !!u.available && !u.running))
+    .catch(() => {})
 })
-
-async function onFiles(ev: Event): Promise<void> {
-  const input = ev.target as HTMLInputElement
-  const files = [...(input.files ?? [])]
-  input.value = ''
-  await form.uploadFiles(files)
-}
-
-function onActiveMinutes(e: Event): void {
-  tracker.activeMinutes = Number((e.target as HTMLSelectElement).value)
-  saveActiveMinutes(tracker.activeMinutes)
-}
-const tickerStyles = Object.keys(TICKER_LABELS) as TickerStyle[]
-function onTicker(e: Event): void {
-  tracker.ticker = (e.target as HTMLSelectElement).value as TickerStyle
-  saveTicker(tracker.ticker)
-}
-const hintsLayouts = Object.keys(HINTS_LAYOUT_LABELS) as HintsLayout[]
-function onHintsLayout(e: Event): void {
-  tracker.hintsLayout = (e.target as HTMLSelectElement).value as HintsLayout
-  saveHintsLayout(tracker.hintsLayout)
-}
+onUnmounted(() => window.removeEventListener('hashchange', onHash))
 
 /** Enter never saves the whole configuration by accident; in the room field it runs the discovery. */
 function onEnter(ev: KeyboardEvent): void {
   const target = ev.target as HTMLElement
   if (target.tagName !== 'INPUT') return
   ev.preventDefault()
-  if (target.id === 'cfg-room') void onDiscover()
-}
-
-function setVisible(value: boolean): void {
-  rows.value = setChecked(rows.value, new Set(visible.value.map((r) => r.name)), value)
+  if (target.id === 'cfg-room') void form.onDiscover()
 }
 
 async function onSave(): Promise<void> {
@@ -82,372 +76,52 @@ async function onSave(): Promise<void> {
   emit('saved')
   setView('dashboard')
 }
-
-async function onRestore(): Promise<void> {
-  if (await form.onRestore()) setView('dashboard')
-}
-
-const diagIcon = { info: Info, warn: TriangleAlert, error: CircleAlert } as const
-const diagClass = { info: 'text-muted-foreground', warn: 'text-warn-foreground bg-warn', error: 'text-destructive' } as const
-const selectClass =
-  'border-input bg-background h-9 w-full min-w-0 rounded-md border px-2 text-sm shadow-xs focus-visible:ring-ring/50 focus-visible:ring-3'
 </script>
 
 <template>
-  <section class="mx-auto flex max-w-[900px] flex-col gap-4" aria-labelledby="cfg-title">
-    <h2 id="cfg-title" class="text-xl font-semibold">Configuration</h2>
+  <section class="mx-auto flex max-w-[1100px] flex-col gap-4 pb-28" aria-labelledby="cfg-title">
+    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <h2 id="cfg-title" class="text-xl font-semibold">Configuration</h2>
+      <p v-if="!loading && !loadError" data-config-summary class="text-muted-foreground text-sm">
+        {{ summary.count }} suivis · <span class="text-primary">{{ summary.withLogic }} avec logique</span>
+        <template v-if="toFix"> · <span class="text-warn-foreground">{{ toFix }} à corriger</span></template>
+        <template v-if="room">
+          · room <span :class="room.sleeping ? 'text-warn-foreground' : 'text-good-foreground'">{{ room.sleeping ? 'endormie' : 'éveillée' }}</span>
+        </template>
+      </p>
+    </div>
     <p v-if="loading" class="text-muted-foreground">Chargement…</p>
     <Alert v-else-if="loadError" variant="destructive" role="alert">
       <AlertDescription>Impossible de lire la configuration : {{ loadError }}</AlertDescription>
     </Alert>
-    <form v-else class="flex flex-col gap-4" novalidate @submit.prevent="onSave" @keydown.enter="onEnter">
-      <!-- Save (at the top so it is never lost below the slot list) -->
-      <div class="bg-card flex flex-col gap-2 rounded-xl border px-4 py-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <Button type="submit" :disabled="!canSave">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</Button>
-          <Button v-if="tracker.slots.length" type="button" variant="outline" @click="setView('dashboard')">Annuler</Button>
-          <p class="min-w-0 flex-1 px-1 text-sm">
-            <strong>{{ summary.count }}</strong> slot(s) suivi(s) · {{ summary.withLogic }} avec logique
-            <template v-if="summary.warnings"> · <span class="text-warn-foreground bg-warn rounded px-1">{{ summary.warnings }} avertissement(s)</span></template>
-            <template v-if="summary.errors"> · <span class="text-destructive">{{ summary.errors }} erreur(s)</span></template>
-          </p>
-          <Button v-if="cfg?.has_backup" type="button" variant="ghost" size="sm" :disabled="restoring" @click="onRestore">
-            <RotateCcw aria-hidden="true" /> Restaurer la configuration précédente
-          </Button>
+    <form v-else novalidate @submit.prevent @keydown.enter="onEnter">
+      <TabsRoot v-model="tab" class="flex flex-col gap-4">
+        <TabsList aria-label="Sections de la configuration" class="-mx-1 flex gap-1 overflow-x-auto border-b px-1">
+          <TabsTrigger
+            v-for="t in CONFIG_TABS"
+            :key="t"
+            :value="t"
+            :data-config-tab="t"
+            :class="cn(
+              'text-muted-foreground hover:text-foreground -mb-px flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-sm whitespace-nowrap max-[699px]:min-h-11',
+              'data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:font-semibold',
+            )"
+          >
+            {{ LABELS[t] }}
+            <span v-if="t === 'slots'" class="font-mono text-xs font-normal">{{ summary.count }}</span>
+            <span v-if="t === 'affichage'" class="text-xs font-normal max-[699px]:hidden">(cet appareil)</span>
+            <span v-if="dots[t]" data-tab-dot :class="cn('size-2 rounded-full', t === 'app' ? 'bg-primary' : 'bg-warn-foreground')" aria-label="à voir" />
+          </TabsTrigger>
+        </TabsList>
+        <div class="bg-card rounded-xl border p-4 min-[700px]:p-5">
+          <TabsContent value="slots"><SlotsTab :form="form" /></TabsContent>
+          <TabsContent value="room"><RoomTab :form="form" /></TabsContent>
+          <TabsContent value="fonctions"><FeaturesTab :form="form" /></TabsContent>
+          <TabsContent value="affichage"><DisplayTab /></TabsContent>
+          <TabsContent value="app"><AppTab :form="form" /></TabsContent>
         </div>
-        <p v-if="saveError" class="text-destructive text-sm" role="alert">{{ saveError }}</p>
-      </div>
-
-      <!-- 1. Room -->
-      <Card class="gap-4 py-5">
-        <CardHeader class="px-5">
-          <CardTitle class="flex items-center gap-2"><Link2 class="size-4" aria-hidden="true" /> Room</CardTitle>
-          <CardDescription>Colle le lien de la room archipelago.gg : l'app y lit les slots et le port.</CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4 px-5">
-          <div class="flex flex-col gap-1.5">
-            <Label for="cfg-room">Lien de la room</Label>
-            <div class="flex flex-wrap gap-2">
-              <Input
-                id="cfg-room"
-                v-model="roomUrl"
-                type="url"
-                inputmode="url"
-                placeholder="https://archipelago.gg/room/…"
-                autocomplete="off"
-                class="min-w-0 flex-[1_1_240px]"
-              />
-              <Button type="button" variant="secondary" :disabled="discovering || !roomUrl.trim()" @click="onDiscover()">
-                <Search aria-hidden="true" /> {{ discovering ? 'Recherche…' : 'Découvrir les slots' }}
-              </Button>
-            </div>
-            <p v-if="discoverError" class="text-destructive text-sm" role="alert">{{ discoverError }}</p>
-          </div>
-
-          <div v-if="room" class="bg-muted/60 flex flex-wrap items-center gap-2 rounded-lg p-3 text-sm">
-            <Badge variant="outline">{{ room.players.length }} slots</Badge>
-            <Badge variant="outline">{{ roomGames }} jeux</Badge>
-            <Badge v-if="room.server" variant="outline">{{ room.server }}</Badge>
-            <template v-if="room.sleeping">
-              <Badge variant="warn"><AlarmClock aria-hidden="true" /> Room endormie</Badge>
-              <Button type="button" size="sm" variant="outline" :disabled="waking" @click="onDiscover(true)">
-                {{ waking ? 'Réveil…' : 'Réveiller la room' }}
-              </Button>
-              <span class="text-muted-foreground basis-full text-xs">
-                Elle redémarre quand quelqu'un ouvre son lien. Réveille-la pour tester la connexion.
-              </span>
-            </template>
-            <Badge v-else variant="good"><CircleCheck aria-hidden="true" /> Room éveillée</Badge>
-          </div>
-
-          <details class="text-sm" :open="advanced" @toggle="advanced = ($event.target as HTMLDetailsElement).open">
-            <summary class="text-primary min-h-8 cursor-pointer">Avancé : serveur hors archipelago.gg</summary>
-            <div class="mt-2 flex flex-col gap-1.5">
-              <Label for="cfg-server">Adresse du serveur (host:port)</Label>
-              <Input id="cfg-server" v-model="server" type="text" placeholder="192.168.1.10:38281" autocomplete="off" />
-              <p class="text-muted-foreground text-xs">Utilisée seulement si le lien de room est vide.</p>
-            </div>
-          </details>
-
-          <div class="flex flex-col gap-1.5">
-            <Label for="cfg-pw">Mot de passe de la room</Label>
-            <Input
-              id="cfg-pw"
-              v-model="password"
-              type="password"
-              autocomplete="new-password"
-              :placeholder="cfg?.has_password ? 'inchangé' : 'aucun'"
-              :disabled="clearPassword"
-            />
-            <div class="flex min-h-8 items-center gap-2">
-              <Checkbox id="cfg-pw-clear" v-model="clearPassword" />
-              <Label for="cfg-pw-clear" class="font-normal">effacer le mot de passe</Label>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" :disabled="probing || (!roomUrl.trim() && !server.trim())" @click="onProbe">
-              <PlugZap aria-hidden="true" /> {{ probing ? 'Test en cours…' : 'Tester la connexion' }}
-            </Button>
-            <p
-              v-if="probeResult"
-              :class="cn('text-sm', probeResult.ok ? 'text-good-foreground' : 'text-destructive')"
-              role="status"
-            >
-              {{ probeResult.text }}
-            </p>
-          </div>
-
-          <div class="flex items-start gap-2">
-            <Checkbox id="cfg-wake" v-model="wakeRoom" class="mt-0.5" />
-            <div class="flex flex-col gap-0.5">
-              <Label for="cfg-wake" class="font-normal">Réveiller automatiquement la room quand elle dort</Label>
-              <p class="text-muted-foreground text-xs">
-                Désactivé : l'app attend que quelqu'un ouvre la room (elle ne la garde pas allumée).
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-2">
-            <Checkbox id="cfg-scout" v-model="scoutChecked" class="mt-0.5" />
-            <div class="flex flex-col gap-0.5">
-              <Label for="cfg-scout" class="font-normal">Demander au serveur le contenu des checks déjà faits</Label>
-              <p class="text-muted-foreground text-xs">
-                Pour l'Historique : quel item était dans chacun de tes checks faits, et pour qui. Seulement des checks
-                déjà faits, sans créer de hint : rien n'est dévoilé. Désactivé : l'item n'est connu que s'il est parti
-                vers un slot suivi par l'app.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-2">
-            <Checkbox id="cfg-roomdash" v-model="roomDashboard" class="mt-0.5" />
-            <div class="flex flex-col gap-0.5">
-              <Label for="cfg-roomdash" class="font-normal">Tableau de bord de la room complète</Label>
-              <p class="text-muted-foreground text-xs">
-                Ajoute une page « Room complète » (menu Plus de la v2) : classement, fil des checks et activité de toute
-                la room. Une connexion d'écoute en plus, en lecture seule ; les checks sont écrits dans
-                <code class="bg-muted rounded px-1">data/room_feed/</code>. Désactivé par défaut.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-2">
-            <Checkbox id="cfg-hints-foreign" v-model="hintsForeignLogic" class="mt-0.5" />
-            <div class="flex flex-col gap-0.5">
-              <Label for="cfg-hints-foreign" class="font-normal">Indices : calculer l'accessibilité chez les autres joueurs</Label>
-              <p class="text-muted-foreground text-xs">
-                Pour la page Indices : quand un de tes items est chez un joueur que l'app ne suit pas, elle suit aussi ce
-                slot (en lecture seule, au plus 12) pour savoir s'il peut faire le check et ce qui lui manque. Une
-                connexion et un monde recalculé de plus par slot. Désactivé : « Inconnu » pour ces indices.
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-start gap-2">
-            <Checkbox id="cfg-goal-override" v-model="goalOverride" class="mt-0.5" />
-            <div class="flex flex-col gap-0.5">
-              <Label for="cfg-goal-override" class="font-normal">Choisir le but à la main</Label>
-              <p class="text-muted-foreground text-xs">
-                L'app trouve le but de chaque slot toute seule. Activé : dans « Slots à suivre », un sélecteur « But »
-                apparaît sous les slots dont le jeu propose plusieurs conditions de victoire, pour imposer la tienne
-                (objectif, logique et go mode la suivent). Désactivé par défaut ; tes choix restent enregistrés.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <!-- 2. Yamls -->
-      <Card class="gap-4 py-5">
-        <CardHeader class="px-5">
-          <CardTitle class="flex items-center gap-2"><FileUp class="size-4" aria-hidden="true" /> Yamls</CardTitle>
-          <CardDescription>
-            {{ yamls.length }} yaml(s) dans <code class="bg-muted rounded px-1">config/players/</code>. Certains jeux en
-            ont besoin pour calculer la logique.
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3 px-5">
-          <div class="flex flex-wrap gap-2">
-            <input ref="fileInput" type="file" accept=".yaml,.yml" multiple class="sr-only" aria-label="Importer des yamls" @change="onFiles" />
-            <Button type="button" variant="secondary" :disabled="uploading" @click="fileInput?.click()">
-              <FileUp aria-hidden="true" /> {{ uploading ? 'Import…' : 'Importer des yamls' }}
-            </Button>
-            <Button type="button" variant="outline" :disabled="!yamls.length" @click="onAssociate">
-              <Wand2 aria-hidden="true" /> Associer automatiquement
-            </Button>
-          </div>
-          <p v-if="assocInfo" class="text-muted-foreground text-sm" role="status">{{ assocInfo }}</p>
-          <ul v-if="uploadLog.length" class="flex flex-col gap-1 text-sm" role="status">
-            <li v-for="(l, k) in uploadLog" :key="k" :class="l.ok ? 'text-good-foreground' : 'text-destructive'">{{ l.text }}</li>
-          </ul>
-        </CardContent>
-      </Card>
-
-      <!-- 3. Slots -->
-      <Card class="gap-4 py-5">
-        <CardHeader class="px-5">
-          <CardTitle>
-            Slots à suivre <span class="text-muted-foreground text-sm font-normal">({{ checkedRows.length }} / {{ rows.length }})</span>
-          </CardTitle>
-          <CardDescription>
-            Coche tes slots ; le yaml et le joueur se règlent sur les slots cochés. « Fin » : afficher sous le but ce
-            qui manque pour la victoire (jeux avec logique).
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3 px-5">
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_minmax(0,14rem)]">
-            <Input v-model="filterText" type="search" placeholder="Rechercher un slot ou un jeu…" aria-label="Rechercher un slot ou un jeu" />
-            <select v-model="filterGame" :class="selectClass" aria-label="Filtrer par jeu">
-              <option value="">Tous les jeux</option>
-              <option v-for="g in gameOptions" :key="g" :value="g">{{ g }}</option>
-            </select>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="flex min-h-8 items-center gap-2 pr-2">
-              <Checkbox id="cfg-checked-only" v-model="checkedOnly" />
-              <Label for="cfg-checked-only" class="font-normal">Cochés seulement</Label>
-            </div>
-            <Button type="button" size="sm" variant="outline" :disabled="!visible.length" @click="setVisible(true)">
-              Cocher les {{ visible.length }} affichés
-            </Button>
-            <Button type="button" size="sm" variant="outline" :disabled="!visible.length" @click="setVisible(false)">
-              Décocher les affichés
-            </Button>
-            <Button type="button" size="sm" variant="outline" @click="checkWithYaml">Cocher ceux qui ont un yaml</Button>
-          </div>
-
-          <p v-if="!rows.length" class="text-muted-foreground text-sm">Aucun slot. Utilise « Découvrir les slots ».</p>
-          <p v-else-if="!visible.length" class="text-muted-foreground text-sm">Aucun slot ne correspond au filtre.</p>
-          <!-- Bounded height: a room has 150+ slots, the page must not grow with them. -->
-          <ul v-else data-slot-list class="max-h-[min(60vh,36rem)] divide-y overflow-y-auto overscroll-contain rounded-lg border text-sm">
-            <li
-              class="text-muted-foreground bg-card sticky top-0 z-10 hidden px-3 py-1.5 text-xs font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem] sm:gap-2"
-              aria-hidden="true"
-            >
-              <span class="pl-6.5">slot · jeu</span><span>yaml</span><span>joueur</span><span>fin</span>
-            </li>
-            <li v-for="(r, i) in visible" :key="r.name" :class="cn('flex flex-col gap-1 px-3 py-1.5', !r.checked && 'opacity-75')">
-              <div class="grid grid-cols-1 items-center gap-x-2 gap-y-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,17rem)_minmax(0,7rem)_2.5rem]">
-                <div class="flex min-w-0 items-center gap-2.5">
-                  <Checkbox :id="`cfg-row-${i}`" v-model="r.checked" :aria-label="`suivre ${r.name}`" />
-                  <label :for="`cfg-row-${i}`" class="min-w-0 flex-1 cursor-pointer truncate" :title="`${r.name} · ${r.game || 'jeu inconnu'}`">
-                    <span class="font-medium">{{ r.name }}</span>
-                    <span class="text-muted-foreground text-xs"> · {{ r.game || 'jeu inconnu' }}</span>
-                  </label>
-                </div>
-                <div v-if="r.checked" class="flex gap-2 pl-6.5 sm:contents">
-                  <select v-model="r.yaml" :class="cn(selectClass, 'h-8 flex-1')" :aria-label="`yaml de ${r.name}`">
-                    <option value="">aucun yaml</option>
-                    <option v-for="y in yamlPaths" :key="y" :value="y">{{ shortYaml(y) }}</option>
-                    <option v-if="r.yaml && !yamlPaths.includes(r.yaml)" :value="r.yaml">{{ r.yaml }}</option>
-                  </select>
-                  <Input
-                    v-model="r.owner"
-                    type="text"
-                    list="cfg-owners"
-                    placeholder="joueur"
-                    class="h-8 w-20 shrink-0 sm:w-full"
-                    :aria-label="`joueur de ${r.name}`"
-                  />
-                  <label
-                    v-if="games[r.game]?.logic"
-                    data-goal-needs
-                    class="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs"
-                    title="Afficher ce qui manque pour la victoire"
-                  >
-                    <Checkbox v-model="r.goalNeeds" :aria-label="`ce qui manque pour la victoire de ${r.name}`" />
-                    <span class="text-muted-foreground sm:sr-only">fin</span>
-                  </label>
-                </div>
-              </div>
-              <p v-if="r.checked && goalOverride && goalLoading.has(r.game)" class="text-muted-foreground pl-6.5 text-xs" data-goal-loading>
-                Lecture des conditions de victoire de {{ r.game }}…
-              </p>
-              <div v-if="r.checked && goalOverride && goalOptions(r.game).length" data-goal-choice class="flex flex-wrap items-center gap-2 pl-6.5">
-                <label v-for="o in goalOptions(r.game)" :key="o.option" class="flex min-w-0 items-center gap-2 text-xs">
-                  <span class="text-muted-foreground shrink-0">But · {{ o.display }}</span>
-                  <select
-                    :value="r.goal?.[o.option] ?? ''"
-                    :class="cn(selectClass, 'h-8 w-auto max-w-[16rem]')"
-                    :aria-label="`${o.display} de ${r.name}`"
-                    @change="onGoal(r, o.option, $event)"
-                  >
-                    <option value="">automatique</option>
-                    <option v-for="c in o.choices" :key="c" :value="c">{{ c }}</option>
-                  </select>
-                </label>
-              </div>
-              <ul v-if="r.checked && diags[r.name].length" class="flex flex-col gap-0.5 pl-6.5">
-                <li
-                  v-for="(d, k) in diags[r.name]"
-                  :key="k"
-                  :class="cn('flex items-start gap-1.5 rounded px-1.5 py-0.5 text-xs', diagClass[d.level])"
-                >
-                  <component :is="diagIcon[d.level]" class="mt-px size-3.5 shrink-0" aria-hidden="true" />{{ d.text }}
-                </li>
-              </ul>
-            </li>
-          </ul>
-          <datalist id="cfg-owners"><option v-for="o in owners" :key="o" :value="o" /></datalist>
-        </CardContent>
-      </Card>
-
-      <!-- 4. Display preferences (this device only) -->
-      <Card class="gap-3 py-4">
-        <CardHeader class="px-5">
-          <CardTitle>Affichage <span class="text-muted-foreground text-sm font-normal">(sur cet appareil)</span></CardTitle>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-3 px-5">
-          <DisplayInfos />
-          <label class="flex flex-wrap items-center gap-2 text-sm">
-            Jeux actifs (affichés en premier)
-            <select
-              :value="tracker.activity.mode ?? 'auto'"
-              data-active-mode
-              :class="cn(selectClass, 'w-auto')"
-              @change="setActiveMode(($event.target as HTMLSelectElement).value as 'auto' | 'manual')"
-            >
-              <option value="auto">Automatique : check récent</option>
-              <option value="manual">Manuel : choisis à la main</option>
-            </select>
-          </label>
-          <p v-if="tracker.activity.mode === 'manual'" class="text-muted-foreground text-xs">
-            Seuls les jeux activés à la main (« Activer », « Définir comme actif ») sont actifs, et le restent jusqu'à
-            « Plus actif », quels que soient les checks. Plusieurs jeux peuvent l'être en même temps.
-          </p>
-          <label v-else class="flex flex-wrap items-center gap-2 text-sm">
-            Un jeu est « actif » (affiché en premier) s'il a fait un check depuis
-            <select
-              :value="tracker.activeMinutes"
-              :class="cn(selectClass, 'w-auto')"
-              @change="onActiveMinutes"
-            >
-              <option v-for="m in ACTIVE_CHOICES" :key="m" :value="m">{{ m >= 60 ? `${m / 60} h` : `${m} min` }}</option>
-            </select>
-          </label>
-          <label class="flex flex-wrap items-center gap-2 text-sm">
-            Bandeau « Derniers reçus » du tableau de bord
-            <select :value="tracker.ticker" data-ticker-style :disabled="!shows('recent')" :class="cn(selectClass, 'w-auto disabled:opacity-50')" @change="onTicker">
-              <option v-for="t in tickerStyles" :key="t" :value="t">{{ TICKER_LABELS[t] }}</option>
-            </select>
-          </label>
-          <p class="text-muted-foreground text-xs">
-            Défilant : les derniers items reçus passent en continu comme un fil d'actualité (pause au survol). Interface
-            v2 seulement.
-          </p>
-          <label class="flex flex-wrap items-center gap-2 text-sm">
-            Page Indices
-            <select :value="tracker.hintsLayout" data-hints-layout :class="cn(selectClass, 'w-auto')" @change="onHintsLayout">
-              <option v-for="l in hintsLayouts" :key="l" :value="l">{{ HINTS_LAYOUT_LABELS[l] }}</option>
-            </select>
-          </label>
-        </CardContent>
-      </Card>
-
+      </TabsRoot>
     </form>
-
-    <UserApworldsPanel @imported="form.loadConfig().catch(() => {})" />
-    <UpdatePanel />
+    <SaveBar :form="form" :bottom-nav="bottomNav" @save="onSave" />
   </section>
 </template>

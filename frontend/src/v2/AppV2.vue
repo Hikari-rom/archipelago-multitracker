@@ -103,7 +103,7 @@ const TABS: { key: View; label: string }[] = [
   </div>
   <main class="mx-auto max-w-[1440px] px-4 pt-4 pb-24 min-[700px]:px-8 min-[700px]:pb-10">
     <p v-if="tracker.loadError && !tracker.slots.length" role="alert" class="rounded-xl border bg-card p-4"><span class="text-error">! </span>Impossible de joindre le serveur : {{ tracker.loadError }}</p>
-    <ConfigView v-else-if="view === 'config'" />
+    <ConfigView v-else-if="view === 'config'" bottom-nav />
     <LogsView v-else-if="view === 'logs'" />
     <HistoryV2 v-else-if="view === 'history'" :slots="selected" :owner="owner" :chips="chips" @update:owner="(k: string) => (owner = k)" />
     <RoomV2 v-else-if="view === 'room'" />
