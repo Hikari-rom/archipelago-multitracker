@@ -662,6 +662,7 @@ class Service:
         if not game or not st.synced:
             return None
         names = self.datapackage.location_name
+        bulk = self.roomfeed.bulk_locations(name) & st.checked if self.roomfeed is not None else set()
         ctx = GoalContext(
             game=game, slot_data=st.slot_data or {}, yaml=yaml_options(cfg.yaml, game),
             received=Counter(self.datapackage.item_name(game, i.get("item")) for i in st.items),
@@ -669,7 +670,7 @@ class Service:
             locations={names(game, loc) for loc in st.checked | st.missing},
             goal=st.goal_reached, checked_ids=set(st.checked), overrides=self.goal_choice(name),
             override_names={o["option"]: o["display"] for o in self.goal_options.get(game, [])},
-            storage=dict(st.storage))
+            storage=dict(st.storage), bulk={names(game, loc) for loc in bulk})
         try:
             objective = describe_goal(ctx)
         except Exception:  # noqa: BLE001  a describer must never break the slot's summary

@@ -30,6 +30,7 @@ NO_TRACKER = "la room ne publie pas d'identifiant de tracker"
 GOAL_STATUS = 30
 GROUP_TYPE = 2  # AP slot_info type of an item-link group
 WINDOW_MAX = 7200  # a catch-up window up to this wide is dated by its midpoint (activity)
+BULK_WINDOW = 5.0  # checks heard this long after a collect / release announcement are part of it
 HOURS, DAYS = 48, 30
 SSE_BATCH_MAX = 200
 FLAG_PROGRESSION, FLAG_USEFUL, FLAG_TRAP = 1, 2, 4
@@ -115,6 +116,7 @@ class RoomFeed:
         self._tracked_ids: set[int] = set()
         self.presence = Presence(set())
         self._live_check_at: dict[int, float] = {}
+        self._bulk_at: dict[tuple[str, int], float] = {}  # ("collect"|"release", slot) -> when it was announced
         self._awaiting_statuses = False
         self._warned_no_seed = False
         # log indexes (sender slot -> count / latest time)
@@ -157,6 +159,7 @@ class RoomFeed:
             self._listener = self._listener_factory(
                 server=self.server, password=self.password, slot_name=self.slot_name, datapackage=self.datapackage,
                 on_session=self._on_session, on_check=self._on_check, on_join=self._on_join, on_part=self._on_part,
+                on_bulk=self._on_bulk,
                 on_status=self._on_status, on_state=self._on_state,
                 min_delay=self.reconnect_delays[0], max_delay=self.reconnect_delays[1])
             self._listener.start()
@@ -235,6 +238,7 @@ class RoomFeed:
                 self.log.remember_room(self._room_id, listener.seed_name)
         self._refresh_slots()
         self.log.save_state(listening_since=listener.listening_since)
+        self.log.start_tags(time.time())
         self._awaiting_statuses = True  # the server's statuses arrive right after Connected
         self._poll_wakeup.set()
 
@@ -259,8 +263,13 @@ class RoomFeed:
     def _on_check(self, sender: int, receiver: int, item: int, location: int, flags: int, at: float) -> None:
         if self._stopped:
             return
+        via = None
+        if at - self._bulk_at.get(("collect", receiver), float("-inf")) <= BULK_WINDOW:
+            via = "collect"
+        elif at - self._bulk_at.get(("release", sender), float("-inf")) <= BULK_WINDOW:
+            via = "release"
         entry = CheckEntry(recorded_at=at, at=at, after=None, before=None, src="live", sender=sender,
-                           receiver=receiver, item=item, location=location, flags=flags)
+                           receiver=receiver, item=item, location=location, flags=flags, via=via)
         self._live_check_at[sender] = max(at, self._live_check_at.get(sender, at))
         self.presence.check(sender, at)
         if self.log.seed is None and not self._warned_no_seed:
@@ -269,6 +278,16 @@ class RoomFeed:
         if self._record(entry):
             self._queue(entry)
             self._notify()
+
+    def _on_bulk(self, kind: str, slot: int, at: float) -> None:
+        if not self._stopped:
+            self._bulk_at[(kind, slot)] = at
+
+    def bulk_locations(self, slot_name: str) -> set[int]:
+        """Checked locations of the slot validated by a collect or a release, not done in the game."""
+        ids = {sid for sid, s in self._slots.items() if s.get("name") == slot_name}
+        ids |= {sid for sid, (name, _game) in self.log.slot_names.items() if name == slot_name}
+        return set().union(*(self.log.bulk_locations(sid) for sid in ids))
 
     def _on_join(self, slot: int, tags: list[str]) -> None:
         if self._stopped:

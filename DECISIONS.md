@@ -605,3 +605,19 @@ Conception : `docs/superpowers/specs/2026-11-07-go-mode-et-but-manuel-design.md`
 - Code : état dans `components/config/form.ts` (`useConfigForm`), un composant par onglet dans `components/config/`.
   Aucun changement backend.
 
+
+## D43 — Checks validés par un collect ou un release (2026-11-25, signalé par Romain)
+- Constat : un `!collect` (ou le collect automatique à la victoire) fait valider par le serveur, dans tous les mondes,
+  les checks qui tiennent les items du joueur ; un release valide ceux du monde qui release. Pour le serveur ces checks
+  sont faits, pas dans le jeu. Le but d'AEMinecraft compte les advancements obtenus dans le monde Minecraft (mod :
+  `RootAdvancementService.completedGoalAdvancements`) : la page affichait 40 / 67 pour 12 faits en jeu.
+- Les connexions de suivi des slots ont le tag `NoText` : elles ne reçoivent pas l'annonce. Seule l'écoute de la room
+  complète (D22) l'entend (`PrintJSON` « Collect » / « Release », envoyé juste avant les checks) : les checks entendus
+  dans les 5 s qui suivent, pour le joueur qui collecte ou depuis le monde qui release, sont écrits avec
+  `"via": "collect"|"release"` dans `data/room_feed/<seed>/checks-*.jsonl`.
+- Avant ce marquage (`bulk_tags_since` dans `state.json`) : une suite de checks vers un même joueur, à moins d'1 s
+  d'écart, venant d'au moins 3 mondes, est un collect. Rattrapage par le tracker web : au moins 10 mondes pour un même
+  joueur dans une coupure de moins d'1 h (sur la room de Romain : un seul cas, le collect de Mathcroft-Music).
+- Utilisé par le but d'AEMinecraft (`GoalContext.bulk`) : advancements validés autrement comptés à part, avec une note.
+  Sans la room complète (option `room_dashboard`), rien n'est repéré et ces checks comptent.
+- Kills (kill_sanity) : ne comptent pas non plus pour le but (le mod ne compte que des advancements).

@@ -56,6 +56,9 @@ class FakeListener:
         self.statuses[slot] = value
         self.kw["on_status"](slot, value)
 
+    def bulk(self, kind, slot, at):
+        self.kw["on_bulk"](kind, slot, at)
+
     def check(self, sender, receiver, item, location, flags=0, at=None):
         self.kw["on_check"](sender, receiver, item, location, flags, time.time() if at is None else at)
 
@@ -196,6 +199,25 @@ async def test_live_check_is_written_and_published_in_a_batch(env):
         first = batch[0]["checks"][1]
         assert first["sender"] == "romain_a" and first["receiver"] == "bob" and first["item"] == "GameA/item77"
         assert first["location"] == "GameA/loc501" and first["category"] == "PROG" and first["src"] == "live"
+    finally:
+        await e.feed.stop()
+
+
+async def test_checks_right_after_a_collect_or_a_release_are_tagged(env):
+    e = env()
+    await started(e)
+    try:
+        e.listener.session()
+        e.listener.bulk("collect", 3, 1000.0)
+        e.listener.check(1, 3, 77, 501, at=1000.1)  # holds bob's item: collected
+        e.listener.check(2, 1, 78, 502, at=1000.2)  # not for bob: played
+        e.listener.check(1, 3, 79, 503, at=1100.0)  # long after: played
+        e.listener.bulk("release", 1, 2000.0)
+        e.listener.check(1, 4, 80, 504, at=2000.1)  # romain_a's own world released
+        await until(lambda: len(e.lines()) == 4)
+        assert [r.get("via") for r in e.lines()] == ["collect", None, None, "release"]
+        assert e.feed.bulk_locations("romain_a") == {501, 504}
+        assert e.feed.bulk_locations("romain_b") == set() and e.feed.bulk_locations("nobody") == set()
     finally:
         await e.feed.stop()
 

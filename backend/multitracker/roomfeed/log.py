@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import time
+from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -14,6 +15,15 @@ log = logging.getLogger(__name__)
 
 ROOT_DIR = ROOT / "data" / "room_feed"
 NAME_FIELDS = ("sender_name", "sender_game", "receiver_name", "receiver_game", "item_name", "location_name")
+# Checks heard before the feed tagged collects and releases: a collect validates, in the same instant, the checks of
+# every world that holds the collecting player's items. A run of checks to one receiver, each within BURST_GAP
+# seconds of the previous one, from at least BURST_SENDERS worlds, is taken for one.
+BURST_GAP = 1.0
+BURST_SENDERS = 3
+# A collect nobody heard (the app or the room feed was down) comes back in one catch-up poll: at least
+# CATCHUP_SENDERS worlds' checks for one receiver, in a gap of at most CATCHUP_GAP seconds.
+CATCHUP_SENDERS = 10
+CATCHUP_GAP = 3600.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +38,9 @@ class CheckEntry:
     item: int
     location: int
     flags: int
+    # "collect" | "release": validated by the server for a collect of the receiver or a release of the sender, not
+    # done in the game (None: done, or not known)
+    via: str | None = None
 
     @property
     def key(self) -> tuple[int, int]:
@@ -56,7 +69,33 @@ def _parse_entry(row) -> CheckEntry:
         recorded_at=float(row["recorded_at"]), at=_opt_float(row.get("at")), after=_opt_float(row.get("after")),
         before=_opt_float(row.get("before")), src=str(row["src"]), sender=int(row["sender"]),
         receiver=int(row["receiver"]), item=int(row["item"]), location=int(row["location"]),
-        flags=int(row["flags"]))
+        flags=int(row["flags"]), via=row["via"] if row.get("via") in ("collect", "release") else None)
+
+
+def _bursts(entries: list[CheckEntry]) -> set[tuple[int, int]]:
+    """Keys of the checks that came in a collect burst (see BURST_GAP and CATCHUP_SENDERS)."""
+    by_receiver: dict[int, list[CheckEntry]] = defaultdict(list)
+    polls: dict[tuple, list[CheckEntry]] = defaultdict(list)
+    for e in entries:
+        if e.src == "live" and e.at is not None:
+            by_receiver[e.receiver].append(e)
+        elif e.src == "catchup" and e.after is not None and e.before is not None and e.before - e.after <= CATCHUP_GAP:
+            polls[(e.receiver, e.after, e.before)].append(e)
+    keys: set[tuple[int, int]] = set()
+    for found in polls.values():
+        if len({e.sender for e in found}) >= CATCHUP_SENDERS:
+            keys |= {e.key for e in found}
+    for runs in by_receiver.values():
+        runs.sort(key=lambda e: e.at)
+        run: list[CheckEntry] = []
+        for e in [*runs, None]:
+            if e is None or (run and e.at - run[-1].at > BURST_GAP):
+                if len({r.sender for r in run}) >= BURST_SENDERS:
+                    keys |= {r.key for r in run}
+                run = []
+            if e is not None:
+                run.append(e)
+    return keys
 
 
 class RoomLog:
@@ -69,6 +108,8 @@ class RoomLog:
         self.slot_names: dict[int, tuple[str | None, str | None]] = {}
         self.unreadable_lines = 0
         self.write_error: str | None = None
+        self.tags_since: float | None = None  # since when live checks carry `via` (before: bursts, see _bursts)
+        self._bulk: tuple[int, dict[int, set[int]]] | None = None  # (entries count, sender -> locations)
 
     @property
     def dir(self) -> Path | None:
@@ -82,6 +123,9 @@ class RoomLog:
         self.keys = set()
         self.slot_names = {}
         self.unreadable_lines = 0
+        self._bulk = None
+        since = self.load_state().get("bulk_tags_since")
+        self.tags_since = float(since) if isinstance(since, (int, float)) else None
         d = self.dir
         if d is None or not d.is_dir():
             return
@@ -115,8 +159,32 @@ class RoomLog:
             if isinstance(name, str) and name:
                 self.slot_names[slot] = (name, game if isinstance(game, str) else None)
 
+    def start_tags(self, now: float) -> None:
+        """From now on, live checks carry `via` (first session that tags them; kept afterwards)."""
+        if self.tags_since is None and self.dir is not None:
+            self.tags_since = now
+            self._bulk = None
+            self.save_state(bulk_tags_since=now)
+
+    def bulk_locations(self, sender: int) -> set[int]:
+        """Locations of the `sender` slot validated by a collect or a release, not done in the game."""
+        if self._bulk is None or self._bulk[0] != len(self.entries):
+            since = self.tags_since
+            bulk: dict[int, set[int]] = defaultdict(set)
+            for e in self.entries:
+                if e.via is not None:
+                    bulk[e.sender].add(e.location)
+            # live checks heard before the tags, and the catch-up ones (never tagged)
+            for sender_slot, location in _bursts([e for e in self.entries if e.via is None and (
+                    e.src == "catchup" or since is None or e.recorded_at < since)]):
+                bulk[sender_slot].add(location)
+            self._bulk = (len(self.entries), dict(bulk))
+        return set(self._bulk[1].get(sender, ()))
+
     def _row(self, entry: CheckEntry, names: dict[str, str | None]) -> dict:
         row = asdict(entry)
+        if row["via"] is None:
+            del row["via"]
         for field in NAME_FIELDS:
             row[field] = names.get(field)
         return row

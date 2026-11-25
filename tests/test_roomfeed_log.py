@@ -222,3 +222,53 @@ def test_stored_slot_names_are_kept_from_disk_and_adds(tmp_path):
     again = RoomLog(tmp_path)
     again.open_seed("s")
     assert again.slot_names == {1: ("Alice", "Tunic"), 2: ("Bob", "Celeste")}
+
+
+def test_via_is_kept_across_a_reload(tmp_path):
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    log.add(entry(location=1, via="collect"), NAMES)
+    log.add(entry(location=2), NAMES)
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    assert [e.via for e in again.entries] == ["collect", None]
+
+
+def test_bulk_locations_from_the_tags_and_from_the_bursts_before_them(tmp_path):
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    # before the tags: a burst of 3 worlds sending to slot 9 within a second is a collect by slot 9
+    for sender, loc in ((1, 10), (2, 20), (3, 30)):
+        log.add(entry(location=loc, sender=sender, receiver=9, at=100.0 + sender * 0.3, recorded_at=100.0), NAMES)
+    log.add(entry(location=11, sender=1, receiver=9, at=500.0, recorded_at=500.0), NAMES)  # alone: played
+    log.add(entry(location=12, sender=1, receiver=8, at=100.5, recorded_at=100.5), NAMES)  # other receiver
+    log.add(entry(location=13, sender=1, receiver=9, at=None, before=100.2, src="catchup",
+                  recorded_at=900.0), NAMES)  # dated by a poll: never a burst
+    log.start_tags(1000.0)
+    # after: only the tags count
+    log.add(entry(location=14, sender=1, receiver=7, at=2000.0, recorded_at=2000.0, via="collect"), NAMES)
+    for sender, loc in ((1, 15), (2, 25), (3, 35)):
+        log.add(entry(location=loc, sender=sender, receiver=6, at=3000.0, recorded_at=3000.0), NAMES)
+    assert log.bulk_locations(1) == {10, 14}
+    assert log.bulk_locations(2) == {20}
+    again = RoomLog(tmp_path)
+    again.open_seed("s")
+    again.start_tags(5000.0)  # already started: kept
+    assert again.bulk_locations(1) == {10, 14}
+
+
+def test_a_collect_missed_while_not_listening_is_found_in_the_catchup(tmp_path):
+    # A catch-up poll that finds many worlds' checks for one receiver in a short gap: a collect heard by nobody.
+    log = RoomLog(tmp_path)
+    log.open_seed("s")
+    def catchup(sender, receiver, location, after, before):
+        log.add(entry(location=location, sender=sender, receiver=receiver, at=None, after=after, before=before,
+                      src="catchup", recorded_at=before), NAMES)
+    for sender in range(1, 11):
+        catchup(sender, 9, 100 + sender, 1000.0, 1500.0)  # 10 worlds in 8 minutes: collect
+    for sender in range(1, 11):
+        catchup(sender, 8, 200 + sender, 1000.0, 9000.0)  # 10 worlds in a night: played
+    for sender in range(1, 10):
+        catchup(sender, 7, 300 + sender, 1000.0, 1500.0)  # 9 worlds: played
+    assert log.bulk_locations(1) == {101}
+    assert log.bulk_locations(10) == {110}

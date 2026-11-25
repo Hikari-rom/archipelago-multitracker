@@ -38,6 +38,7 @@ class RoomListener:
                  on_part: Callable[[int], None] | None = None,
                  on_status: Callable[[int, int], None] | None = None,  # slot, client status
                  on_state: Callable[["RoomListener"], None] | None = None,
+                 on_bulk: Callable[[str, int, float], None] | None = None,  # "collect"|"release", slot, at
                  min_delay: float = 2.0, max_delay: float = 60.0) -> None:
         self.server = server
         self.password = password or None
@@ -45,6 +46,7 @@ class RoomListener:
         self.datapackage = datapackage
         self.on_session, self.on_check, self.on_join = on_session, on_check, on_join
         self.on_part, self.on_status, self.on_state = on_part, on_status, on_state
+        self.on_bulk = on_bulk
         self.min_delay, self.max_delay = min_delay, max_delay
         self.status = "idle"  # idle | connecting | listening | disconnected | error
         self.error: str | None = None
@@ -199,6 +201,12 @@ class RoomListener:
                 self._call(self.on_join, slot, list(msg.get("tags") or []))
             else:
                 self._call(self.on_part, slot)
+        elif kind in ("Collect", "Release") and msg.get("team") == self.team:
+            # Announced just before the server validates the checks: of every world holding the slot's items
+            # (collect), or of the slot's own world (release).
+            slot = _int(msg.get("slot"))
+            if slot is not None:
+                self._call(self.on_bulk, kind.lower(), slot, time.time())
 
     @staticmethod
     def _parse_item_send(msg: dict[str, Any]) -> tuple[int, int, int, int, int] | None:

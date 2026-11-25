@@ -61,6 +61,7 @@ async def until(predicate, timeout=3.0):
 class Recorder:
     def __init__(self):
         self.checks, self.joins, self.parts, self.statuses, self.sessions, self.states = [], [], [], [], [], []
+        self.bulks = []
 
     def kwargs(self):
         return dict(on_session=self.sessions.append,
@@ -68,7 +69,8 @@ class Recorder:
                     on_join=lambda slot, tags: self.joins.append((slot, tags)),
                     on_part=self.parts.append,
                     on_status=lambda slot, value: self.statuses.append((slot, value)),
-                    on_state=lambda lst: self.states.append(lst.status))
+                    on_state=lambda lst: self.states.append(lst.status),
+                    on_bulk=lambda kind, slot, at: self.bulks.append((kind, slot)))
 
 
 @pytest.fixture
@@ -172,6 +174,21 @@ async def test_join_part_filtered_by_team(play):
         await until(lambda: rec.parts)
         assert rec.joins == [(2, ["AP", "Tracker"]), (1, [])]
         assert rec.parts == [2]
+    finally:
+        await lst.stop()
+
+
+async def test_collect_and_release_announcements_filtered_by_team(play):
+    frames = [ROOM_INFO, CONNECTED,
+              {"cmd": "PrintJSON", "type": "Collect", "team": 0, "slot": 3, "data": [{"text": "x"}]},
+              {"cmd": "PrintJSON", "type": "Collect", "team": 1, "slot": 4},
+              {"cmd": "PrintJSON", "type": "Release", "team": 0, "slot": 2},
+              {"cmd": "PrintJSON", "type": "Release", "team": 0, "slot": "x"},
+              {"cmd": "PrintJSON", "type": "Part", "team": 0, "slot": 9}]
+    lst, sock, rec, _ = await play(frames)
+    try:
+        await until(lambda: rec.parts)
+        assert rec.bulks == [("collect", 3), ("release", 2)]
     finally:
         await lst.stop()
 

@@ -44,6 +44,8 @@
    2026-11-24 : page Configuration en onglets (Slots, Room, Fonctions, Affichage, App), tableau des slots sur PC,
    liste + panneau par slot sur mobile, barre « Enregistrer » qui n'apparaît qu'avec des changements (D42) ; couleurs
    des objets (progression, utile, piège) dans l'onglet Hints des cartes (v0.2.27).
+   2026-11-25 : but AEMinecraft compté comme le mod (advancements faits en jeu : ni kills, ni checks validés par un
+   collect ou un release, repérés par la room complète, D43).
 1. M0 à M19 faits (M11 vérifié sur la vraie room éveillée le 2026-10-11 ; M16 : page « Journal », logs en direct ;
    M17 : totaux, fil des items reçus, tri au choix, barres vert/bleu ; M18 : page « Objectifs » ; M19 : page
    « Historique », bouton maison, jeu actif choisi à la main, mode compact).

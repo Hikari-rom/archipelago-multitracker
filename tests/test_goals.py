@@ -282,3 +282,15 @@ def test_aeminecraft_counts_only_the_advancements_not_the_kills():
     c.checked_ids = {1, 2, 3, 4}
     goal = describe(c)
     assert goal["counters"] == [{"label": "Advancements", "current": 2, "target": 3}]
+
+
+def test_aeminecraft_leaves_out_the_advancements_validated_by_a_collect():
+    # A collect (or a release) marks checks done on the server that the player never got in game: the mod's goal
+    # only counts the advancements done in the Minecraft world.
+    from multitracker.goals import describe
+    names = ["Advancement: Stone Age", "Advancement: Free the End", "Advancement: Ol' Betsy", "Kill Boss: Wither"]
+    c = _ctx("AEMinecraft", {"advancements_required": 5, "boss_list": ["minecraft:ender_dragon"]}, names, names)
+    c.bulk = {"Advancement: Free the End", "Advancement: Ol' Betsy", "Kill Boss: Wither"}
+    goal = describe(c)
+    assert goal["counters"] == [{"label": "Advancements", "current": 1, "target": 5}]
+    assert goal["note"] == "2 autres validés par des collects : à faire en jeu, le mod ne les compte pas."

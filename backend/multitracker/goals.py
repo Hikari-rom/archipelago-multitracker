@@ -37,6 +37,8 @@ class GoalContext:
     overrides: dict[str, Any] = field(default_factory=dict)  # victory chosen by hand {option: value} (D34)
     override_names: dict[str, str] = field(default_factory=dict)  # option -> its display name
     storage: dict[str, Any] = field(default_factory=dict)  # data storage the game's client keeps (GAME_STORAGE_KEYS)
+    # checked locations the server validated for a collect or a release, not done in the game (room feed only)
+    bulk: set[str] = field(default_factory=set)
 
     def opt(self, sd_key: str | None, yaml_key: str | None = None, default: Any = None) -> Any:
         """Option value: the goal chosen by hand, then slot_data (what the generator really used), then the yaml,
@@ -452,11 +454,17 @@ def minecraft(c: GoalContext) -> Goal:
     required = int(c.opt("advancements_required", "advancements_required", 0) or 0)
     bosses = c.opt("boss_list", "boss_list", []) or []
     bosses = [str(b).split(":")[-1].replace("_", " ").title() for b in bosses]
-    # slot_data["locations"] also holds the mob and boss kills (kill_sanity): only these checks count
-    done = sum(1 for name in c.checked if name.startswith("Advancement: "))
+    # The mod counts the advancements done in the Minecraft world: not the kills (kill_sanity), nor the checks a
+    # collect or a release validated on the server.
+    advancements = {name for name in c.checked if name.startswith("Advancement: ")}
+    done = len(advancements - c.bulk)
+    skipped = len(advancements & c.bulk)
     g = Goal(c, (f"{required} advancements" if required else "") + (" et " if required and bosses else "")
              + (("vaincre " + ", ".join(bosses)) if bosses else ""))
     g.counter("Advancements", done, required)
+    if required and skipped:
+        g.note = (f"{skipped} {'autre validé par un collect' if skipped == 1 else 'autres validés par des collects'} : "
+                  "à faire en jeu, le mod ne les compte pas.")
     g.final(("Vaincre " + ", ".join(bosses)) if bosses else "Objectif atteint")
     return g
 
