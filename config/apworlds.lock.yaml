@@ -345,11 +345,11 @@ apworlds:
     published: '2026-07-26T20:21:42Z'
     asset_pattern: '*.apworld'
     asset: outer_wilds.apworld
-    url: https://github.com/Ixrec/OuterWildsArchipelagoRandomizer/releases/download/v1.3.0/outer_wilds.apworld
+    url: https://github.com/IxrecsRandomizers/OuterWildsArchipelagoRandomizer/releases/download/v1.3.0/outer_wilds.apworld
     size: 86645
     file: outer_wilds.apworld
     sha256: 0cb3cfef2ef8ba57bc5762148c94588c745d98e906f59f1f66c5cbdcd8f1216d
-    downloaded_at: '2026-10-11T01:31:24+00:00'
+    downloaded_at: '2026-11-24T20:57:28+00:00'
     source: github
     game: Outer Wilds
   portal2:
@@ -569,11 +569,11 @@ apworlds:
     published: '2026-10-04T16:02:25Z'
     asset_pattern: nine_sols.apworld
     asset: nine_sols.apworld
-    url: https://github.com/Ixrec/NineSolsArchipelagoRandomizer/releases/download/0.6.4/nine_sols.apworld
+    url: https://github.com/IxrecsRandomizers/NineSolsArchipelagoRandomizer/releases/download/0.6.4/nine_sols.apworld
     size: 3661548
     file: nine_sols.apworld
     sha256: 95881e42ad59deec954a0e036d8150c0e65f339b61223225bb139d80e0a56e6f
-    downloaded_at: '2026-10-24T10:28:16+00:00'
+    downloaded_at: '2026-11-24T20:57:40+00:00'
     source: github
     game: Nine Sols
   nodebuster:
