@@ -31,6 +31,10 @@ const hintsWorld = computed(() => {
   return [...hs.filter((h) => h.in_logic), ...hs.filter((h) => !h.in_logic)]
 })
 const hintsElsewhere = computed(() => d.value?.hints_mine_elsewhere ?? [])
+const hintLines = computed(() => {
+  const all = [...hintsWorld.value.map((h) => ({ h, world: true })), ...hintsElsewhere.value.map((h) => ({ h, world: false }))]
+  return [...all.filter((l) => !l.h.found), ...all.filter((l) => l.h.found)]
+})
 const tabs = computed<{ key: DetailTab; label: string }[]>(() => [
   { key: 'logic', label: `En logique ${d.value?.in_logic_locations.length ?? 0}` },
   { key: 'new', label: `★ Nouveaux ${news.value.length}` },
@@ -125,12 +129,17 @@ function onKey(e: KeyboardEvent): void {
       <template v-else-if="tab === 'hints'">
         <p v-if="!hintsWorld.length && !hintsElsewhere.length" class="text-sm text-muted-foreground">Aucun hint.</p>
         <ul class="space-y-1.5 text-sm">
-          <li v-for="(h, n) in hintsWorld" :key="'w' + n">
-            <span v-if="h.in_logic" class="text-hint" aria-label="en logique">◆ </span>{{ h.location }} contient
-            <span data-hint-item :class="itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> pour {{ h.receiver }}
-          </li>
-          <li v-for="(h, n) in hintsElsewhere" :key="'e' + n">
-            <span data-hint-item :class="itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> → {{ h.location }} ∆ {{ h.finder }} ({{ h.finder_game }})
+          <li
+            v-for="({ h, world }, n) in hintLines" :key="n" :data-hint-found="h.found || undefined"
+            :class="h.found && 'text-muted-foreground line-through'"
+          >
+            <template v-if="world">
+              <span v-if="h.in_logic" class="text-hint" aria-label="en logique">◆ </span>{{ h.location }} contient
+              <span data-hint-item :class="!h.found && itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> pour {{ h.receiver }}
+            </template>
+            <template v-else>
+              <span data-hint-item :class="!h.found && itemClass(h)"><template v-if="h.progression">★ </template>{{ h.item }}</span> → {{ h.location }} ∆ {{ h.finder }} ({{ h.finder_game }})
+            </template>
           </li>
         </ul>
       </template>

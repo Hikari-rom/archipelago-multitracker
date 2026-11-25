@@ -154,6 +154,30 @@ describe('card blocks', () => {
     expect(lines).toContain('◆ Cafe contient Map Skip pour natazox')
     expect(lines).toContain('★ Hookshot → Chest ∆ kuro (Stardew Valley)')
   })
+  it('detail tabs: found hints are struck through, after the ones left to do', async () => {
+    const h = { finder: 'kuro', finder_game: 'Stardew Valley', receiver: 'ww', receiver_game: 'TWW', in_logic: false, progression: false, useful: false, trap: false }
+    tracker.details = {
+      ww: {
+        ...mk({ name: 'ww' }), items_list: [], in_logic_locations: [],
+        hints_mine_elsewhere: [
+          { ...h, item: 'Hookshot', location: 'Chest', found: true },
+          { ...h, item: 'Rupee', location: 'Box', found: false },
+        ],
+        hints_in_my_world: [
+          { ...h, item: 'Map Skip', location: 'Cafe', receiver: 'natazox', found: true, in_logic: true },
+          { ...h, item: 'Ice Trap', location: 'Tree', receiver: 'natazox', found: false },
+        ],
+      } as unknown as SlotDetail,
+    }
+    const w = mount(DetailTabs, { props: { name: 'ww', initial: 'hints' } })
+    await flushPromises()
+    const items = w.findAll('li')
+    expect(items.map((l) => l.text().split(' ')[0])).toEqual(['Tree', 'Rupee', '◆', 'Hookshot'])
+    const done = items.filter((l) => l.attributes('data-hint-found') !== undefined).map((l) => l.text())
+    expect(done).toEqual(['◆ Cafe contient Map Skip pour natazox', 'Hookshot → Chest ∆ kuro (Stardew Valley)'])
+    expect(items.at(-1)!.classes()).toEqual(expect.arrayContaining(['line-through', 'text-muted-foreground']))
+    expect(items[0].classes()).not.toContain('line-through')
+  })
   it('detail tabs: no "Marquer comme vu" when nothing is new', async () => {
     tracker.details = { ww: { ...mk({ name: 'ww' }), items_list: [], hints_mine_elsewhere: [], hints_in_my_world: [], in_logic_locations: [] } as unknown as SlotDetail }
     const w = mount(DetailTabs, { props: { name: 'ww', initial: 'new' } })
