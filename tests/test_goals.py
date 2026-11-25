@@ -268,3 +268,17 @@ def test_tracker_reads_the_balatro_mod_wins_from_data_storage():
     assert "balatro_deck_wins122_0" in get["keys"]
     assert next(m for m in sent if m["cmd"] == "SetNotify")["keys"] == get["keys"]
     assert "storage" in changes[1] and t.state.storage == {"balatro_deck_wins122_0": {}}
+
+
+def test_aeminecraft_counts_only_the_advancements_not_the_kills():
+    # slot_data["locations"] maps every active check (advancements, mob and boss kills) to its id: only the
+    # "Advancement: " ones count toward advancements_required.
+    from multitracker.goals import describe
+    names = {"Advancement: Stone Age": 1, "Advancement: Getting an Upgrade": 2, "Kill Entity: Zombie": 3,
+             "Kill Boss: Wither": 4, "Advancement: Diamonds!": 5}
+    sd = {"advancements_required": 3, "boss_list": ["minecraft:ender_dragon"],
+          "locations": {f"minecraft:x{i}": i for i in names.values()}}
+    c = _ctx("AEMinecraft", sd, names, list(names)[:4])
+    c.checked_ids = {1, 2, 3, 4}
+    goal = describe(c)
+    assert goal["counters"] == [{"label": "Advancements", "current": 2, "target": 3}]

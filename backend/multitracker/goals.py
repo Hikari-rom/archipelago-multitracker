@@ -452,8 +452,8 @@ def minecraft(c: GoalContext) -> Goal:
     required = int(c.opt("advancements_required", "advancements_required", 0) or 0)
     bosses = c.opt("boss_list", "boss_list", []) or []
     bosses = [str(b).split(":")[-1].replace("_", " ").title() for b in bosses]
-    ids = set((c.slot_data.get("locations") or {}).values())
-    done = len(ids & c.checked_ids)
+    # slot_data["locations"] also holds the mob and boss kills (kill_sanity): only these checks count
+    done = sum(1 for name in c.checked if name.startswith("Advancement: "))
     g = Goal(c, (f"{required} advancements" if required else "") + (" et " if required and bosses else "")
              + (("vaincre " + ", ".join(bosses)) if bosses else ""))
     g.counter("Advancements", done, required)
